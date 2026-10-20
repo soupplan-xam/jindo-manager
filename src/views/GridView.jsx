@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF, addDays, fromISO, toISO, colorOf, subjectOf, sectionTarget, printSizes, fitScale } from '../logic.js'
+import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF, addDays, fromISO, toISO, colorOf, subjectOf, progressFor, printSizes, fitScale } from '../logic.js'
 import ContentsPanel from './ContentsPanel.jsx'
 import Palette from './Palette.jsx'
 import useWindowWidth from '../useWindowWidth.js'
@@ -803,10 +803,7 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
     if (s) todayRows.push({ p, cls: s.cls, num: s.num, canceled: s.canceled, perf: s.perf, reason: s.reason })
   }
 
-  const curOf = c => {
-    const l = (perClass[c] || []).filter(x => x.iso <= today)
-    return l.length ? l[l.length - 1].num : 0
-  }
+  const curOf = c => progressFor(data, computed, c, today).current
   const maxCur = Math.max(...data.classes.map(curOf), 0)
 
   const goBehind = c => {
@@ -828,7 +825,7 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
   const show = data.cfg.dash
   const tileCount = (show.today ? 1 : 0) + (show.progress ? 1 : 0) + (show.exam ? 1 : 0)
   // 반이 많아도 겹치지 않도록 칸 최소 너비를 정해두고 자동으로 줄을 채운다.
-  const autoCols = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))', gap: '6px 12px' }
+  const autoCols = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(165px, 1fr))', gap: '6px 12px' }
   // 손잡이 폭을 뺀 나머지를 비율대로 나눠 갖는다
   const rawW = dragW || data.ui.dashW
   const growOf = k => rawW[k] || 1
@@ -879,14 +876,14 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
 
           {/* 반별 진도 */}
           {show.progress && (
-            <Tile label="진도" sub={data.classes.length + '개 반'} min={min} grow={isMobile ? undefined : growOf('progress')}>
+            <Tile label="진도" sub={exam ? exam.name + '까지' : '학기 말까지'} min={min} grow={isMobile ? undefined : growOf('progress')}>
               {data.classes.length === 0 ? (
                 <div style={{ fontSize: 13, color: FAINT }}>등록된 반이 없습니다</div>
               ) : (
                 <div style={autoCols}>
                   {data.classes.map(c => {
                     const cur = curOf(c)
-                    const total = sectionTarget(perClass[c], today)
+                    const { total, remaining } = progressFor(data, computed, c, today)
                     const behind = maxCur - cur
                     return (
                       <div key={c} style={{ display: 'flex', alignItems: 'baseline', gap: 4, minWidth: 0, flexWrap: 'nowrap' }}>
@@ -894,6 +891,7 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
                         <span style={{ fontSize: 12, fontWeight: 700, minWidth: 0, ...ellipBase }}>{c}</span>
                         <span style={{ fontSize: 17, fontWeight: 700, lineHeight: 1, flex: 'none' }}>{cur}</span>
                         <span style={{ fontSize: 11, color: FAINT, flex: 'none' }}>/{total}</span>
+                        <span style={{ fontSize: 11, color: GREEN, flex: 'none' }}>남은 {remaining}</span>
                         {behind > 0 && (
                           <button
                             onClick={() => goBehind(c)}
