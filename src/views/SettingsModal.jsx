@@ -8,7 +8,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
   const [confirmClear, setConfirmClear] = useState(false)
   const cfg = data.cfg
   const weeks = cfg.printWeeks || 1 // 인쇄 범위 — 고를 수 있는 크기가 여기에 달렸다
-  const [open, setOpen] = useState({ mode: true, sem: true, count: true, view: false, dash: false, print: false, data: false, file: false })
+  const [open, setOpen] = useState({ mode: true, sem: true, count: true, targetExam: true, view: false, dash: false, print: false, data: false, file: false })
   const [key, setKey] = useState(getApiKey)
   const [keyShown, setKeyShown] = useState(false)
   const [model, setModelState] = useState(getModel)
@@ -134,7 +134,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
           <div style={{ padding: '0 0 16px', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14 }}>
             <SwitchRow label="고사 후 1차시부터 다시" on={cfg.examReset} onClick={() => setCfg({ examReset: !cfg.examReset })} />
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-              <span>기준 고사</span>
+              <span>차시 초기화 기준 고사</span>
               {exams.length ? (
                 <select
                   value={cfg.examId ?? exams[0].id}
@@ -147,6 +147,18 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
                 <span style={{ fontSize: 13, color: FAINT }}>일정에 고사를 추가하면 선택할 수 있습니다.</span>
               )}
             </div>
+          </div>
+        </Sec>
+
+        <Sec id="targetExam" title="진도 목표 고사">
+          <div style={{ paddingBottom: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <select aria-label="진도 목표 고사" value={cfg.targetExamId ?? ''}
+              onChange={e => setCfg({ targetExamId: e.target.value || null })} style={uSelect}>
+              <option value="">자동 (초기화 이후 다음 고사)</option>
+              {exams.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+              <option value="semester">학기 말까지</option>
+            </select>
+            <span style={{ fontSize: 12, color: FAINT }}>목표 고사는 반별 진도·남은 차시·D-day에 적용됩니다. 차시 초기화 기준과 따로 선택하세요.</span>
           </div>
         </Sec>
 

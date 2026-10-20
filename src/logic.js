@@ -96,6 +96,25 @@ export function pickExam(data) {
   return exams[0] || null
 }
 
+export function pickTargetExam(data) {
+  const exams = data.events.filter(e => e.type === '고사').slice().sort((a,b) => a.start.localeCompare(b.start))
+  if (data.cfg.targetExamId === 'semester') return null
+  const selected = exams.find(e => String(e.id) === String(data.cfg.targetExamId))
+  if (selected) return selected
+  const reset = data.cfg.examReset ? pickExam(data) : null
+  return exams.find(e => !reset || e.start > reset.end) || null
+}
+
+export function progressFor(data, computed, cls, today) {
+  const reset = data.cfg.examReset ? pickExam(data) : null
+  const target = computed.exam
+  const afterReset = reset && (!target || target.start > reset.end)
+  const list = (computed.perClass[cls] || []).filter(x =>
+    (!afterReset || x.iso > reset.end) && (!target || x.iso < target.start))
+  const current = list.filter(x => x.iso <= today).length
+  return { current, total: list.length, remaining: list.length - current }
+}
+
 function eventsOn(data, iso) {
   // 개인 일정(출장 등)도 수업이 빠지는 건 같으므로 모든 유형을 결손으로 본다
   return data.events.filter(e => e.start <= iso && iso <= e.end)
@@ -109,7 +128,8 @@ function cancelEventFor(data, iso, p, cls) {
 // sessions[iso|p] = {cls, num, extra?} | {cls, canceled, reason, user?}
 // perClass[cls] = [{iso, p, num}...] (결손 제외, 순서대로)
 export function compute(data) {
-  const exam = pickExam(data)
+  const resetExam = pickExam(data)
+  const exam = pickTargetExam(data)
   const sessions = {}
   const perClass = {}
   const counters = {}
@@ -139,7 +159,7 @@ export function compute(data) {
           sessions[key] = { cls, canceled: true, user: true, perf, extra: !!swap, reason: uc.reason || (perf ? '수행평가' : '결손') }
           continue
         }
-        const sec = data.cfg.examReset && exam && iso > exam.end ? 1 : 0
+        const sec = data.cfg.examReset && resetExam && iso > resetExam.end ? 1 : 0
         const ck = sec + '|' + cls
         counters[ck] = (counters[ck] || 0) + 1
         const num = counters[ck]

@@ -19,7 +19,8 @@ export const defaultData = () => ({
   memos: {}, // 구버전 칸별 메모 — 로드 시 contents로 이관됨
   cfg: {
     examReset: false,
-    examId: null,
+    examId: null, // 차시 초기화 기준
+    targetExamId: null, // 자동: 초기화 이후 다음 고사, semester: 학기 말
     anim: true,
     dash: { today: true, progress: true, exam: true }, // 대시보드에 띄울 항목
     printScale: 'l', // 인쇄 크기: s(A4의 1/4) · m(1/2) · l(1)
