@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF, addDays, fromISO, toISO, colorOf, subjectOf, progressFor, printSizes, fitScale } from '../logic.js'
+import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF, addDays, fromISO, toISO, colorOf, subjectOf, progressFor, progressGroups, printSizes, fitScale } from '../logic.js'
 import ContentsPanel from './ContentsPanel.jsx'
 import Palette from './Palette.jsx'
 import useWindowWidth from '../useWindowWidth.js'
@@ -915,7 +915,11 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
   // 진도 칸에는 진도를 세는 반만 — 보강으로만 들어간 반(정규 시간표에 없고 센 차시도 없는 반)은 뺀다
   const regular = new Set(Object.values(data.pattern))
   const progClasses = data.classes.filter(c => regular.has(c) || (perClass[c] || []).length)
-  const maxCur = Math.max(...progClasses.map(curOf), 0)
+  // 같은 학년·과목 묶음 안에서 가장 빠른 반과 견준다 (1학년과 2학년은 따로 센다)
+  const groups = progressGroups(data, progClasses)
+  const maxOf = {}
+  groups.forEach(g => g.classes.forEach(c => { maxOf[c] = Math.max(...g.classes.map(curOf), 0) }))
+  const behindOf = c => (maxOf[c] || 0) - curOf(c)
 
   const goBehind = c => {
     const ent = Object.entries(sessions).find(kv => kv[1].cls === c && kv[1].canceled)
@@ -929,7 +933,7 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
   const dday = exam ? Math.round((fromISO(exam.start) - todayD) / 86400000) : null
   // 최대 차시보다 2차시 이상 느린 반 — 고사 카드에서 경고로 보여준다
   const risky = progClasses
-    .map(c => ({ c, behind: maxCur - curOf(c) }))
+    .map(c => ({ c, behind: behindOf(c) }))
     .filter(x => x.behind >= 2)
     .sort((a, b) => b.behind - a.behind)
   const chip = c => ({ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: colorOf(data, c), border: '1px solid rgba(26,26,26,0.16)', flex: 'none' })
@@ -991,11 +995,17 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
               {progClasses.length === 0 ? (
                 <div style={{ fontSize: 13, color: FAINT }}>등록된 반이 없습니다</div>
               ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                {groups.map(g => (
+                <div key={g.key}>
+                {groups.length > 1 && g.label && (
+                  <div style={{ fontSize: 10.5, fontWeight: 700, color: FAINT, marginBottom: 3, letterSpacing: '0.02em' }}>{g.label}</div>
+                )}
                 <div style={autoCols}>
-                  {progClasses.map(c => {
+                  {g.classes.map(c => {
                     const cur = curOf(c)
                     const { total, remaining } = progressFor(data, computed, c, today)
-                    const behind = maxCur - cur
+                    const behind = behindOf(c)
                     return (
                       <div key={c} style={{ display: 'flex', alignItems: 'baseline', gap: 4, minWidth: 0, flexWrap: 'nowrap' }}>
                         <span style={{ ...chip(c), alignSelf: 'center' }} />
@@ -1006,7 +1016,7 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
                         {behind > 0 && (
                           <button
                             onClick={() => goBehind(c)}
-                            title={'가장 빠른 반보다 ' + behind + '차시 뒤처짐'}
+                            title={(g.label || '같은 묶음') + '에서 가장 빠른 반보다 ' + behind + '차시 뒤처짐'}
                             style={{
                               border: 'none', borderRadius: 3, padding: '1px 4px', cursor: 'pointer',
                               fontSize: 10, fontWeight: 700, color: '#FFFFFF', background: WARN, lineHeight: 1.3, flex: 'none',
@@ -1018,6 +1028,9 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
                       </div>
                     )
                   })}
+                </div>
+                </div>
+                ))}
                 </div>
               )}
             </Tile>
@@ -1041,7 +1054,7 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
                           <button
                             key={x.c}
                             onClick={() => goBehind(x.c)}
-                            title={'가장 빠른 반보다 ' + x.behind + '차시 뒤처짐'}
+                            title={'같은 학년에서 가장 빠른 반보다 ' + x.behind + '차시 뒤처짐'}
                             style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 11, fontWeight: 700, color: WARN, whiteSpace: 'nowrap' }}
                           >
                             {x.c} −{x.behind}

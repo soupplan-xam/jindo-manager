@@ -87,6 +87,31 @@ export function colorOf(data, cls) {
   return i < 0 ? '#FFFFFF' : DEFAULT_TINTS[i % DEFAULT_TINTS.length]
 }
 
+// 반 이름의 학년: '1-8' → '1', '2학년 3반' → '2', 알 수 없으면 ''
+export function gradeOf(cls) {
+  const m = String(cls).trim().match(/^(\d+)\s*(?:-|학년|\.)/)
+  return m ? m[1] : ''
+}
+
+// 진도를 서로 비교할 묶음 — 같은 학년 · 같은 과목끼리만 견준다.
+// [{ key, label, classes }] 학년 → 과목 순서
+export function progressGroups(data, classes) {
+  const map = new Map()
+  for (const c of classes) {
+    const g = gradeOf(c), subj = subjectOf(data, c)
+    const key = g + '|' + subj
+    if (!map.has(key)) map.set(key, { key, grade: g, subject: subj, classes: [] })
+    map.get(key).classes.push(c)
+  }
+  const groups = [...map.values()].sort((a, b) => (Number(a.grade) || 99) - (Number(b.grade) || 99) || a.subject.localeCompare(b.subject))
+  const subjPerGrade = {}
+  groups.forEach(x => { subjPerGrade[x.grade] = (subjPerGrade[x.grade] || 0) + 1 })
+  groups.forEach(x => {
+    x.label = [x.grade ? x.grade + '학년' : '', subjPerGrade[x.grade] > 1 || !x.grade ? x.subject : ''].filter(Boolean).join(' · ')
+  })
+  return groups
+}
+
 // 반의 과목: 지정 없으면 첫 과목
 export function subjectOf(data, cls) {
   return (data.clsSubject && data.clsSubject[cls]) || (data.subjects && data.subjects[0]) || ''
