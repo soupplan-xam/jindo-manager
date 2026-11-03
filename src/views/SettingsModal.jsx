@@ -2,6 +2,7 @@
 import { GREEN, FAINT, INK, LINE, SUB, WARN, RED, exportCSV, printSizes, fitScale } from '../logic.js'
 import { getApiKey, setApiKey, getModel, setModel, exportJSON, importJSON, defaultData } from '../storage.js'
 import { checkKey } from '../importer.js'
+import DateField from './DateField.jsx'
 import Modal from './Modal.jsx'
 
 export default function SettingsModal({ data, setData, computed, today, setSnack, onClose, onResetSetup, onImport, onSchools }) {
@@ -118,15 +119,15 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
     <Modal title="설정" onClose={onClose}>
       <div style={{ marginTop: 16 }}>
         <Sec id="sem" title="학기 설정">
-          <div style={{ padding: '0 0 16px', display: 'flex', gap: 24, maxWidth: 380 }}>
-            <label style={{ flex: 1, fontSize: 12, color: SUB }}>
+          <div style={{ padding: '0 0 16px', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 12, color: SUB }}>
               시작일
-              <input type="date" value={data.semStart} onChange={e => patch({ semStart: e.target.value })} style={dateInput} />
-            </label>
-            <label style={{ flex: 1, fontSize: 12, color: SUB }}>
+              <DateField value={data.semStart} onChange={v => patch({ semStart: v, semEnd: data.semEnd && data.semEnd >= v ? data.semEnd : v })} label="학기 시작일" />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 12, color: SUB }}>
               종료일
-              <input type="date" value={data.semEnd} onChange={e => patch({ semEnd: e.target.value })} style={dateInput} />
-            </label>
+              <DateField value={data.semEnd} onChange={v => patch({ semEnd: v })} near={data.semStart} min={data.semStart} label="학기 종료일" />
+            </div>
           </div>
         </Sec>
 
@@ -334,7 +335,3 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
 
 const uInput = { border: 'none', borderBottom: '1px solid ' + LINE, background: 'transparent', fontSize: 14, padding: '4px 0' }
 const uSelect = { border: 'none', borderBottom: '1px solid ' + LINE, background: 'transparent', fontSize: 13, padding: '2px 0' }
-const dateInput = {
-  display: 'block', width: '100%', boxSizing: 'border-box', border: 'none',
-  borderBottom: '1px solid ' + LINE, background: 'transparent', fontSize: 14, padding: '6px 0', marginTop: 5,
-}

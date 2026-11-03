@@ -5,6 +5,7 @@ import ScheduleEditor from './ScheduleEditor.jsx'
 import ScheduleCalendar, { CalendarIcon, ListIcon } from './ScheduleCalendar.jsx'
 import useWindowWidth from '../useWindowWidth.js'
 import useSplit from '../useSplit.js'
+import { DateRangeField } from './DateField.jsx'
 
 // 최초 설정 = 진도표 화면과 같은 골격(윗줄 + 시간표 + 오른쪽 패널).
 // 윗줄만 대시보드 대신 학기 기간이고, 오른쪽 패널은 차시별 내용 대신 일정이다.
@@ -18,9 +19,12 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
 
   const semFields = (
     <div data-intro-sem style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-      <input type="date" value={data.semStart} onChange={e => patch({ semStart: e.target.value })} style={dateField} />
-      <span style={{ fontSize: 13, color: FAINT }}>~</span>
-      <input type="date" value={data.semEnd} onChange={e => patch({ semEnd: e.target.value })} style={dateField} />
+      <DateRangeField
+        start={data.semStart}
+        end={data.semEnd}
+        onChange={r => patch({ semStart: r.start, semEnd: r.end })}
+        labels={['학기 시작일', '학기 종료일']}
+      />
     </div>
   )
 
@@ -39,7 +43,7 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
   )
 
   // 두 칼럼의 첫 줄(학기 / 일정)을 같은 높이로 맞춘다
-  const rowStyle = { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flex: 'none', height: 32, boxSizing: 'border-box' }
+  const rowStyle = { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flex: 'none', minHeight: 32, boxSizing: 'border-box' }
 
   const semRow = (
     <div style={rowStyle}>
@@ -143,7 +147,3 @@ function SearchIcon() {
   )
 }
 
-const dateField = {
-  border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF',
-  fontSize: 13, padding: '6px 8px', boxSizing: 'border-box',
-}

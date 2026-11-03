@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, toISO } from '../logic.js'
 import { guessSemester } from '../schools.js'
+import { DateRangeField } from './DateField.jsx'
 import Modal from './Modal.jsx'
 
 // 학사일정을 넣은 직후 이어지는 두 단계 안내.
@@ -48,21 +49,14 @@ export default function SetupGuideModal({ data, patch, onClose }) {
               ))}
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-              <input
-                type="date"
-                value={data.semStart}
-                onChange={e => patch({ semStart: e.target.value })}
-                style={{ ...dateField, colorScheme: 'light' }}
-              />
-              <span style={{ fontSize: 13, color: FAINT }}>~</span>
-              <input
-                type="date"
-                value={data.semEnd}
-                min={data.semStart}
-                onChange={e => patch({ semEnd: e.target.value })}
-                style={{ ...dateField, colorScheme: 'light' }}
+              <DateRangeField
+                start={data.semStart}
+                end={data.semEnd}
+                onChange={r => patch({ semStart: r.start, semEnd: r.end })}
+                labels={['학기 시작일', '학기 종료일']}
               />
             </div>
+            <div style={{ marginTop: 10, fontSize: 12, color: FAINT }}>10.12처럼 숫자로 바로 치거나 [기간]을 눌러 달력에서 시작일·종료일을 차례로 고르세요.</div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', marginTop: 20 }}>
@@ -108,10 +102,6 @@ export default function SetupGuideModal({ data, patch, onClose }) {
   )
 }
 
-const dateField = {
-  border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF',
-  fontSize: 13, padding: '7px 9px', boxSizing: 'border-box',
-}
 
 // 학기 전환 칩 — 학사일정 검색의 학년 칩과 같은 모양
 const semChip = on => ({

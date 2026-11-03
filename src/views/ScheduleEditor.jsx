@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { DAYS, GREEN, FAINT, INK, LINE, LINE_SOFT, RED, SUB, fromISO, toISO } from '../logic.js'
 import { CalendarIcon, XMark, TYPE_COLOR } from './ScheduleCalendar.jsx'
+import { DateRangeField } from './DateField.jsx'
 
 const TYPES = ['휴업일', '행사', '고사', '개인']
 
@@ -23,6 +24,7 @@ export default function ScheduleEditor({ data, setData, computed, setSnack, maxH
   const addRange = () => setRanges(rs => [...rs, { start: rs[rs.length - 1].end, end: rs[rs.length - 1].end }])
   const removeRange = i => setRanges(rs => rs.filter((_, j) => j !== i))
 
+  const addRef = useRef(null)
   const add = () => {
     if (!sched.name.trim() || !ranges.length || ranges.some(r => !r.start)) {
       setSnack({ text: '날짜와 이름을 확인해주세요.', kind: 'none' })
@@ -88,6 +90,8 @@ export default function ScheduleEditor({ data, setData, computed, setSnack, maxH
   })
 
   const linkBtn = c => ({ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: c })
+
+  addRef.current = add
 
   return (
     <>
@@ -159,9 +163,16 @@ export default function ScheduleEditor({ data, setData, computed, setSnack, maxH
         {/* 기간 여러 줄 — 6.10~6.12, 7.1~7.3 처럼 띄엄띄엄 골라 한 번에 넣는다 */}
         {ranges.map((r, i) => (
           <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: i === 0 ? 12 : 8, flexWrap: 'wrap' }}>
-            <input type="date" value={r.start} onChange={e => setRange(i, { start: e.target.value })} style={{ ...uInput, colorScheme: 'light' }} />
-            <span style={{ fontSize: 13, color: FAINT }}>~</span>
-            <input type="date" value={r.end} min={r.start} onChange={e => setRange(i, { end: e.target.value })} style={{ ...uInput, colorScheme: 'light' }} />
+            <DateRangeField
+              start={r.start}
+              end={r.end}
+              onChange={p => setRange(i, p)}
+              refDate={data.semStart}
+              keepLength
+              labels={['일정 시작일', '일정 종료일']}
+              onEnter={() => addRef.current()}
+              width={140}
+            />
             {ranges.length > 1 && (
               <button onClick={() => removeRange(i)} title="이 기간 빼기" style={{ ...linkBtn(FAINT), fontSize: 15, lineHeight: 1 }}>×</button>
             )}

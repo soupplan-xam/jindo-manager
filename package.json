@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check": "node scripts/check-exam-target.mjs && node scripts/check-date-input.mjs"
   },
   "dependencies": {
     "intro.js": "^8.5.0",

@@ -6,4 +6,4 @@
 - 배포: 원본 main push 시 GitHub Actions → GitHub Pages
 - Supabase / Vercel: 사용하지 않음. 데이터는 브라우저 localStorage에 저장됨.
 - 연결 계정은 원본 쓰기 권한 없음. 원본 공개 사이트 변경에는 소유자의 PR 반영이 필요함.
-- 검사: node scripts/check-exam-target.mjs, npm run build
+- 검사: npm run check (check-exam-target, check-date-input), npm run build
