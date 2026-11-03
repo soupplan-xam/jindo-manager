@@ -16,7 +16,8 @@ export const defaultData = () => ({
   events: [], // {id, start, end, name, type: '휴업일'|'행사'|'고사'|'개인', period?, cls?}
   cancels: {}, // {'iso|p': {reason}}
   extras: {}, // {'iso|p': '2-1'} 그 날 그 교시에 실제로 한 수업 — 빈 칸이면 보강, 있던 칸이면 교체
-  extraKind: {}, // {'iso|p': 'makeup' | 'swap'} 보강(진도 안 셈) · 교환(진도 셈, 표시만 따로)
+  extraKind: {}, // {'iso|p': 'swap'} 교환 수업(진도 셈, 표시만 따로)
+  makeups: {}, // {'iso|p': {place}} 보강 — 반이 아니라 장소로 적고, 진도를 세지 않는다
   memos: {}, // 구버전 칸별 메모 — 로드 시 contents로 이관됨
   cfg: {
     examReset: false,
@@ -51,8 +52,33 @@ function normalize(d) {
     ui: { ...base.ui, ...(d.ui || {}), dashW: { ...base.ui.dashW, ...((d.ui || {}).dashW || {}) } },
   }
   if (!Array.isArray(out.subjects) || !out.subjects.length) out.subjects = ['수학']
-  for (const k of ['extras', 'extraKind', 'cancels', 'colors']) if (!out[k] || typeof out[k] !== 'object') out[k] = {}
+  for (const k of ['extras', 'extraKind', 'makeups', 'cancels', 'colors']) if (!out[k] || typeof out[k] !== 'object') out[k] = {}
+  migrateMakeups(out)
   return migrateMemos(out)
+}
+
+// 예전 방식 보강(반으로 넣고 extraKind=makeup)을 장소 보강으로 옮긴다.
+// 보강 때문에만 생긴 반은 반 목록과 반 색에서 뺀다.
+function migrateMakeups(d) {
+  const old = Object.keys(d.extraKind).filter(k => d.extraKind[k] === 'makeup')
+  if (!old.length) return
+  d.extras = { ...d.extras }
+  d.extraKind = { ...d.extraKind }
+  d.makeups = { ...d.makeups }
+  const moved = new Set()
+  for (const k of old) {
+    const cls = d.extras[k]
+    if (cls) { d.makeups[k] = { place: cls }; moved.add(cls) }
+    delete d.extras[k]
+    delete d.extraKind[k]
+  }
+  const used = new Set([...Object.values(d.pattern), ...Object.values(d.extras)])
+  const drop = [...moved].filter(c => !used.has(c))
+  if (drop.length) {
+    d.classes = d.classes.filter(c => !drop.includes(c))
+    d.colors = { ...d.colors }
+    drop.forEach(c => delete d.colors[c])
+  }
 }
 
 // 구버전 칸별 메모(iso|p)를 (반의 과목, 차시번호)의 차시별 내용으로 이관.
