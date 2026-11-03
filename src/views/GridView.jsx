@@ -133,6 +133,21 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
     })
   }
   // 수업을 다른 시간으로 옮긴 날 — 원래 칸은 비운다. 그 반의 뒤 차시가 하나씩 당겨진다.
+  // 칸 메모 — 그 날 그 칸에만 남는다(수행평가 결시 번호 등). 차시별 내용과 따로 둔다
+  const notes = data.notes || {}
+  const saveNote = (key, text) => {
+    const prev = notes
+    const v = text.trim()
+    setData(d => {
+      const n = { ...(d.notes || {}) }
+      if (v) n[key] = v
+      else delete n[key]
+      return { ...d, notes: n }
+    })
+    setPop(null)
+    setSnack({ text: v ? '메모를 저장했습니다.' : '메모를 지웠습니다.', kind: 'notes', prev, ms: 4000 })
+  }
+
   // 보강 — 반이 아니라 장소로 적는다. 진도를 세지 않고 회색으로 보인다
   const setMakeup = (key, place) => {
     const prev = data.makeups || {}
@@ -225,7 +240,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
         boxShadow: '0 10px 28px rgba(26,26,26,0.16)', zIndex: 80, textAlign: 'left', cursor: 'default',
         maxHeight: 'calc(100vh - 16px)', overflowY: 'auto', boxSizing: 'border-box',
         left: Math.max(8, Math.min(pop.x, window.innerWidth - W - 8)),
-        top: Math.max(8, Math.min(pop.y + 2, window.innerHeight - (pop.mode === 'color' ? 250 : pop.mode === 'pick' ? 280 : pop.mode === 'loss' ? 200 : 330))),
+        top: Math.max(8, Math.min(pop.y + 2, window.innerHeight - (pop.mode === 'color' ? 250 : pop.mode === 'pick' ? 280 : pop.mode === 'loss' ? 200 : pop.mode === 'note' ? 210 : 370))),
       }}
     >
       <div style={{ padding: '9px 14px', fontSize: 13, color: SUB, borderBottom: '1px solid ' + LINE_SOFT }}>
@@ -256,7 +271,10 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
               <div className="hov2" onClick={() => markCell(pop.key, 'perf')} style={{ ...menuItem(false), color: RED, fontWeight: 600 }}>수행평가</div>
             </>
           )}
-          {!popCell.canceled && <div className="hov2" onClick={() => setPop({ ...pop, mode: 'edit' })} style={menuItem(false)}>내용 편집</div>}
+          <div className="hov2" onClick={() => setPop({ ...pop, mode: 'note', note: notes[pop.key] || '' })} style={menuItem(false)}>
+            {notes[pop.key] ? '메모 고치기' : '메모'} <span style={{ fontSize: 11.5, color: FAINT }}>· 이 칸에만</span>
+          </div>
+          {!popCell.canceled && <div className="hov2" onClick={() => setPop({ ...pop, mode: 'edit' })} style={menuItem(false)}>차시 내용 편집 <span style={{ fontSize: 11.5, color: FAINT }}>· 같은 차시 모두</span></div>}
           {!popCell.canceled && !popCell.swap && (
             <div className="hov2" onClick={() => setExtra(pop.key, popCell.cls, 'swap')} style={menuItem(false)}>교환 수업으로 표시</div>
           )}
@@ -274,6 +292,28 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             </>
           )}
         </>
+      )}
+      {pop.mode === 'note' && (
+        <form onSubmit={e => { e.preventDefault(); saveNote(pop.key, pop.note || '') }} style={{ padding: '10px 14px 12px' }}>
+          <label htmlFor="cell-note" style={{ display: 'block', fontSize: 12, color: FAINT, marginBottom: 7 }}>이 칸 메모 (다른 반·다른 날에는 안 보입니다)</label>
+          <textarea
+            id="cell-note"
+            value={pop.note || ''}
+            onChange={e => setPop({ ...pop, note: e.target.value })}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); saveNote(pop.key, pop.note || '') } }}
+            placeholder="예: 3, 15번 결시"
+            rows={3}
+            autoFocus
+            style={{ width: '100%', boxSizing: 'border-box', border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 13, padding: '6px 8px', resize: 'vertical', fontFamily: 'inherit' }}
+          />
+          <div style={{ display: 'flex', alignItems: 'center', marginTop: 8 }}>
+            <span style={{ fontSize: 11, color: FAINT, flex: 1 }}>Shift+Enter 줄바꿈</span>
+            {notes[pop.key] && (
+              <button type="button" onClick={() => saveNote(pop.key, '')} style={{ ...linkBtn, color: WARN, marginRight: 14 }}>지우기</button>
+            )}
+            <button type="submit" style={{ ...linkBtn, fontWeight: 700 }}>저장</button>
+          </div>
+        </form>
       )}
       {pop.mode === 'loss' && (
         <form
@@ -537,6 +577,18 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
               )}
             </div>
           )}
+          {/* 칸 메모 — 그 날 그 칸에만. 휴대폰에서는 한 줄로 줄인다 */}
+          {s && notes[key] && (
+            <div
+              title={notes[key]}
+              style={{
+                position: 'relative', padding: isMobile ? '0 5px 2px' : '0 9px 3px', fontSize: isMobile ? 9.5 : 11, lineHeight: 1.3,
+                color: NOTE_FG, fontWeight: 600, flex: 'none', minWidth: 0, ...ellipBase,
+              }}
+            >
+              ✎ {notes[key].replace(/\n/g, ' · ')}
+            </div>
+          )}
           {/* 아랫단: 내용은 옅은 흰 띠 위에 — 미니멀에서도 그대로 보인다 */}
           {s && !s.canceled && (isMobile ? !!cont : true) && (
             <div style={{ background: 'rgba(255,255,255,0.62)', padding: isMobile ? '2px 5px 3px' : '3px 9px 4px', flex: 'none' }}>
@@ -779,6 +831,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
                       <div style={{ display: 'flex', flexDirection: P.showCont ? 'column' : 'row', gap: P.showCont ? 0 : 4, alignItems: P.showCont ? 'stretch' : 'center', height: P.showCont ? undefined : '100%', padding: P.showCont ? '4px 6px' : '0 5px' }}>
                         <span style={{ fontSize: P.cls, fontWeight: 700, color: '#999' }}>{s.cls}</span>
                         {P.showCont && <span style={{ fontSize: Math.max(8.5, P.cls - 1), color: '#777' }}>{s.reason}</span>}
+                        {P.showCont && notes[day.iso + '|' + p] && <span style={{ fontSize: Math.max(8.5, P.cls - 1), color: NOTE_FG, wordBreak: 'break-all' }}>✎ {notes[day.iso + '|' + p]}</span>}
                       </div>
                     </td>
                   )
@@ -801,6 +854,9 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
                     </div>
                     {cont && (
                       <div style={{ padding: '2px 6px 5px', fontSize: P.cont, lineHeight: 1.4, color: '#222', wordBreak: 'break-all' }}>{cont}</div>
+                    )}
+                    {P.showCont && notes[day.iso + '|' + p] && (
+                      <div style={{ padding: '0 6px 4px', fontSize: Math.max(8.5, P.cont - 0.5), lineHeight: 1.35, color: NOTE_FG, wordBreak: 'break-all' }}>✎ {notes[day.iso + '|' + p]}</div>
                     )}
                   </td>
                 )
@@ -1211,6 +1267,8 @@ const ellipBase = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'n
 const ellip = (size, weight) => ({ fontSize: size, fontWeight: weight, lineHeight: 1.3, ...ellipBase })
 // 보강 칸 — 진도를 세지 않는 수업이라 반 색 대신 회색
 const MAKEUP_BG = '#E6E4E0'
+// 칸 메모 글씨 — 진한 갈색이라 파랑·노랑·회색 칸 위에서 모두 읽힌다
+const NOTE_FG = '#7A4B12'
 const LOSS_REASONS = ['출장', '연수', '학교 행사', '학급 사정', '시험 감독']
 const menuItem = first => ({ padding: first ? '9px 14px' : '9px 14px', fontSize: 14, cursor: 'pointer', fontWeight: first ? 600 : 400 })
 const linkBtn = { border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: GREEN }
