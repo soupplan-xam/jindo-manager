@@ -912,7 +912,10 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
   }
 
   const curOf = c => progressFor(data, computed, c, today).current
-  const maxCur = Math.max(...data.classes.map(curOf), 0)
+  // 진도 칸에는 진도를 세는 반만 — 보강으로만 들어간 반(정규 시간표에 없고 센 차시도 없는 반)은 뺀다
+  const regular = new Set(Object.values(data.pattern))
+  const progClasses = data.classes.filter(c => regular.has(c) || (perClass[c] || []).length)
+  const maxCur = Math.max(...progClasses.map(curOf), 0)
 
   const goBehind = c => {
     const ent = Object.entries(sessions).find(kv => kv[1].cls === c && kv[1].canceled)
@@ -925,7 +928,7 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
 
   const dday = exam ? Math.round((fromISO(exam.start) - todayD) / 86400000) : null
   // 최대 차시보다 2차시 이상 느린 반 — 고사 카드에서 경고로 보여준다
-  const risky = data.classes
+  const risky = progClasses
     .map(c => ({ c, behind: maxCur - curOf(c) }))
     .filter(x => x.behind >= 2)
     .sort((a, b) => b.behind - a.behind)
@@ -985,11 +988,11 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
           {/* 반별 진도 */}
           {show.progress && (
             <Tile label="진도" sub={exam ? exam.name + '까지' : '학기 말까지'} min={min} grow={isMobile ? undefined : growOf('progress')}>
-              {data.classes.length === 0 ? (
+              {progClasses.length === 0 ? (
                 <div style={{ fontSize: 13, color: FAINT }}>등록된 반이 없습니다</div>
               ) : (
                 <div style={autoCols}>
-                  {data.classes.map(c => {
+                  {progClasses.map(c => {
                     const cur = curOf(c)
                     const { total, remaining } = progressFor(data, computed, c, today)
                     const behind = maxCur - cur
