@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { LINE } from '../logic.js'
 
-export default function Modal({ title, onClose, children, width = 560 }) {
+export default function Modal({ title, onClose, children, width = 560, noClose = false }) {
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', onKey)
@@ -26,7 +26,7 @@ export default function Modal({ title, onClose, children, width = 560 }) {
         <div style={{ display: 'flex', alignItems: 'baseline' }}>
           <div style={{ fontSize: 16, fontWeight: 700 }}>{title}</div>
           <div style={{ flex: 1 }} />
-          <button onClick={onClose} style={{ border: 'none', background: 'none', padding: '0 2px', cursor: 'pointer', fontSize: 17, lineHeight: 1, color: '#8F8B86' }}>×</button>
+          {!noClose && <button onClick={onClose} style={{ border: 'none', background: 'none', padding: '0 2px', cursor: 'pointer', fontSize: 17, lineHeight: 1, color: '#8F8B86' }}>×</button>}
         </div>
         {children}
       </div>

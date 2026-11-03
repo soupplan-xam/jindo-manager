@@ -11,10 +11,14 @@ import SetupGuideModal from './views/SetupGuideModal.jsx'
 import SetupView from './views/SetupView.jsx'
 import Snackbar from './views/Snackbar.jsx'
 import useWindowWidth from './useWindowWidth.js'
+import useCloudSync from './useCloudSync.js'
+import { SyncButton, SyncModal, SyncConflictModal } from './views/SyncPanel.jsx'
 
 export default function App() {
   const [data, setData] = useState(loadData)
   useEffect(() => saveData(data), [data])
+  const sync = useCloudSync(data, setData)
+  const [syncOpen, setSyncOpen] = useState(false)
   // 인쇄 배율은 CSS가 body 속성을 보고 정한다
   useEffect(() => {
     document.body.dataset.printScale = data.cfg.printScale || 'l'
@@ -176,6 +180,7 @@ export default function App() {
             <GuideIcon />
           </button>
         )}
+        <SyncButton sync={sync} onClick={() => setSyncOpen(true)} compact={isMobile} />
         <button
           onClick={() => setSettingsOpen(true)}
           title="설정"
@@ -205,6 +210,8 @@ export default function App() {
         {view === 'setup' && <SetupView {...ctx} fit={fit} onStart={finishSetup} />}
       </div>
 
+      {syncOpen && <SyncModal sync={sync} onClose={() => setSyncOpen(false)} />}
+      <SyncConflictModal sync={sync} data={data} />
       {settingsOpen && (
         <SettingsModal
           data={data}

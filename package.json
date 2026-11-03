@@ -7,9 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "node scripts/check-exam-target.mjs && node scripts/check-date-input.mjs && node scripts/check-makeup-swap.mjs"
+    "check": "node scripts/check-exam-target.mjs && node scripts/check-date-input.mjs && node scripts/check-makeup-swap.mjs && node scripts/check-sync.mjs"
   },
   "dependencies": {
+    "firebase": "12.19.0",
     "intro.js": "^8.5.0",
     "pdfjs-dist": "^4.10.38",
     "react": "^18.3.1",

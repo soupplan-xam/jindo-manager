@@ -8,13 +8,14 @@
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self';
-               script-src 'self' 'wasm-unsafe-eval' blob:;
+               script-src 'self' 'wasm-unsafe-eval' blob: https://apis.google.com https://www.gstatic.com;
                style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
                font-src 'self' https://cdn.jsdelivr.net;
                img-src 'self' data: blob:;
-               connect-src 'self' https://openrouter.ai https://open.neis.go.kr https://cdn.jsdelivr.net;
+               connect-src 'self' https://openrouter.ai https://open.neis.go.kr https://cdn.jsdelivr.net https://*.googleapis.com https://*.firebaseapp.com;
                worker-src 'self' blob:;
                child-src 'self' blob:;
+               frame-src 'self' blob: https://*.firebaseapp.com https://accounts.google.com https://apis.google.com;
                frame-ancestors 'none';
                base-uri 'self';
                form-action 'self';
