@@ -16,6 +16,7 @@ export const defaultData = () => ({
   events: [], // {id, start, end, name, type: '휴업일'|'행사'|'고사'|'개인', period?, cls?}
   cancels: {}, // {'iso|p': {reason}}
   extras: {}, // {'iso|p': '2-1'} 그 날 그 교시에 실제로 한 수업 — 빈 칸이면 보강, 있던 칸이면 교체
+  extraKind: {}, // {'iso|p': 'makeup' | 'swap'} 보강(진도 안 셈) · 교환(진도 셈, 표시만 따로)
   memos: {}, // 구버전 칸별 메모 — 로드 시 contents로 이관됨
   cfg: {
     examReset: false,
@@ -50,6 +51,7 @@ function normalize(d) {
     ui: { ...base.ui, ...(d.ui || {}), dashW: { ...base.ui.dashW, ...((d.ui || {}).dashW || {}) } },
   }
   if (!Array.isArray(out.subjects) || !out.subjects.length) out.subjects = ['수학']
+  for (const k of ['extras', 'extraKind', 'cancels', 'colors']) if (!out[k] || typeof out[k] !== 'object') out[k] = {}
   return migrateMemos(out)
 }
 

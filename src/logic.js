@@ -14,6 +14,12 @@ export const TINTS = [
   '#A1CEB8', '#A1CDCE', '#A0B6D0', '#B1A0D0', '#CEA1B0', '#D3BD9C', // 진하게
 ]
 
+// 반 색 빠른 선택 — 파란 계열 3 + 노란 계열 3. 검은 글씨가 잘 읽히도록 밝게 두었다.
+export const CLASS_TINTS = [
+  { c: '#DCE8F8', n: '연한 파랑' }, { c: '#BCD3F2', n: '파랑' }, { c: '#97BBEA', n: '진한 파랑' },
+  { c: '#FBF0C8', n: '연한 노랑' }, { c: '#F6E09C', n: '노랑' }, { c: '#EFCB6A', n: '진한 노랑' },
+]
+
 // 색을 고르지 않은 반에 순서대로 붙는 기본색 — 예전과 같게 두어 쓰던 색이 바뀌지 않는다.
 // 이웃한 반끼리 계열이 겹치지 않도록 돌려 놓았다.
 export const DEFAULT_TINTS = [
@@ -125,7 +131,8 @@ function cancelEventFor(data, iso, p, cls) {
 }
 
 // 학기 전체를 훑으며 각 (날짜|교시) 칸의 상태를 계산한다.
-// sessions[iso|p] = {cls, num, extra?} | {cls, canceled, reason, user?}
+// sessions[iso|p] = {cls, num, extra?, swap?} | {cls, canceled, reason, user?} | {cls, canceled, makeup, reason:'보강'}
+// 보강은 진도를 세지 않으므로 결손과 같이 차시를 쓰지 않는 칸(canceled)으로 두고 makeup 으로 구분한다.
 // perClass[cls] = [{iso, p, num}...] (결손 제외, 순서대로)
 export function compute(data) {
   const resetExam = pickExam(data)
@@ -147,9 +154,14 @@ export function compute(data) {
         const swap = Object.prototype.hasOwnProperty.call(extras, key) ? extras[key] : null
         const cls = swap === null ? data.pattern[dow + '-' + p] : swap
         if (!cls) continue
+        const kind = swap !== null ? (data.extraKind || {})[key] : null
         const ev = cancelEventFor(data, iso, p, cls)
         if (ev) {
           sessions[key] = { cls, canceled: true, reason: ev.name, extra: !!swap }
+          continue
+        }
+        if (kind === 'makeup') {
+          sessions[key] = { cls, canceled: true, makeup: true, extra: true, reason: '보강' }
           continue
         }
         const uc = data.cancels[key]
@@ -163,7 +175,7 @@ export function compute(data) {
         const ck = sec + '|' + cls
         counters[ck] = (counters[ck] || 0) + 1
         const num = counters[ck]
-        sessions[key] = { cls, num, extra: !!swap }
+        sessions[key] = { cls, num, extra: !!swap, swap: kind === 'swap' }
         ;(perClass[cls] = perClass[cls] || []).push({ iso, p, num })
       }
     }
@@ -201,7 +213,7 @@ export function exportCSV(sessions) {
     .forEach(k => {
       const kv = k.split('|')
       const s = sessions[k]
-      lines.push([kv[0], kv[1], s.cls, s.canceled ? '결손' : s.num].join(','))
+      lines.push([kv[0], kv[1], s.cls, s.makeup ? '보강' : s.perf ? '수행평가' : s.canceled ? '결손' : s.num].join(','))
     })
   const a = document.createElement('a')
   a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\n')], { type: 'text/csv' }))

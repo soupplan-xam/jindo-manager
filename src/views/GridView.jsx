@@ -102,52 +102,74 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   }
 
   // 그 날만의 보강·교체. 시간표는 그대로 두고 그 칸만 바꾼다.
-  const setExtra = (key, cls) => {
+  // kind: 'swap'(교환 — 진도 셈) | 'makeup'(보강 — 진도 안 셈)
+  const undoExtras = { kind: 'extras', prev: data.extras, prevKind: data.extraKind || {}, prevClasses: data.classes }
+  const withKind = (d, key, kind) => {
+    const k = { ...(d.extraKind || {}) }
+    if (kind) k[key] = kind
+    else delete k[key]
+    return k
+  }
+  const setExtra = (key, cls, kind = 'swap') => {
     const before = sessions[key]
     setData(d => {
       const next = { ...d.extras, [key]: cls }
       const classes = d.classes.includes(cls) ? d.classes : [...d.classes, cls]
-      return { ...d, extras: next, classes }
+      return { ...d, extras: next, extraKind: withKind(d, key, kind), classes }
     })
     setPop(null)
+    const label = kind === 'makeup' ? '보강' : '교환'
     setSnack({
-      text: before
-        ? before.cls + ' 대신 ' + cls + ' 수업으로 바꿨습니다.'
-        : cls + ' 수업을 넣었습니다. 이후 차시가 하나씩 밀립니다.',
-      kind: 'extras', prev: data.extras, prevClasses: data.classes,
+      text: kind === 'makeup'
+        ? cls + ' 보강을 넣었습니다. 진도 차시는 세지 않습니다.'
+        : before && before.cls !== cls
+          ? before.cls + ' 대신 ' + cls + ' ' + label + ' 수업으로 바꿨습니다.'
+          : before
+            ? cls + ' ' + label + ' 수업으로 표시했습니다. 진도 차시에 셉니다.'
+            : cls + ' ' + label + ' 수업을 넣었습니다. 진도 차시에 셉니다.',
+      ...undoExtras,
     })
   }
   // 수업을 다른 시간으로 옮긴 날 — 원래 칸은 비운다. 그 반의 뒤 차시가 하나씩 당겨진다.
-  const dropCell = key => {
+  // swap 이면 '교환으로 빠짐' 표시를 남긴다
+  const dropCell = (key, kind = null) => {
     const before = sessions[key]
-    setData(d => ({ ...d, extras: { ...d.extras, [key]: '' } }))
+    setData(d => ({ ...d, extras: { ...d.extras, [key]: '' }, extraKind: withKind(d, key, kind) }))
     setPop(null)
     setSnack({
-      text: (before ? before.cls + ' ' : '') + '수업을 이 칸에서 뺐습니다.',
-      kind: 'extras', prev: data.extras, prevClasses: data.classes,
+      text: (before ? before.cls + ' ' : '') + (kind === 'swap' ? '수업을 교환으로 비웠습니다. 바꾼 시간 칸을 눌러 교환 수업을 넣으세요.' : '수업을 이 칸에서 뺐습니다.'),
+      ...undoExtras,
     })
   }
   const clearExtra = key => {
     setData(d => {
       const next = { ...d.extras }
       delete next[key]
-      return { ...d, extras: next }
+      return { ...d, extras: next, extraKind: withKind(d, key, null) }
     })
     setPop(null)
-    setSnack({ text: '원래 시간표로 되돌렸습니다.', kind: 'extras', prev: data.extras, prevClasses: data.classes })
+    setSnack({ text: '원래 시간표로 되돌렸습니다.', ...undoExtras })
   }
 
   // 결손·수행평가 모두 차시를 소모하지 않으므로 뒤 차시가 밀린다.
-  const markCell = (key, kind) => {
+  const markCell = (key, kind, reason = '') => {
     const s = sessions[key]
-    if (!s || !s.num) return
+    if (!s) return
+    // 이미 결손인 칸은 사유만 고친다
+    if (s.canceled) {
+      setData(d => ({ ...d, cancels: { ...d.cancels, [key]: { ...(d.cancels[key] || {}), reason } } }))
+      setPop(null)
+      setSnack({ text: reason ? '결손 사유를 「' + reason + '」(으)로 고쳤습니다.' : '결손 사유를 지웠습니다.', kind: 'none' })
+      return
+    }
+    if (!s.num) return
     const examStart = exam ? exam.start : null
     const cnt = (perClass[s.cls] || []).filter(x => x.num > s.num && (!examStart || x.iso < examStart)).length
-    setData(d => ({ ...d, cancels: { ...d.cancels, [key]: { reason: '', kind } } }))
+    setData(d => ({ ...d, cancels: { ...d.cancels, [key]: { reason, kind } } }))
     setPop(null)
     setSnack({
-      text: (kind === 'perf' ? '수행평가로 표시했습니다. ' : '') + s.num + '차시 이후 ' + cnt + '개 차시가 이동했습니다.',
-      kind: 'cancel', key, canReason: kind !== 'perf',
+      text: (kind === 'perf' ? '수행평가로 표시했습니다. ' : reason ? '「' + reason + '」 결손. ' : '') + s.num + '차시 이후 ' + cnt + '개 차시가 이동했습니다.',
+      kind: 'cancel', key, canReason: kind !== 'perf' && !reason,
     })
   }
 
@@ -180,8 +202,9 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
       style={{
         position: 'fixed', width: W, background: '#FFFFFF', border: '1px solid ' + LINE, borderRadius: 6,
         boxShadow: '0 10px 28px rgba(26,26,26,0.16)', zIndex: 80, textAlign: 'left', cursor: 'default',
+        maxHeight: 'calc(100vh - 16px)', overflowY: 'auto', boxSizing: 'border-box',
         left: Math.max(8, Math.min(pop.x, window.innerWidth - W - 8)),
-        top: Math.min(pop.y + 2, window.innerHeight - (pop.mode === 'color' ? 250 : pop.mode === 'pick' ? 220 : 210)),
+        top: Math.max(8, Math.min(pop.y + 2, window.innerHeight - (pop.mode === 'color' ? 250 : pop.mode === 'pick' ? 280 : pop.mode === 'loss' ? 200 : 330))),
       }}
     >
       <div style={{ padding: '9px 14px', fontSize: 13, color: SUB, borderBottom: '1px solid ' + LINE_SOFT }}>
@@ -189,35 +212,113 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
       </div>
       {pop.mode === 'menu' && popCell && (
         <>
-          {popCell.canceled ? (
-            <div className="hov2" onClick={() => clearCancel(pop.key, popPerf ? '수행평가 표시를 해제했습니다.' : '결손을 해제했습니다.')} style={menuItem(true)}>
-              {popPerf ? '수행평가 해제' : '결손 해제'}
-            </div>
+          {popCell.makeup ? (
+            <>
+              <div style={{ ...menuItem(true), cursor: 'default', color: '#185FA5' }}>보강 · 진도에 세지 않음</div>
+              <div className="hov2" onClick={() => setExtra(pop.key, popCell.cls, 'swap')} style={menuItem(false)}>교환 수업으로 바꾸기 (진도 셈)</div>
+            </>
+          ) : popCell.canceled ? (
+            <>
+              <div className="hov2" onClick={() => clearCancel(pop.key, popPerf ? '수행평가 표시를 해제했습니다.' : '결손을 해제했습니다.')} style={menuItem(true)}>
+                {popPerf ? '수행평가 해제' : '결손 해제'}
+              </div>
+              {!popPerf && popCell.user && (
+                <div className="hov2" onClick={() => setPop({ ...pop, mode: 'loss', reason: data.cancels[pop.key]?.reason || '' })} style={menuItem(false)}>
+                  결손 사유 {data.cancels[pop.key]?.reason ? '고치기' : '입력'}
+                </div>
+              )}
+            </>
           ) : (
             <>
-              <div className="hov2" onClick={() => markCell(pop.key, 'loss')} style={menuItem(true)}>결손 처리</div>
+              <div className="hov2" onClick={() => setPop({ ...pop, mode: 'loss', reason: '' })} style={menuItem(true)}>결손 처리…</div>
               <div className="hov2" onClick={() => markCell(pop.key, 'perf')} style={{ ...menuItem(false), color: RED, fontWeight: 600 }}>수행평가</div>
             </>
           )}
-          <div className="hov2" onClick={() => setPop({ ...pop, mode: 'edit' })} style={menuItem(false)}>내용 편집</div>
+          {!popCell.canceled && <div className="hov2" onClick={() => setPop({ ...pop, mode: 'edit' })} style={menuItem(false)}>내용 편집</div>}
+          {!popCell.canceled && !popCell.swap && (
+            <div className="hov2" onClick={() => setExtra(pop.key, popCell.cls, 'swap')} style={menuItem(false)}>교환 수업으로 표시</div>
+          )}
+          {popCell.swap && (
+            <div className="hov2" onClick={() => setExtra(pop.key, popCell.cls, 'makeup')} style={menuItem(false)}>보강으로 바꾸기 (진도 안 셈)</div>
+          )}
+          {!popCell.makeup && (
+            <div className="hov2" onClick={() => dropCell(pop.key, 'swap')} style={menuItem(false)}>교환으로 비우기</div>
+          )}
           <div className="hov2" onClick={() => dropCell(pop.key)} style={menuItem(false)}>이 칸 삭제</div>
           <div className="hov2" onClick={() => setPop({ ...pop, mode: 'color' })} style={{ ...menuItem(false), display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 11 }}>
             <span style={{ width: 12, height: 12, borderRadius: 3, background: colorOf(data, popCell.cls), border: '1px solid rgba(26,26,26,0.18)', flex: 'none' }} />
             반 색 바꾸기
           </div>
           {popExtra && (
-            <div className="hov2" onClick={() => clearExtra(pop.key)} style={{ ...menuItem(false), color: WARN }}>원래 시간표로</div>
+            <div className="hov2" onClick={() => clearExtra(pop.key)} style={{ ...menuItem(false), color: WARN }}>
+              {popCell.makeup ? '보강 지우기 (원래 시간표로)' : '원래 시간표로'}
+            </div>
           )}
         </>
       )}
+      {pop.mode === 'loss' && (
+        <form
+          onSubmit={e => { e.preventDefault(); markCell(pop.key, 'loss', (pop.reason || '').trim()) }}
+          style={{ padding: '10px 14px 12px' }}
+        >
+          <label htmlFor="loss-reason" style={{ display: 'block', fontSize: 12, color: FAINT, marginBottom: 7 }}>결손 사유 (비워 둬도 됩니다)</label>
+          <input
+            id="loss-reason"
+            value={pop.reason || ''}
+            onChange={e => setPop({ ...pop, reason: e.target.value })}
+            placeholder="예: 출장"
+            autoFocus
+            style={{ width: '100%', boxSizing: 'border-box', border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 13, padding: '6px 8px' }}
+          />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 8 }}>
+            {LOSS_REASONS.map(r => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setPop({ ...pop, reason: r })}
+                style={{
+                  border: '1px solid ' + (pop.reason === r ? GREEN : LINE), borderRadius: 999, padding: '3px 9px', cursor: 'pointer',
+                  background: pop.reason === r ? '#EAF1EE' : '#FFFFFF', color: pop.reason === r ? GREEN : SUB, fontSize: 12,
+                }}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+            <button type="submit" style={{ ...linkBtn, fontWeight: 700 }}>{popCell && popCell.canceled ? '사유 저장' : '결손 처리'}</button>
+          </div>
+        </form>
+      )}
       {pop.mode === 'pick' && (
         <div style={{ padding: '10px 14px 12px' }}>
+          <div role="radiogroup" aria-label="수업 종류" style={{ display: 'flex', gap: 5, marginBottom: 10 }}>
+            {[['swap', '교환', '진도 셈'], ['makeup', '보강', '진도 안 셈']].map(([k, t, note]) => {
+              const on = (pop.kind || 'swap') === k
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => setPop({ ...pop, kind: k })}
+                  style={{
+                    flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 6, padding: '5px 4px', cursor: 'pointer',
+                    background: on ? '#EAF1EE' : '#FFFFFF', color: on ? GREEN : SUB, lineHeight: 1.25,
+                  }}
+                >
+                  <span style={{ display: 'block', fontSize: 13, fontWeight: 700 }}>{t}</span>
+                  <span style={{ display: 'block', fontSize: 10.5 }}>{note}</span>
+                </button>
+              )
+            })}
+          </div>
           <div style={{ fontSize: 12, color: FAINT, marginBottom: 8 }}>어느 반 수업인가요?</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {data.classes.map(c => (
               <button
                 key={c}
-                onClick={() => setExtra(pop.key, c)}
+                onClick={() => setExtra(pop.key, c, pop.kind || 'swap')}
                 style={{
                   border: '1px solid rgba(26,26,26,0.16)', borderRadius: 5, cursor: 'pointer',
                   background: colorOf(data, c), color: INK, padding: '5px 9px',
@@ -232,12 +333,12 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             <input
               value={pop.draft || ''}
               onChange={e => setPop({ ...pop, draft: e.target.value })}
-              onKeyDown={e => { if (e.key === 'Enter' && (pop.draft || '').trim()) setExtra(pop.key, pop.draft.trim()) }}
+              onKeyDown={e => { if (e.key === 'Enter' && (pop.draft || '').trim()) setExtra(pop.key, pop.draft.trim(), pop.kind || 'swap') }}
               placeholder="새 반 이름"
               style={{ flex: 1, minWidth: 0, border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 13, padding: '6px 8px' }}
             />
             <button
-              onClick={() => { const v = (pop.draft || '').trim(); if (v) setExtra(pop.key, v) }}
+              onClick={() => { const v = (pop.draft || '').trim(); if (v) setExtra(pop.key, v, pop.kind || 'swap') }}
               style={{ ...linkBtn, fontWeight: 700, flex: 'none' }}
             >
               추가
@@ -273,6 +374,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
         <div style={{ padding: '11px 14px 13px' }}>
           <div style={{ fontSize: 12, color: FAINT, marginBottom: 8 }}>{popCell.cls}</div>
           <Palette
+            simple
             value={colorOf(data, popCell.cls)}
             onPick={t => {
               setData(d => ({ ...d, colors: { ...d.colors, [popCell.cls]: t } }))
@@ -321,7 +423,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
       // 빈 칸도 누를 수 있다 — 보강이 생기거나 수업을 바꿔 하는 날이 있으므로.
       // 다만 휴업일·행사로 그 시간 자체가 없는 날은 그대로 둔다.
       const dayOff = !s && data.events.some(e => e.start <= day.iso && day.iso <= e.end && (!e.period || e.period === p))
-      const clickable = s ? !s.canceled || s.user : !dayOff
+      const clickable = s ? !s.canceled || s.user || s.makeup : !dayOff
       const perf = !!(s && s.perf)
       return (
         <div
@@ -342,9 +444,13 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             borderTop: '1px solid ' + LINE_SOFT, borderLeft: '1px solid ' + LINE_SOFT,
             cursor: clickable ? 'pointer' : 'default',
             boxShadow: day.isToday ? 'inset 1px 0 0 rgba(15,92,77,0.4), inset -1px 0 0 rgba(15,92,77,0.4)' : 'none',
-            background: s && !s.canceled ? colorOf(data, s.cls) : '#FFFFFF',
+            background: s && (!s.canceled || s.makeup) ? colorOf(data, s.cls) : '#FFFFFF',
           }}
         >
+          {/* 교환으로 비운 칸 — 수업이 다른 시간으로 옮겨 갔다는 흔적 */}
+          {!s && data.extras[key] === '' && (data.extraKind || {})[key] === 'swap' && (
+            <div style={{ padding: isMobile ? '4px 5px' : '6px 9px', fontSize: isMobile ? 9.5 : 11.5, color: FAINT }}>교환으로 빠짐</div>
+          )}
           {/* 윗줄: 반은 왼쪽, 차시는 오른쪽 끝 — 숫자가 한 열로 정렬돼 훑기 쉽다 */}
           {s && (
             <div
@@ -355,24 +461,26 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
               }}
             >
               {/* 결손·수행평가 모두 차시를 쓰지 않으므로 같은 빗금 배경을 쓴다 */}
-              {s.canceled && (
+              {s.canceled && !s.makeup && (
                 <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(45deg,transparent 0,transparent 5px,rgba(26,26,26,0.06) 5px,rgba(26,26,26,0.06) 6px)' }} />
               )}
               {/* 그 날만의 보강·교체라는 표시 */}
-              {s.extra && (
+              {s.extra && !s.swap && !s.makeup && (
                 <span
                   title="이 날만의 수업"
                   style={{ width: 5, height: 5, borderRadius: '50%', background: GREEN, flex: 'none', alignSelf: 'center', position: 'relative' }}
                 />
               )}
-              <span style={{ ...ellip(isMobile ? 10 : 12, 600), color: s.canceled ? FAINT : SUB, minWidth: 0, position: 'relative' }}>{s.cls}</span>
+              <span style={{ ...ellip(isMobile ? 10 : 12, 600), color: s.canceled && !s.makeup ? FAINT : SUB, minWidth: 0, position: 'relative' }}>{s.cls}</span>
               <div style={{ flex: 1 }} />
+              {s.swap && <span title="교환 수업 — 진도에 셉니다" style={{ fontSize: isMobile ? 9.5 : 11, fontWeight: 700, color: GREEN, position: 'relative', flex: 'none' }}>교환</span>}
+              {s.makeup && <span title="보강 — 진도에 세지 않습니다" style={{ fontSize: isMobile ? 10 : 12, fontWeight: 700, color: '#185FA5', position: 'relative', flex: 'none' }}>보강</span>}
               {!s.canceled && mkNum(s.num)}
               {perf && (min
                 ? <span title="수행평가" style={{ width: 8, height: 8, borderRadius: '50%', background: RED, position: 'relative', flex: 'none', alignSelf: 'center' }} />
                 : <span style={{ fontSize: isMobile ? 10 : 12, fontWeight: 700, color: RED, position: 'relative', flex: 'none' }}>{isMobile ? '수행' : '수행평가'}</span>
               )}
-              {s.canceled && !perf && !min && (
+              {s.canceled && !perf && !s.makeup && !min && (
                 <span style={{ fontSize: isMobile ? 9 : 12, color: SUB, position: 'relative', minWidth: 0, ...ellipBase }}>{s.reason}</span>
               )}
             </div>
@@ -1022,6 +1130,7 @@ function popTitle(key, sessions) {
 
 const ellipBase = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
 const ellip = (size, weight) => ({ fontSize: size, fontWeight: weight, lineHeight: 1.3, ...ellipBase })
+const LOSS_REASONS = ['출장', '연수', '학교 행사', '학급 사정', '시험 감독']
 const menuItem = first => ({ padding: first ? '9px 14px' : '9px 14px', fontSize: 14, cursor: 'pointer', fontWeight: first ? 600 : 400 })
 const linkBtn = { border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: GREEN }
 const navBtn = kind => ({

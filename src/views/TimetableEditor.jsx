@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { GREEN, INK, LINE, LINE_SOFT, FAINT, RED, SUB, TINTS, colorOf, subjectOf } from '../logic.js'
+import Palette from './Palette.jsx'
 import useWindowWidth from '../useWindowWidth.js'
 
 // 시간표 입력 두 가지 방식:
@@ -264,18 +265,8 @@ export default function TimetableEditor({ data, setData, setSnack, cellHeight = 
                 }}
               >
                 <div style={{ fontSize: 12, color: FAINT }}>색</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 6, marginTop: 7 }}>
-                  {TINTS.map(t => (
-                    <span
-                      key={t}
-                      onClick={() => setColor(c, t)}
-                      style={{
-                        width: 22, height: 22, borderRadius: 3, background: t, cursor: 'pointer',
-                        border: colorOf(data, c) === t ? '2px solid ' + GREEN : '1px solid rgba(26,26,26,0.14)',
-                        boxSizing: 'border-box',
-                      }}
-                    />
-                  ))}
+                <div style={{ marginTop: 7 }}>
+                  <Palette simple value={colorOf(data, c)} onPick={t => setColor(c, t)} size={18} />
                 </div>
                 <div style={{ fontSize: 12, color: FAINT, marginTop: 12 }}>과목</div>
                 <select
