@@ -214,7 +214,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
         <>
           {popCell.makeup ? (
             <>
-              <div style={{ ...menuItem(true), cursor: 'default', color: '#185FA5' }}>보강 · 진도에 세지 않음</div>
+              <div style={{ ...menuItem(true), cursor: 'default', color: SUB }}>보강 · 진도에 세지 않음</div>
               <div className="hov2" onClick={() => setExtra(pop.key, popCell.cls, 'swap')} style={menuItem(false)}>교환 수업으로 바꾸기 (진도 셈)</div>
             </>
           ) : popCell.canceled ? (
@@ -444,7 +444,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             borderTop: '1px solid ' + LINE_SOFT, borderLeft: '1px solid ' + LINE_SOFT,
             cursor: clickable ? 'pointer' : 'default',
             boxShadow: day.isToday ? 'inset 1px 0 0 rgba(15,92,77,0.4), inset -1px 0 0 rgba(15,92,77,0.4)' : 'none',
-            background: s && (!s.canceled || s.makeup) ? colorOf(data, s.cls) : '#FFFFFF',
+            background: s && s.makeup ? MAKEUP_BG : s && !s.canceled ? colorOf(data, s.cls) : '#FFFFFF',
           }}
         >
           {/* 교환으로 비운 칸 — 수업이 다른 시간으로 옮겨 갔다는 흔적 */}
@@ -474,7 +474,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
               <span style={{ ...ellip(isMobile ? 10 : 12, 600), color: s.canceled && !s.makeup ? FAINT : SUB, minWidth: 0, position: 'relative' }}>{s.cls}</span>
               <div style={{ flex: 1 }} />
               {s.swap && <span title="교환 수업 — 진도에 셉니다" style={{ fontSize: isMobile ? 9.5 : 11, fontWeight: 700, color: GREEN, position: 'relative', flex: 'none' }}>교환</span>}
-              {s.makeup && <span title="보강 — 진도에 세지 않습니다" style={{ fontSize: isMobile ? 10 : 12, fontWeight: 700, color: '#185FA5', position: 'relative', flex: 'none' }}>보강</span>}
+              {s.makeup && <span title="보강 — 진도에 세지 않습니다" style={{ fontSize: isMobile ? 10 : 12, fontWeight: 700, color: SUB, position: 'relative', flex: 'none' }}>보강</span>}
               {!s.canceled && mkNum(s.num)}
               {perf && (min
                 ? <span title="수행평가" style={{ width: 8, height: 8, borderRadius: '50%', background: RED, position: 'relative', flex: 'none', alignSelf: 'center' }} />
@@ -1146,6 +1146,8 @@ function popTitle(key, sessions) {
 
 const ellipBase = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
 const ellip = (size, weight) => ({ fontSize: size, fontWeight: weight, lineHeight: 1.3, ...ellipBase })
+// 보강 칸 — 진도를 세지 않는 수업이라 반 색 대신 회색
+const MAKEUP_BG = '#E6E4E0'
 const LOSS_REASONS = ['출장', '연수', '학교 행사', '학급 사정', '시험 감독']
 const menuItem = first => ({ padding: first ? '9px 14px' : '9px 14px', fontSize: 14, cursor: 'pointer', fontWeight: first ? 600 : 400 })
 const linkBtn = { border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: GREEN }
