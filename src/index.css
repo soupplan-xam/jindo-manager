@@ -76,3 +76,11 @@ html.widget-mode, html.widget-mode body { background: transparent; overflow: hid
 .dd-row .dd-x { opacity: 0; }
 .dd-row:hover .dd-x, .dd-row .dd-x:focus-visible { opacity: 1; }
 @media (hover: none) { .dd-row .dd-x { opacity: 1; } }
+
+/* 위젯 본문 — 넓으면 왼쪽 시간표 · 오른쪽 달력, 좁으면 위아래 */
+.wg-wrap { container-type: inline-size; }
+.wg-body { display: flex; flex-direction: column; gap: 12px; }
+@container (min-width: 640px) {
+  .wg-body { display: grid; grid-template-columns: minmax(260px, 0.85fr) minmax(0, 1.4fr); align-items: stretch; }
+  .wg-right { min-height: 0 !important; }
+}

@@ -65,7 +65,7 @@ function guard(win) {
 function createWidget() {
   const st = readState()
   const area = screen.getPrimaryDisplay().workArea
-  const b = st.bounds || { width: 340, height: 560, x: area.x + area.width - 360, y: area.y + 40 }
+  const b = st.bounds || { width: 900, height: 620, x: area.x + area.width - 920, y: area.y + 40 }
   widget = new BrowserWindow({
     ...b,
     minWidth: 260, minHeight: 220,

@@ -5,6 +5,7 @@ import useTodayInfo from '../useTodayInfo.js'
 import useCloudSync from '../useCloudSync.js'
 import { WeatherLine, MealView, periodLabel, NOW_BG } from './TodayCards.jsx'
 import { TODO_COLORS } from './MonthCalendar.jsx'
+import { MiniWeek, MiniMonth } from './WidgetParts.jsx'
 
 // 바탕화면 위젯 — 오늘 수업 · 지금 교시 · 오늘 할 일 · 고사 D-day · 급식 · 날씨.
 // 윈도우 프로그램은 이 화면(#widget)을 테두리 없는 작은 창으로 띄운다. 브라우저에서도 열린다.
@@ -75,11 +76,12 @@ export default function WidgetView({ shared = null }) {
   return (
     <div style={{ height: '100vh', boxSizing: 'border-box', padding: desk || shared ? 0 : 16, display: 'flex' }}>
       <div
+        className="wg-wrap"
         style={{
           flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',
           background: desk || shared ? '#FFFFFF' : 'rgba(255,255,255,' + pref.opacity + ')', borderRadius: desk || shared ? 0 : 16,
           boxShadow: desk || shared ? 'none' : '0 8px 30px rgba(25,31,40,0.18)', border: desk || shared ? 'none' : '1px solid rgba(225,229,234,0.9)',
-          backdropFilter: 'blur(12px)', maxWidth: desk || shared ? undefined : 380, margin: desk || shared ? 0 : '0 auto',
+          backdropFilter: 'blur(12px)', margin: desk || shared ? 0 : '0 auto',
         }}
       >
         {/* 머리줄 — 윈도우 프로그램에서는 여기를 끌어 창을 옮긴다 */}
@@ -110,7 +112,7 @@ export default function WidgetView({ shared = null }) {
 
         {menu && (
           <div style={{ padding: '8px 14px 12px', borderTop: '1px solid ' + LINE_SOFT, background: '#F9FAFB', fontSize: 13, color: INK, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {[['lessons', '오늘 수업'], ['todos', '오늘 할 일'], ['dday', '고사 D-day'], ['meal', '급식'], ['weather', '날씨']].map(([k, label]) => (
+            {[['dday', 'D-day'], ['weather', '날씨'], ['meal', '급식']].map(([k, label]) => (
               <label key={k} style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
                 <input type="checkbox" checked={!!pref[k]} onChange={() => setPref({ [k]: !pref[k] })} style={{ accentColor: GREEN, margin: 0 }} /> {label}
               </label>
@@ -127,64 +129,32 @@ export default function WidgetView({ shared = null }) {
           </div>
         )}
 
-        <div className="soft-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-          {pref.lessons && section('오늘 수업', lessons.length === 0 ? (
-            <div style={{ fontSize: 13, color: FAINT }}>수업 없음</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {lessons.map(s => {
-                const isNow = P && P.kind === 'class' && P.period === s.p
-                const isNext = P && P.kind !== 'class' && P.next === s.p
-                const cont = !s.canceled && s.num ? contentOf(data, s.sec || 'start', subjectOf(data, s.cls), s.num) : ''
-                return (
-                  <div key={s.p} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', margin: '0 -8px', borderRadius: 8, background: isNow ? NOW_BG : 'transparent', boxShadow: isNext ? 'inset 0 0 0 1px #C6E6FA' : 'none' }}>
-                    <span style={{ width: 34, fontSize: 11.5, color: isNow ? GREEN : FAINT, fontWeight: isNow ? 800 : 500, flex: 'none' }}>{isNow ? '지금' : s.p + '교시'}</span>
-                    <span style={{ width: 10, height: 10, borderRadius: 3, background: s.makeup ? '#E8EBEF' : colorOf(data, s.cls), border: '1px solid rgba(25,31,40,0.15)', flex: 'none' }} />
-                    <span style={{ fontSize: 13.5, fontWeight: 700, color: s.canceled && !s.makeup ? FAINT : INK, flex: 'none' }}>{s.makeup ? s.place || '보강' : s.cls}</span>
-                    <span style={{ fontSize: 12, color: SUB, minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cont}</span>
-                    {s.canceled ? (
-                      <span style={{ fontSize: 11.5, fontWeight: 700, color: s.perf ? RED : FAINT, flex: 'none' }}>{s.makeup ? '보강' : s.perf ? '수행' : s.reason}</span>
-                    ) : (
-                      <span style={{ fontSize: 16, fontWeight: 800, color: INK, flex: 'none' }}>{s.num}</span>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          ))}
-
-          {pref.todos && section('오늘 할 일', todos.length === 0 ? (
-            <div style={{ fontSize: 13, color: FAINT }}>없음</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {todos.map(t => (
-                <label key={t.id} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13.5, cursor: 'pointer' }}>
-                  <input type="checkbox" checked={t.done} onChange={() => toggleTodo(t.id)} style={{ accentColor: GREEN, width: 15, height: 15, margin: 0, flex: 'none' }} />
-                  <span style={{ color: t.done ? FAINT : todoColor(t.color), fontWeight: t.color ? 600 : 400, textDecoration: t.done ? 'line-through' : 'none' }}>{t.text}</span>
-                </label>
-              ))}
-            </div>
-          ), <span style={{ fontSize: 11, color: FAINT }}>{todos.filter(t => !t.done).length}개 남음</span>)}
-
-          {pref.dday && (exam || upcomingDdays(data, today).length > 0) && section('D-day', (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {exam && (
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                  <span style={{ fontSize: 22, fontWeight: 800, color: INK, letterSpacing: '-0.02em' }}>{ddayText(dday)}</span>
-                  <span style={{ fontSize: 13, color: SUB }}>{exam.name} · {exam.start.slice(5).replace('-', '.')}</span>
-                </div>
-              )}
-              {upcomingDdays(data, today).slice(0, 5).map(x => (
-                <div key={x.id} style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                  <span style={{ fontSize: 15, fontWeight: 800, color: x.days <= 7 ? '#D9480F' : INK, minWidth: 44 }}>{ddayText(x.days)}</span>
-                  <span style={{ fontSize: 13, color: SUB, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{x.name} · {x.date.slice(5).replace('-', '.')}</span>
-                </div>
-              ))}
-            </div>
-          ))}
-
-          {pref.weather && section('날씨', <WeatherLine weather={info.weather} weatherErr={info.weatherErr} place={info.place} size={12.5} />)}
-          {pref.meal && section('급식', <MealView meal={info.meal} mealErr={info.mealErr} school={info.school} size={13} />, info.meal && info.meal.length === 1 && info.meal[0].cal ? null : null)}
+        {/* 본문: 왼쪽 이번 주 시간표(+ 오늘 정보), 오른쪽 이번 달 달력(할 일). 좁으면 위아래로 */}
+        <div className="wg-body soft-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0 12px 12px' }}>
+          <div className="wg-left" style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
+            <MiniWeek data={data} computed={computed} today={today} period={P} periods={Math.max(7, (data.cfg.bells || []).length)} />
+            {pref.dday && (exam || upcomingDdays(data, today).length > 0) && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px', alignItems: 'baseline', fontSize: 12.5, color: SUB }}>
+                {exam && <span><b style={{ fontSize: 15, color: INK }}>{ddayText(dday)}</b> {exam.name}</span>}
+                {upcomingDdays(data, today).slice(0, 4).map(x => (
+                  <span key={x.id}><b style={{ fontSize: 13.5, color: x.days <= 7 ? '#D9480F' : INK }}>{ddayText(x.days)}</b> {x.name}</span>
+                ))}
+              </div>
+            )}
+            {pref.weather && <WeatherLine weather={info.weather} weatherErr={info.weatherErr} place={info.place} size={12} />}
+            {pref.meal && (
+              <div>
+                <button type="button" onClick={() => setPref({ mealOpen: !pref.mealOpen })} aria-expanded={!!pref.mealOpen}
+                  style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: SUB }}>
+                  {pref.mealOpen ? '▾' : '▸'} 오늘 급식
+                </button>
+                {pref.mealOpen && <div style={{ marginTop: 4 }}><MealView meal={info.meal} mealErr={info.mealErr} school={info.school} size={12.5} only="중식" /></div>}
+              </div>
+            )}
+          </div>
+          <div className="wg-right" style={{ minWidth: 0, minHeight: 360, display: 'flex', flexDirection: 'column' }}>
+            <MiniMonth data={data} setData={setData} today={today} />
+          </div>
         </div>
       </div>
     </div>

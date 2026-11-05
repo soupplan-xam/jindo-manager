@@ -39,11 +39,11 @@ export default function App() {
   const openWidget = async () => {
     if (pipRef.current) { try { pipRef.current.win.focus() } catch { /* 무시 */ } return }
     if (!('documentPictureInPicture' in window)) {
-      window.open(location.pathname + '#widget', 'jindo-widget', 'popup,width=380,height=660')
+      window.open(location.pathname + '#widget', 'jindo-widget', 'popup,width=940,height=660')
       return
     }
     try {
-      const win = await window.documentPictureInPicture.requestWindow({ width: 360, height: 640 })
+      const win = await window.documentPictureInPicture.requestWindow({ width: 920, height: 640 })
       // 이 창의 스타일을 옮긴다
       for (const ss of [...document.styleSheets]) {
         try {
