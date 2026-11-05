@@ -117,6 +117,46 @@ export function subjectOf(data, cls) {
   return (data.clsSubject && data.clsSubject[cls]) || (data.subjects && data.subjects[0]) || ''
 }
 
+const examsOf = data => data.events.filter(e => e.type === '고사').slice().sort((a, b) => a.start.localeCompare(b.start))
+
+// 차시를 1부터 다시 세는 고사들. examId 'all' 이면 모든 고사 뒤마다.
+export function resetExams(data) {
+  if (!data.cfg.examReset) return []
+  if (data.cfg.examId === 'all') return examsOf(data)
+  const e = pickExam(data)
+  return e ? [e] : []
+}
+
+// 차시 구간 — 초기화 고사로 나뉜다. 차시별 내용은 구간마다 따로 적는다.
+// [{ key: 'start' | 'after:<고사 id>', start: 구간 첫날, label }]
+export function sectionsOf(data) {
+  const rs = resetExams(data)
+  const out = [{ key: 'start', start: data.semStart || '', label: rs.length ? rs[0].name + ' 전' : '학기' }]
+  rs.forEach(e => out.push({ key: 'after:' + e.id, start: toISO(addDays(fromISO(e.end), 1)), label: e.name + ' 후', exam: e }))
+  return out
+}
+export function sectionKeyOn(sections, iso) {
+  let k = sections[0].key
+  for (const s of sections) if (s.start <= iso) k = s.key
+  return k
+}
+
+// 차시별 내용 — secContents[구간][과목][차시]
+export function contentOf(data, sec, subj, num) {
+  const c = ((data.secContents || {})[sec] || {})[subj] || {}
+  return c[num] || ''
+}
+export function withContent(d, sec, subj, num, v) {
+  const all = { ...(d.secContents || {}) }
+  const bySubj = { ...(all[sec] || {}) }
+  const nums = { ...(bySubj[subj] || {}) }
+  if (v) nums[num] = v
+  else delete nums[num]
+  bySubj[subj] = nums
+  all[sec] = bySubj
+  return { ...d, secContents: all }
+}
+
 // 기준 고사: 설정에서 고른 고사, 없으면 시작일이 가장 이른 '고사' 일정
 export function pickExam(data) {
   const exams = data.events.filter(e => e.type === '고사').slice().sort((a, b) => (a.start < b.start ? -1 : 1))
@@ -127,21 +167,24 @@ export function pickExam(data) {
   return exams[0] || null
 }
 
-export function pickTargetExam(data) {
-  const exams = data.events.filter(e => e.type === '고사').slice().sort((a,b) => a.start.localeCompare(b.start))
+export function pickTargetExam(data, today = toISO(new Date())) {
+  const exams = examsOf(data)
   if (data.cfg.targetExamId === 'semester') return null
   const selected = exams.find(e => String(e.id) === String(data.cfg.targetExamId))
   if (selected) return selected
+  // 모든 고사마다 다시 세면: 아직 끝나지 않은 가장 가까운 고사
+  if (data.cfg.examReset && data.cfg.examId === 'all') return exams.find(e => e.end >= today) || null
   const reset = data.cfg.examReset ? pickExam(data) : null
   return exams.find(e => !reset || e.start > reset.end) || null
 }
 
 export function progressFor(data, computed, cls, today) {
-  const reset = data.cfg.examReset ? pickExam(data) : null
   const target = computed.exam
-  const afterReset = reset && (!target || target.start > reset.end)
+  // 목표 고사 앞의 마지막 초기화 고사 뒤부터 센다
+  const resets = resetExams(data).filter(r => !target || r.end < target.start)
+  const reset = resets[resets.length - 1] || null
   const list = (computed.perClass[cls] || []).filter(x =>
-    (!afterReset || x.iso > reset.end) && (!target || x.iso < target.start))
+    (!reset || x.iso > reset.end) && (!target || x.iso < target.start))
   const current = list.filter(x => x.iso <= today).length
   return { current, total: list.length, remaining: list.length - current }
 }
@@ -160,7 +203,7 @@ function cancelEventFor(data, iso, p, cls) {
 // 보강은 진도를 세지 않으므로 결손과 같이 차시를 쓰지 않는 칸(canceled)으로 두고 makeup 으로 구분한다.
 // perClass[cls] = [{iso, p, num}...] (결손 제외, 순서대로)
 export function compute(data) {
-  const resetExam = pickExam(data)
+  const sections = sectionsOf(data)
   const exam = pickTargetExam(data)
   const sessions = {}
   const perClass = {}
@@ -199,17 +242,17 @@ export function compute(data) {
           sessions[key] = { cls, canceled: true, user: true, perf, extra: !!swap, reason: uc.reason || (perf ? '수행평가' : '결손') }
           continue
         }
-        const sec = data.cfg.examReset && resetExam && iso > resetExam.end ? 1 : 0
+        const sec = sectionKeyOn(sections, iso)
         const ck = sec + '|' + cls
         counters[ck] = (counters[ck] || 0) + 1
         const num = counters[ck]
-        sessions[key] = { cls, num, extra: !!swap, swap: kind === 'swap' }
-        ;(perClass[cls] = perClass[cls] || []).push({ iso, p, num })
+        sessions[key] = { cls, num, sec, extra: !!swap, swap: kind === 'swap' }
+        ;(perClass[cls] = perClass[cls] || []).push({ iso, p, num, sec })
       }
     }
     d = addDays(d, 1)
   }
-  return { sessions, perClass, exam }
+  return { sessions, perClass, exam, sections }
 }
 
 // 목표차시는 따로 설정하지 않는다 — 지금 구간(고사 리셋 반영)의 마지막 차시가 곧 목표.

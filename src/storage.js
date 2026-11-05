@@ -1,4 +1,4 @@
-import { compute, subjectOf } from './logic.js'
+import { compute, subjectOf, sectionsOf, toISO } from './logic.js'
 
 const KEY = 'jindo.data.v1'
 
@@ -12,7 +12,8 @@ export const defaultData = () => ({
   subjectColors: {}, // {'수학': '#D5E7DC'} 과목 색 — 그 과목 반들이 함께 쓴다
   subjects: ['수학'], // 차시별 내용 과목 탭
   clsSubject: {}, // {'2-1': '수학'} 반→과목 (없으면 첫 과목)
-  contents: {}, // {'수학': {'1': '집합의 뜻', ...}} 과목별 차시 내용
+  contents: {}, // 구버전 차시 내용 {'수학': {'1': ...}} — 로드 시 secContents로 옮긴다
+  secContents: {}, // {'start' | 'after:<고사 id>': {'수학': {'1': '집합의 뜻'}}} 구간별 차시 내용
   events: [], // {id, start, end, name, type: '휴업일'|'행사'|'고사'|'개인', period?, cls?}
   cancels: {}, // {'iso|p': {reason}}
   extras: {}, // {'iso|p': '2-1'} 그 날 그 교시에 실제로 한 수업 — 빈 칸이면 보강, 있던 칸이면 교체
@@ -53,9 +54,9 @@ function normalize(d) {
     ui: { ...base.ui, ...(d.ui || {}), dashW: { ...base.ui.dashW, ...((d.ui || {}).dashW || {}) } },
   }
   if (!Array.isArray(out.subjects) || !out.subjects.length) out.subjects = ['수학']
-  for (const k of ['extras', 'extraKind', 'makeups', 'notes', 'cancels', 'colors']) if (!out[k] || typeof out[k] !== 'object') out[k] = {}
+  for (const k of ['extras', 'extraKind', 'makeups', 'notes', 'cancels', 'colors', 'contents', 'secContents']) if (!out[k] || typeof out[k] !== 'object') out[k] = {}
   migrateMakeups(out)
-  return migrateMemos(out)
+  return migrateContents(migrateMemos(out))
 }
 
 // 예전 방식 보강(반으로 넣고 extraKind=makeup)을 장소 보강으로 옮긴다.
@@ -80,6 +81,22 @@ function migrateMakeups(d) {
     d.colors = { ...d.colors }
     drop.forEach(c => delete d.colors[c])
   }
+}
+
+// 구간 없이 하나로 적던 차시 내용을 구간별로 옮긴다.
+// 어느 구간 내용이었는지 알 수 없으므로, 이미 시작된 구간(오늘 이전에 시작)마다 같은 내용을 복사해 두고
+// 앞으로 올 구간은 비워 둔다. 구간에 이미 적힌 내용이 있으면 그것을 남긴다.
+function migrateContents(d, today = toISO(new Date())) {
+  const subjs = Object.keys(d.contents || {})
+  if (!subjs.length) return d
+  const secs = sectionsOf(d).filter((s, i) => i === 0 || s.start <= today)
+  const all = { ...(d.secContents || {}) }
+  for (const s of secs) {
+    const bySubj = { ...(all[s.key] || {}) }
+    for (const subj of subjs) bySubj[subj] = { ...(d.contents[subj] || {}), ...(bySubj[subj] || {}) }
+    all[s.key] = bySubj
+  }
+  return { ...d, secContents: all, contents: {} }
 }
 
 // 구버전 칸별 메모(iso|p)를 (반의 과목, 차시번호)의 차시별 내용으로 이관.

@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { GREEN, INK, FAINT, LINE, LINE_SOFT, SUB, SECTION_TITLE, CHIP_BTN, subjectOf } from '../logic.js'
+import { GREEN, INK, FAINT, LINE, LINE_SOFT, SUB, SECTION_TITLE, CHIP_BTN, subjectOf, contentOf, withContent, sectionKeyOn } from '../logic.js'
 import Palette from './Palette.jsx'
 import ScheduleCalendar, { CalendarIcon } from './ScheduleCalendar.jsx'
 
 // 차시별 내용: 과목 탭 아래 차시 번호별 입력.
-// 여기 적은 내용이 진도표의 같은 차시 칸에 그대로 표시된다 (저장소는 contents 하나).
-export default function ContentsPanel({ data, setData, computed, today, active, setActive, height, focusNum, weekRange, onCollapse, setSnack }) {
+// 여기 적은 내용이 진도표의 같은 구간·차시 칸에 그대로 표시된다.
+// 고사 뒤 차시를 1부터 다시 세면 구간(예: 1차 정기시험 전/후)마다 내용을 따로 적는다.
+export default function ContentsPanel({ data, setData, computed, today, active, setActive, height, focusNum, weekRange, weekSec, onCollapse, setSnack }) {
   const scrollRef = useRef(null)
   const [adding, setAdding] = useState(false)
   const [newSubj, setNewSubj] = useState('')
@@ -18,11 +19,32 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
   const subj = data.subjects.includes(active) ? active : data.subjects[0]
   const subjClasses = data.classes.filter(c => subjectOf(data, c) === subj)
 
+  // 구간: 고른 구간 → 보고 있는 주의 구간 → 오늘의 구간. 주를 넘기면 다시 그 주를 따라간다.
+  const sections = computed.sections || [{ key: 'start', label: '학기' }]
+  const [secPick, setSecPick] = useState(null)
+  useEffect(() => { setSecPick(null) }, [weekSec])
+  const secKeys = sections.map(s => s.key)
+  const sec = [secPick, weekSec, sectionKeyOn(sections, today)].find(k => k && secKeys.includes(k)) || 'start'
+  const secIdx = secKeys.indexOf(sec)
+  const prevSec = secIdx > 0 ? sections[secIdx - 1] : null
+  const secHasContent = key => Object.values(((data.secContents || {})[key] || {})[subj] || {}).some(Boolean)
+  const showWeek = weekSec === sec
+  const copyPrev = () => {
+    if (!prevSec) return
+    const from = ((data.secContents || {})[prevSec.key] || {})[subj] || {}
+    setData(d => {
+      const all = { ...(d.secContents || {}) }
+      all[sec] = { ...(all[sec] || {}), [subj]: { ...from } }
+      return { ...d, secContents: all }
+    })
+    setSnack && setSnack({ text: prevSec.label + ' ' + subj + ' 내용을 복사했습니다.', kind: 'none', ms: 4000 })
+  }
+
   // 이 과목 반들의 최대 차시 + 여유 5행. 진도가 없어도 최소 15행은 보여 미리 적을 수 있게.
   let maxNum = 0
   let curNum = 0
   subjClasses.forEach(c => {
-    const list = computed.perClass[c] || []
+    const list = (computed.perClass[c] || []).filter(x => (x.sec || 'start') === sec)
     list.forEach(x => {
       if (x.num > maxNum) maxNum = x.num
       if (x.iso <= today && x.num > curNum) curNum = x.num
@@ -30,14 +52,7 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
   })
   const rowCount = Math.max(maxNum, 10) + 5
 
-  const setContent = (num, v) => {
-    setData(d => {
-      const contents = { ...d.contents, [subj]: { ...(d.contents[subj] || {}) } }
-      if (v) contents[subj][num] = v
-      else delete contents[subj][num]
-      return { ...d, contents }
-    })
-  }
+  const setContent = (num, v) => setData(d => withContent(d, sec, subj, num, v))
 
   const addSubject = () => {
     const v = newSubj.trim()
@@ -80,14 +95,18 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
         map[s] = ok ? v : s
         taken.push(map[s])
       })
-      const contents = {}
-      Object.entries(d.contents).forEach(([k, v]) => { contents[map[k] || k] = v })
+      // 구간마다 과목 이름을 옮긴다
+      const secContents = {}
+      Object.entries(d.secContents || {}).forEach(([k, bySubj]) => {
+        secContents[k] = {}
+        Object.entries(bySubj).forEach(([s, v]) => { secContents[k][map[s] || s] = v })
+      })
       const clsSubject = {}
       Object.entries(d.clsSubject).forEach(([c, s]) => { clsSubject[c] = map[s] || s })
       const subjectColors = {}
       Object.entries(d.subjectColors || {}).forEach(([k, v]) => { subjectColors[map[k] || k] = v })
       setActive(map[subj] || subj)
-      return { ...d, subjects: d.subjects.map(s => map[s]), contents, clsSubject, subjectColors }
+      return { ...d, subjects: d.subjects.map(s => map[s]), secContents, clsSubject, subjectColors }
     })
     setEditMode(false)
   }
@@ -96,13 +115,16 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
     if (data.subjects.length <= 1) return
     setData(d => {
       const subjects = d.subjects.filter(x => x !== s)
-      const contents = { ...d.contents }
-      delete contents[s]
+      const secContents = {}
+      Object.entries(d.secContents || {}).forEach(([k, bySubj]) => {
+        secContents[k] = { ...bySubj }
+        delete secContents[k][s]
+      })
       const clsSubject = { ...d.clsSubject }
       Object.keys(clsSubject).forEach(c => { if (clsSubject[c] === s) clsSubject[c] = subjects[0] })
       const subjectColors = { ...d.subjectColors }
       delete subjectColors[s]
-      return { ...d, subjects, contents, clsSubject, subjectColors }
+      return { ...d, subjects, secContents, clsSubject, subjectColors }
     })
     setDrafts(p => {
       const n = { ...p }
@@ -136,15 +158,15 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
       requestAnimationFrame(run)
     })
     return () => cancelAnimationFrame(f1)
-  }, [rMin, rMax, subj, height])
+  }, [rMin, rMax, subj, height, sec])
 
   const rows = []
   for (let n = 1; n <= rowCount; n++) {
     const isCur = n === curNum
     // 보고 있는 주의 최소~최대 차시를 한 덩어리로 음영 처리
-    const inWeek = !!(weekRange && n >= weekRange.min && n <= weekRange.max)
-    const first = !!(weekRange && n === weekRange.min)
-    const last = !!(weekRange && n === weekRange.max)
+    const inWeek = !!(showWeek && weekRange && n >= weekRange.min && n <= weekRange.max)
+    const first = !!(showWeek && weekRange && n === weekRange.min)
+    const last = !!(showWeek && weekRange && n === weekRange.max)
     rows.push(
       <div
         key={n}
@@ -159,7 +181,7 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
       >
         <div style={{ width: 26, textAlign: 'right', fontSize: 13, fontWeight: isCur || inWeek ? 700 : 400, color: isCur ? GREEN : inWeek ? INK : FAINT, flex: 'none' }}>{n}</div>
         <input
-          value={(data.contents[subj] || {})[n] || ''}
+          value={contentOf(data, sec, subj, n)}
           onChange={e => setContent(n, e.target.value)}
           placeholder=""
           style={{
@@ -305,6 +327,36 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
           {data.subjectColors[colorFor] && (
             <div onClick={() => clearSubjectColor(colorFor)} style={{ ...miniBtn, marginTop: 10, fontSize: 12.5, color: GREEN }}>
               색 지우기
+            </div>
+          )}
+        </div>
+      )}
+      {sections.length > 1 && !calView && (
+        <div style={{ border: '1px solid ' + LINE, borderTop: 'none', borderBottom: 'none', background: '#FFFFFF', padding: '7px 10px 6px', flex: 'none' }}>
+          <div role="tablist" aria-label="차시 구간" className="chip-scroll" style={{ display: 'flex', gap: 5 }}>
+            {sections.map(s => {
+              const on = s.key === sec
+              return (
+                <button
+                  key={s.key}
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => setSecPick(s.key)}
+                  title={s.key === weekSec ? '보고 있는 주의 구간' : ''}
+                  style={{
+                    border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 999, padding: '3px 10px', cursor: 'pointer', flex: 'none',
+                    background: on ? '#EAF1EE' : '#FFFFFF', color: on ? GREEN : SUB, fontSize: 12, fontWeight: on ? 700 : 500,
+                  }}
+                >
+                  {s.label}
+                </button>
+              )
+            })}
+          </div>
+          {prevSec && !secHasContent(sec) && secHasContent(prevSec.key) && (
+            <div style={{ marginTop: 6, fontSize: 11.5, color: FAINT, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span>이 구간은 새로 적습니다.</span>
+              <button onClick={copyPrev} style={{ ...miniBtn, color: GREEN, fontWeight: 700, fontSize: 11.5 }}>{prevSec.label} 내용 복사해 오기</button>
             </div>
           )}
         </div>

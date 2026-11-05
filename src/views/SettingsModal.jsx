@@ -139,15 +139,21 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
               {exams.length ? (
                 <select
                   value={cfg.examId ?? exams[0].id}
-                  onChange={e => setCfg({ examId: Number(e.target.value) })}
+                  onChange={e => setCfg({ examId: e.target.value === 'all' ? 'all' : Number(e.target.value) })}
                   style={uSelect}
                 >
                   {exams.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                  {exams.length > 1 && <option value="all">모든 고사 후마다</option>}
                 </select>
               ) : (
                 <span style={{ fontSize: 13, color: FAINT }}>일정에 고사를 추가하면 선택할 수 있습니다.</span>
               )}
             </div>
+            {cfg.examReset && (
+              <span style={{ fontSize: 12, color: FAINT, lineHeight: 1.5 }}>
+                차시별 내용은 고사 전·후 구간마다 따로 적습니다. 차시별 내용 패널 위의 구간 버튼으로 바꿔 봅니다.
+              </span>
+            )}
           </div>
         </Sec>
 
@@ -155,7 +161,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
           <div style={{ paddingBottom: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <select aria-label="진도 목표 고사" value={cfg.targetExamId ?? ''}
               onChange={e => setCfg({ targetExamId: e.target.value || null })} style={uSelect}>
-              <option value="">자동 (초기화 이후 다음 고사)</option>
+              <option value="">{cfg.examReset && cfg.examId === 'all' ? '자동 (다가오는 고사)' : '자동 (초기화 이후 다음 고사)'}</option>
               {exams.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
               <option value="semester">학기 말까지</option>
             </select>

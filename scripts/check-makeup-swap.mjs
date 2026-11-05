@@ -21,7 +21,7 @@ d.extras = { '2026-10-07|1': '', '2026-10-08|2': 'A' }
 d.extraKind = { '2026-10-07|1': 'swap', '2026-10-08|2': 'swap' }
 c = compute(d)
 assert.equal(c.sessions['2026-10-07|1'], undefined)
-assert.deepEqual(c.sessions['2026-10-08|2'], { cls: 'A', num: 2, extra: true, swap: true })
+assert.deepEqual(c.sessions['2026-10-08|2'], { cls: 'A', num: 2, sec: 'start', extra: true, swap: true })
 assert.equal(c.perClass.A.length, 4)
 
 // 예전 데이터(extraKind 없음): 넣은 수업은 그대로 진도에 센다

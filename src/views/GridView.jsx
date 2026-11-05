@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF, addDays, fromISO, toISO, colorOf, subjectOf, progressFor, progressGroups, printSizes, fitScale } from '../logic.js'
+import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF, addDays, fromISO, toISO, colorOf, subjectOf, progressFor, progressGroups, contentOf, withContent, printSizes, fitScale } from '../logic.js'
 import ContentsPanel from './ContentsPanel.jsx'
 import Palette from './Palette.jsx'
 import useWindowWidth from '../useWindowWidth.js'
@@ -77,19 +77,9 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   const semLabel = semD.getFullYear() + '-' + (semM >= 3 && semM <= 7 ? '1' : '2') + '학기'
 
   // 칸 내용 = 차시별 내용(contents)에서 파생. 칸에서 고치면 같은 과목·차시의 모든 칸에 반영된다.
-  const contentOf = (cls, num) => {
-    const subj = subjectOf(data, cls)
-    return (data.contents[subj] || {})[num] || ''
-  }
-  const setContent = (cls, num, v) => {
-    const subj = subjectOf(data, cls)
-    setData(d => {
-      const contents = { ...d.contents, [subj]: { ...(d.contents[subj] || {}) } }
-      if (v) contents[subj][num] = v
-      else delete contents[subj][num]
-      return { ...d, contents }
-    })
-  }
+  // 칸 내용 = 그 구간(고사로 나뉜 차시 구간)의 차시별 내용. 칸에서 고치면 같은 구간·과목·차시의 모든 칸에 반영된다.
+  const contentAt = (cls, num, sec) => contentOf(data, sec || 'start', subjectOf(data, cls), num)
+  const setContent = (cls, num, v, sec) => setData(d => withContent(d, sec || 'start', subjectOf(d, cls), num, v))
 
   const clearCancel = (key, msg) => {
     setData(d => {
@@ -454,7 +444,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
           />
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
             <button
-              onClick={() => { if (popCell.num) setContent(popCell.cls, popCell.num, pop.draft); setPop(null) }}
+              onClick={() => { if (popCell.num) setContent(popCell.cls, popCell.num, pop.draft, popCell.sec); setPop(null) }}
               style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: GREEN }}
             >
               저장
@@ -495,11 +485,20 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   )
 
   // 이번 주에 해당하는 차시 번호 — 차시별 내용 패널을 이 위치로 스크롤한다.
+  // 이 주의 구간 — 주 안에 구간이 갈리면(고사 주) 더 많은 칸이 속한 구간
+  const secCount = {}
+  days.forEach(day => {
+    for (let p = 1; p <= 7; p++) {
+      const s = sessions[day.iso + '|' + p]
+      if (s && !s.canceled && subjectOf(data, s.cls) === activeSubject) secCount[s.sec] = (secCount[s.sec] || 0) + 1
+    }
+  })
+  const weekSec = Object.keys(secCount).sort((a, b) => secCount[b] - secCount[a])[0] || null
   const weekNums = []
   days.forEach(day => {
     for (let p = 1; p <= 7; p++) {
       const s = sessions[day.iso + '|' + p]
-      if (s && !s.canceled && subjectOf(data, s.cls) === activeSubject) weekNums.push(s.num)
+      if (s && !s.canceled && s.sec === weekSec && subjectOf(data, s.cls) === activeSubject) weekNums.push(s.num)
     }
   })
   const focusNum = weekNums.length ? Math.round(weekNums.reduce((a, b) => a + b, 0) / weekNums.length) : null
@@ -511,7 +510,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
     const cells = days.map(day => {
       const key = day.iso + '|' + p
       const s = sessions[key]
-      const cont = s && !s.canceled ? contentOf(s.cls, s.num) : ''
+      const cont = s && !s.canceled ? contentAt(s.cls, s.num, s.sec) : ''
       // 빈 칸도 누를 수 있다 — 보강이 생기거나 수업을 바꿔 하는 날이 있으므로.
       // 다만 휴업일·행사로 그 시간 자체가 없는 날은 그대로 둔다.
       const dayOff = !s && data.events.some(e => e.start <= day.iso && day.iso <= e.end && (!e.period || e.period === p))
@@ -597,7 +596,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
               ) : (
                 <input
                   value={cont}
-                  onChange={e => setContent(s.cls, s.num, e.target.value)}
+                  onChange={e => setContent(s.cls, s.num, e.target.value, s.sec)}
                   onFocus={() => setActiveSubject(subjectOf(data, s.cls))}
                   onClick={e => e.stopPropagation()}
                   placeholder="내용"
@@ -836,7 +835,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
                     </td>
                   )
                 }
-                const cont = s.canceled || !P.showCont ? '' : contentOf(s.cls, s.num)
+                const cont = s.canceled || !P.showCont ? '' : contentAt(s.cls, s.num, s.sec)
                 return (
                   <td key={day.iso} style={{ ...ptd, background: colorOf(data, s.cls) }}>
                     <div
@@ -940,7 +939,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
               <button className="hov" onClick={() => setWeekOffset(weekOffset + 1)} title="다음 주" style={navBtn('arrow')}>›</button>
             </div>
             <div {...swipe} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-              <ContentsPanel data={data} setData={setData} computed={computed} today={today} active={activeSubject} setActive={setActiveSubject} height="100%" focusNum={focusNum} weekRange={weekRange} setSnack={setSnack} />
+              <ContentsPanel data={data} setData={setData} computed={computed} today={today} active={activeSubject} setActive={setActiveSubject} height="100%" focusNum={focusNum} weekRange={weekRange} weekSec={weekSec} setSnack={setSnack} />
             </div>
           </>
         )}
@@ -978,7 +977,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
         )}
         {showContents && (
           <div data-print="hide" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <ContentsPanel data={data} setData={setData} computed={computed} today={today} active={activeSubject} setActive={setActiveSubject} height={fit ? '100%' : gridH} focusNum={focusNum} weekRange={weekRange} setSnack={setSnack} onCollapse={() => setUI({ contentsOpen: false })} />
+            <ContentsPanel data={data} setData={setData} computed={computed} today={today} active={activeSubject} setActive={setActiveSubject} height={fit ? '100%' : gridH} focusNum={focusNum} weekRange={weekRange} weekSec={weekSec} setSnack={setSnack} onCollapse={() => setUI({ contentsOpen: false })} />
           </div>
         )}
       </div>
