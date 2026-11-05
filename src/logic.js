@@ -257,6 +257,14 @@ export function compute(data) {
 }
 
 // 목표차시는 따로 설정하지 않는다 — 지금 구간(고사 리셋 반영)의 마지막 차시가 곧 목표.
+// D-day 글자: D-3 · D-DAY · D+2
+export const ddayText = n => (n > 0 ? 'D-' + n : n === 0 ? 'D-DAY' : 'D+' + -n)
+// 직접 넣은 D-day — 오늘 이후(당일 포함) 가까운 순. [{ id, name, date, days }]
+export function upcomingDdays(data, today) {
+  const t = fromISO(today)
+  return (data.ddays || []).filter(d => d.date >= today).map(d => ({ ...d, days: Math.round((fromISO(d.date) - t) / 86400000) })).sort((a, b) => a.date.localeCompare(b.date))
+}
+
 export function sectionTarget(list, today) {
   if (!list || !list.length) return 0
   let i = -1

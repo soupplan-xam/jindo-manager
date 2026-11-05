@@ -71,3 +71,8 @@ input::placeholder, textarea::placeholder { color: #B0B8C1; }
 
 /* 바탕화면 위젯 — 윈도우 프로그램의 투명 창 위에 카드만 보이게 */
 html.widget-mode, html.widget-mode body { background: transparent; overflow: hidden; }
+
+/* D-day 줄 — 지우기(×)는 마우스를 올렸을 때만 */
+.dd-row .dd-x { opacity: 0; }
+.dd-row:hover .dd-x, .dd-row .dd-x:focus-visible { opacity: 1; }
+@media (hover: none) { .dd-row .dd-x { opacity: 1; } }

@@ -26,6 +26,7 @@ export const defaultData = () => ({
   overtime: defaultOvertime(), // 초과근무: 계산 기준·방과후 계획·날짜별 기록
   school: null, // {code, region, name} 급식·날씨용 우리 학교(나이스)
   weatherLoc: null, // {name, lat, lon} 날씨 위치 — 없으면 학교의 시·도
+  ddays: [], // 직접 넣은 D-day [{id, name, date}]
   todos: {}, // {'iso': [{id, text, done}]} 달력의 날짜별 할 일
   dayColors: {}, // {'iso': '#D3EBC0'} 달력 기간 색칠
   notes: {}, // {'iso|p': '3·15번 결시'} 그 날 그 칸에만 붙는 메모 — 차시별 내용과 달리 다른 반에 퍼지지 않는다
@@ -69,6 +70,7 @@ function normalize(d) {
   migrateMakeups(out)
   out.homeroom = { ...base.homeroom, ...(d.homeroom || {}) }
   out.trips = Array.isArray(d.trips) ? d.trips : []
+  out.ddays = Array.isArray(d.ddays) ? d.ddays : []
   out.travelCfg = d.travelCfg && typeof d.travelCfg === 'object' ? d.travelCfg : {}
   const ot = d.overtime || {}
   out.overtime = { plans: Array.isArray(ot.plans) ? ot.plans : [], logs: ot.logs && typeof ot.logs === 'object' ? ot.logs : {}, workDays: ot.workDays && typeof ot.workDays === 'object' ? ot.workDays : {}, cfg: { ...DEFAULT_OT, ...(ot.cfg || {}) } }

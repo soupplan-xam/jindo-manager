@@ -1,8 +1,9 @@
 ﻿import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF, addDays, fromISO, toISO, colorOf, subjectOf, progressFor, progressGroups, contentOf, withContent, printSizes, fitScale } from '../logic.js'
+import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF, addDays, fromISO, toISO, colorOf, subjectOf, progressFor, progressGroups, contentOf, withContent, ddayText, upcomingDdays, printSizes, fitScale } from '../logic.js'
 import ContentsPanel from './ContentsPanel.jsx'
 import useTodayInfo from '../useTodayInfo.js'
 import { WeatherLine, MealView, periodLabel, NOW_BG } from './TodayCards.jsx'
+import DateField from './DateField.jsx'
 import Palette from './Palette.jsx'
 import useWindowWidth from '../useWindowWidth.js'
 import useSplit from '../useSplit.js'
@@ -927,7 +928,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
         )}
         {mtab === 'dash' && (
           <div className="soft-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-            <DashStrip data={data} computed={computed} today={today} setUI={setUI} setWeekOffset={setWeekOffset} mon0={mon0} isMobile alwaysOpen />
+            <DashStrip data={data} setData={setData} computed={computed} today={today} setUI={setUI} setWeekOffset={setWeekOffset} mon0={mon0} isMobile alwaysOpen />
           </div>
         )}
         {mtab === 'contents' && (
@@ -955,7 +956,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   return (
     <>
     <div data-print="hide" style={{ width: '100%', maxWidth: 1320, margin: '0 auto', height: fit ? '100%' : undefined, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <DashStrip data={data} computed={computed} today={today} setUI={setUI} setWeekOffset={setWeekOffset} mon0={mon0} isMobile={isMobile} />
+      <DashStrip data={data} setData={setData} computed={computed} today={today} setUI={setUI} setWeekOffset={setWeekOffset} mon0={mon0} isMobile={isMobile} />
 
       <div ref={wrapRef} style={{ display: 'flex', alignItems: fit ? 'stretch' : 'flex-start', flex: fit ? 1 : undefined, minHeight: fit ? 300 : 0 }}>
         <div style={{ width: showContents ? splitPct + '%' : '100%', minWidth: 0, flex: 'none', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
@@ -991,7 +992,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
 }
 
 // 대시보드: 한눈에 읽히는 게 목적이라 숫자를 키우고 라벨은 눌러 위계를 만든다.
-function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile, alwaysOpen }) {
+function DashStrip({ data, setData, computed, today, setUI, setWeekOffset, mon0, isMobile, alwaysOpen }) {
   const { sessions, perClass, exam } = computed
   const min = !!data.cfg.minimal
   const open = alwaysOpen || data.ui.dashOpen
@@ -1050,6 +1051,8 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
   }
 
   const dday = exam ? Math.round((fromISO(exam.start) - todayD) / 86400000) : null
+  const ddays = upcomingDdays(data, today)
+  const [ddAdd, setDdAdd] = useState(null) // { name, date } 넣는 중
   // 최대 차시보다 2차시 이상 느린 반 — 고사 카드에서 경고로 보여준다
   const risky = progClasses
     .map(c => ({ c, behind: behindOf(c) }))
@@ -1165,7 +1168,7 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
 
           {/* 고사 — D-day와, 최대 차시보다 2차시 이상 느린 반 */}
           {show.exam && (
-            <Tile label={exam ? exam.name : '고사'} sub={exam ? exam.start.slice(5).replace('-', '.') : ''} min={min} grow={isMobile ? undefined : growOf('exam')}>
+            <Tile label={exam ? exam.name : 'D-day'} sub={exam ? exam.start.slice(5).replace('-', '.') : ''} min={min} grow={isMobile ? undefined : growOf('exam')} minWidth={isMobile ? undefined : 180}>
               {exam ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
                   <div style={{ fontSize: 26, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.02em', whiteSpace: 'nowrap', flex: 'none' }}>
@@ -1189,9 +1192,32 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
                     </div>
                   )}
                 </div>
-              ) : (
-                <div style={{ fontSize: 12, color: FAINT }}>일정에 고사 추가</div>
-              )}
+              ) : null}
+              {/* 직접 넣은 D-day */}
+              <div style={{ marginTop: exam ? 10 : 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {ddays.map(d => (
+                  <div key={d.id} className="dd-row" style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: d.days <= 7 ? WARN : INK, letterSpacing: '-0.02em', flex: 'none', minWidth: 44 }}>{ddayText(d.days)}</span>
+                    <span style={{ fontSize: 12.5, color: INK, minWidth: 0, flex: 1, wordBreak: 'keep-all', lineHeight: 1.35 }}>
+                      {d.name} <span style={{ fontSize: 11, color: FAINT, whiteSpace: 'nowrap' }}>{d.date.slice(5).replace('-', '.')}</span>
+                    </span>
+                    <button type="button" onClick={() => setData(x => ({ ...x, ddays: (x.ddays || []).filter(y => y.id !== d.id) }))} aria-label={d.name + ' D-day 지우기'} className="dd-x" style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', color: FAINT, fontSize: 13, lineHeight: 1, flex: 'none' }}>×</button>
+                  </div>
+                ))}
+                {ddAdd ? (
+                  <form onSubmit={e => { e.preventDefault(); if (!ddAdd.name.trim() || !ddAdd.date) return; setData(x => ({ ...x, ddays: [...(x.ddays || []), { id: Date.now(), name: ddAdd.name.trim(), date: ddAdd.date }] })); setDdAdd(null) }}
+                    style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+                    <input aria-label="D-day 이름" value={ddAdd.name} onChange={e => setDdAdd(v => ({ ...v, name: e.target.value }))} placeholder="이름 (예: 수행평가 마감)" autoFocus style={{ border: '1px solid ' + LINE, borderRadius: 8, fontSize: 12.5, padding: '5px 8px', minWidth: 0 }} />
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <DateField value={ddAdd.date} onChange={v => setDdAdd(x => ({ ...x, date: v }))} label="D-day 날짜" width={136} />
+                      <button type="submit" style={{ border: 'none', borderRadius: 8, background: GREEN, color: '#FFFFFF', fontSize: 12, fontWeight: 700, padding: '5px 10px', cursor: 'pointer' }}>넣기</button>
+                      <button type="button" onClick={() => setDdAdd(null)} style={{ border: 'none', background: 'none', color: FAINT, fontSize: 12, cursor: 'pointer', padding: 0 }}>취소</button>
+                    </div>
+                  </form>
+                ) : (
+                  <button type="button" onClick={() => setDdAdd({ name: '', date: today })} style={{ alignSelf: 'flex-start', border: 'none', background: 'none', padding: '2px 0', cursor: 'pointer', fontSize: 12, fontWeight: 700, color: GREEN }}>+ D-day</button>
+                )}
+              </div>
             </Tile>
           )}
 

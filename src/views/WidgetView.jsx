@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { loadData, saveData } from '../storage.js'
-import { compute, toISO, fromISO, DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, RED, colorOf, subjectOf, contentOf } from '../logic.js'
+import { compute, toISO, fromISO, DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, RED, colorOf, subjectOf, contentOf, ddayText, upcomingDdays } from '../logic.js'
 import useTodayInfo from '../useTodayInfo.js'
 import useCloudSync from '../useCloudSync.js'
 import { WeatherLine, MealView, periodLabel, NOW_BG } from './TodayCards.jsx'
@@ -166,10 +166,20 @@ export default function WidgetView({ shared = null }) {
             </div>
           ), <span style={{ fontSize: 11, color: FAINT }}>{todos.filter(t => !t.done).length}개 남음</span>)}
 
-          {pref.dday && exam && section('고사', (
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-              <span style={{ fontSize: 22, fontWeight: 800, color: INK, letterSpacing: '-0.02em' }}>{dday > 0 ? 'D-' + dday : dday === 0 ? 'D-DAY' : 'D+' + -dday}</span>
-              <span style={{ fontSize: 13, color: SUB }}>{exam.name} · {exam.start.slice(5).replace('-', '.')}</span>
+          {pref.dday && (exam || upcomingDdays(data, today).length > 0) && section('D-day', (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {exam && (
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                  <span style={{ fontSize: 22, fontWeight: 800, color: INK, letterSpacing: '-0.02em' }}>{ddayText(dday)}</span>
+                  <span style={{ fontSize: 13, color: SUB }}>{exam.name} · {exam.start.slice(5).replace('-', '.')}</span>
+                </div>
+              )}
+              {upcomingDdays(data, today).slice(0, 5).map(x => (
+                <div key={x.id} style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: x.days <= 7 ? '#D9480F' : INK, minWidth: 44 }}>{ddayText(x.days)}</span>
+                  <span style={{ fontSize: 13, color: SUB, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{x.name} · {x.date.slice(5).replace('-', '.')}</span>
+                </div>
+              ))}
             </div>
           ))}
 
