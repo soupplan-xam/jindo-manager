@@ -6,8 +6,26 @@ import { fromISO, toISO } from './logic.js'
 import { holidayOn } from './kcal.js'
 import { parseDateText } from './dateText.js'
 
-// rate: 시간당 단가(원, 호봉별 — 직접 입력), monthMax: 월 인정 상한(시간), fixedHours: 정액분 시간
-export const DEFAULT_OT = { onTime: '08:40', offTime: '16:40', deduct: 60, dailyMax: 240, rate: 0, monthMax: 57, fixedHours: 10 }
+// step: 호봉, role: 'teacher' | 'vice'(교감), rate: 시간당 단가 직접 입력(0이면 호봉으로 자동)
+// monthMax: 월 인정 상한(시간), fixedHours: 정액분 시간
+export const DEFAULT_OT = { onTime: '08:40', offTime: '16:40', deduct: 60, dailyMax: 240, step: 0, role: 'teacher', rate: 0, monthMax: 57, fixedHours: 10 }
+
+// 2026년 교원 시간외근무수당 시간당 단가(원) — 호봉 구간별. 공개 자료 기준(참고용), 해마다 고쳐야 한다.
+export const RATE_YEAR = 2026
+export const RATES = [
+  { max: 19, rate: 12795, label: '19호봉 이하' },
+  { max: 29, rate: 14213, label: '20~29호봉' },
+  { max: 99, rate: 15258, label: '30호봉 이상' },
+]
+export const VICE_RATE = 16300
+export function rateByStep(step, role) {
+  if (role === 'vice') return VICE_RATE
+  const n = Number(step)
+  if (!n) return 0
+  return (RATES.find(r => n <= r.max) || RATES[RATES.length - 1]).rate
+}
+// 실제로 쓰는 단가: 직접 넣은 값이 있으면 그것, 없으면 호봉으로
+export const effectiveRate = cfg => Number(cfg.rate) || rateByStep(cfg.step, cfg.role)
 export const defaultOvertime = () => ({ cfg: { ...DEFAULT_OT }, plans: [], logs: {}, workDays: {} })
 
 export const toMin = t => { const m = String(t || '').match(/^(\d{1,2}):(\d{2})$/); return m ? +m[1] * 60 + +m[2] : null }
@@ -92,7 +110,7 @@ export function workDaysIn(data, y, m) {
 // 예상 수당: 실적분 = 인정 시간 × 단가, 정액분 = 정액 시간 × 단가(15일 이상 출근 시 전액, 미만은 출근일/15 비례)
 export function allowance(cfg0, month, attend) {
   const cfg = { ...DEFAULT_OT, ...(cfg0 || {}) }
-  const rate = Number(cfg.rate) || 0
+  const rate = effectiveRate(cfg)
   const perf = Math.floor(month.hours * rate)
   const fixed = attend == null ? 0 : Math.floor(rate * cfg.fixedHours * Math.min(1, attend / 15))
   return { rate, perf, fixed, total: perf + fixed, unpaid: Math.floor((month.leftover / 60) * rate) }

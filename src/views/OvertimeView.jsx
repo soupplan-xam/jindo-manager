@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react'
 import { GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, RED, WARN, SECTION_TITLE, fromISO, toISO, DAYS } from '../logic.js'
-import { DEFAULT_OT, defaultOvertime, monthOvertime, dayOvertime, parsePlanText, fileText, fmtMin, isOffDay, workDaysIn, allowance } from '../overtime.js'
+import { DEFAULT_OT, defaultOvertime, monthOvertime, dayOvertime, parsePlanText, fileText, fmtMin, isOffDay, workDaysIn, allowance, effectiveRate, rateByStep, RATES, RATE_YEAR, VICE_RATE } from '../overtime.js'
 import { DateRangeField } from './DateField.jsx'
 import useWindowWidth from '../useWindowWidth.js'
 
@@ -97,6 +97,8 @@ export default function OvertimeView({ data, setData, setSnack }) {
   const autoDays = workDaysIn(data, ym.y, ym.m)
   const attend = (ot.workDays || {})[mKey] ?? autoDays
   const pay = allowance(cfg, month, attend)
+  const rate = effectiveRate(cfg)
+  const autoRate = rateByStep(cfg.step, cfg.role)
   const setCfg = p => setOt(o => ({ ...o, cfg: { ...cfg, ...p } }))
 
   // 고른 날
@@ -245,14 +247,17 @@ export default function OvertimeView({ data, setData, setSnack }) {
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, minmax(0, 1fr))', gap: 10, fontSize: 12.5, color: SUB }}>
         <label>출근 기준시각<input type="time" value={cfg.onTime} onChange={e => setCfg({ onTime: e.target.value })} style={{ ...field, width: '100%', marginTop: 4 }} /></label>
         <label>퇴근 기준시각<input type="time" value={cfg.offTime} onChange={e => setCfg({ offTime: e.target.value })} style={{ ...field, width: '100%', marginTop: 4 }} /></label>
-        <label>시간당 단가(원)<input type="number" min="0" step="1" value={cfg.rate || ''} placeholder="예: 12795" onChange={e => setCfg({ rate: Math.max(0, Math.round(+e.target.value || 0)) })} style={{ ...field, width: '100%', marginTop: 4 }} /></label>
+        <label>호봉<input type="number" min="1" max="40" value={cfg.step || ''} placeholder="예: 8" onChange={e => setCfg({ step: Math.max(0, Math.round(+e.target.value || 0)) })} style={{ ...field, width: '100%', marginTop: 4 }} /></label>
+        <label>직위<select value={cfg.role} onChange={e => setCfg({ role: e.target.value })} style={{ ...field, width: '100%', marginTop: 4 }}><option value="teacher">교사</option><option value="vice">교감</option></select></label>
+        <label>시간당 단가(원)<input type="number" min="0" step="1" value={cfg.rate || ''} placeholder={autoRate ? '자동 ' + autoRate.toLocaleString('ko-KR') : '호봉을 넣으세요'} onChange={e => setCfg({ rate: Math.max(0, Math.round(+e.target.value || 0)) })} style={{ ...field, width: '100%', marginTop: 4 }} />
+          <span style={{ fontSize: 11, color: FAINT }}>{cfg.rate ? '직접 넣은 값 사용 · 지우면 호봉 자동' : autoRate ? '호봉으로 자동 ' + autoRate.toLocaleString('ko-KR') + '원' : ''}</span></label>
         <label>월 인정 상한(시간)<input type="number" min="1" max="200" value={cfg.monthMax} onChange={e => setCfg({ monthMax: Math.max(1, +e.target.value || 57) })} style={{ ...field, width: '100%', marginTop: 4 }} /></label>
         <label>평일 공제(분)<input type="number" min="0" max="240" step="10" value={cfg.deduct} onChange={e => setCfg({ deduct: Math.max(0, +e.target.value || 0) })} style={{ ...field, width: '100%', marginTop: 4 }} /></label>
         <label>하루 최대(시간)<input type="number" min="1" max="12" step="0.5" value={cfg.dailyMax / 60} onChange={e => setCfg({ dailyMax: Math.round((+e.target.value || 4) * 60) })} style={{ ...field, width: '100%', marginTop: 4 }} /></label>
         <label>정액분(시간)<input type="number" min="0" max="20" value={cfg.fixedHours} onChange={e => setCfg({ fixedHours: Math.max(0, +e.target.value || 0) })} style={{ ...field, width: '100%', marginTop: 4 }} /></label>
       </div>
       <div style={{ fontSize: 11.5, color: FAINT, marginTop: 10, lineHeight: 1.6 }}>
-        시간당 단가는 호봉별로 다릅니다. 급여명세서나 행정실에서 확인해 넣어 주세요(예: 2시간 25,590원이면 12,795원). 평일은 퇴근 기준시각 뒤부터 세고 공제를 뺍니다. 방과후 있는 날은 방과후 수업 시간을 빼고 방과후가 끝나는 시각부터 셉니다. 주말·공휴일·휴업일은 공제 없이 셉니다. 실적분은 한 달 합계에서 1시간 미만을 버리고, 정액분은 15일 이상 출근 시 전액·미만이면 출근일 비율로 계산합니다(참고용 — 학교 기준이 다르면 위 값을 고쳐 주세요).
+        시간당 단가({RATE_YEAR}년 교원 기준, 참고용): {RATES.map(r => r.label + ' ' + r.rate.toLocaleString('ko-KR') + '원').join(' · ')} · 교감 {VICE_RATE.toLocaleString('ko-KR')}원. 급여명세서와 다르면 단가를 직접 넣으세요. 평일은 퇴근 기준시각 뒤부터 세고 공제를 뺍니다. 방과후 있는 날은 방과후 수업 시간을 빼고 방과후가 끝나는 시각부터 셉니다. 주말·공휴일·휴업일은 공제 없이 셉니다. 실적분은 한 달 합계에서 1시간 미만을 버리고, 정액분은 15일 이상 출근 시 전액·미만이면 출근일 비율로 계산합니다(참고용 — 학교 기준이 다르면 위 값을 고쳐 주세요).
       </div>
     </section>
   )
@@ -271,16 +276,16 @@ export default function OvertimeView({ data, setData, setSnack }) {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1.1fr) minmax(0, 1fr)', gap: isMobile ? 12 : 20, marginTop: 12, alignItems: 'stretch' }}>
           <div>
-            <div style={{ fontSize: 13, color: FAINT }}>{cfg.rate ? ym.y + '-' + String(ym.m + 1).padStart(2, '0') + ' 예상 초과근무수당' : '이번 달 인정 시간'}</div>
+            <div style={{ fontSize: 13, color: FAINT }}>{rate ? ym.y + '-' + String(ym.m + 1).padStart(2, '0') + ' 예상 초과근무수당' : '이번 달 인정 시간'}</div>
             <div style={{ fontSize: isMobile ? 34 : 40, fontWeight: 800, color: INK, letterSpacing: '-0.03em', lineHeight: 1.15 }}>
-              {cfg.rate ? won(pay.total) : month.hours + '시간'}
+              {rate ? won(pay.total) : month.hours + '시간'}
             </div>
             <div style={{ display: 'flex', gap: 22, marginTop: 10, flexWrap: 'wrap', fontSize: 13, color: SUB }}>
               <div>인정시간<div style={{ fontSize: 16, fontWeight: 800, color: INK }}>{month.hours}시간 / {cfg.monthMax}시간</div></div>
               <div>오늘까지 기록<div style={{ fontSize: 16, fontWeight: 800, color: INK }}>{month.total ? fmtMin(month.total) : '0분'}</div></div>
               {month.planned > 0 && <div>남은 방과후 예정<div style={{ fontSize: 16, fontWeight: 800, color: '#5AA9DE' }}>+{fmtMin(month.planned)} <span style={{ fontSize: 12, fontWeight: 600, color: FAINT }}>→ 월말 {month.projected}시간</span></div></div>}
-              {cfg.rate > 0 && <div>실적분<div style={{ fontSize: 16, fontWeight: 800, color: INK }}>{won(pay.perf)}</div></div>}
-              {cfg.rate > 0 && (
+              {rate > 0 && <div>실적분<div style={{ fontSize: 16, fontWeight: 800, color: INK }}>{won(pay.perf)}</div></div>}
+              {rate > 0 && (
                 <div>정액분 <span style={{ fontSize: 11.5, color: FAINT }}>15일 이상 출근 시 전액</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ fontSize: 16, fontWeight: 800, color: INK }}>{won(pay.fixed)}</span>
@@ -290,7 +295,7 @@ export default function OvertimeView({ data, setData, setSnack }) {
                 </div>
               )}
             </div>
-            {!cfg.rate && <button type="button" onClick={() => setCfgOpen(true)} style={{ ...link, color: GREEN, fontWeight: 700, marginTop: 8 }}>시간당 단가를 넣으면 예상 수당이 나옵니다</button>}
+            {!rate && <button type="button" onClick={() => setCfgOpen(true)} style={{ ...link, color: GREEN, fontWeight: 700, marginTop: 8 }}>계산 기준에서 호봉을 넣으면 예상 수당이 나옵니다</button>}
           </div>
           {/* 다음 인정 단위까지 — 눈에 잘 띄게 */}
           <div
@@ -311,7 +316,7 @@ export default function OvertimeView({ data, setData, setSnack }) {
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#D9480F' }}>다음 인정 단위까지</div>
                 <div style={{ fontSize: isMobile ? 34 : 40, fontWeight: 800, color: '#D9480F', letterSpacing: '-0.03em', lineHeight: 1.1 }}>{month.toNext}분</div>
                 <div style={{ fontSize: 13, color: '#862E00', marginTop: 4, lineHeight: 1.5 }}>
-                  아직 반영되지 않은 기록이 {month.leftover}분 있어요.{cfg.rate ? ' ' + month.toNext + '분 더 채우면 +' + won(cfg.rate) : ''}
+                  아직 반영되지 않은 기록이 {month.leftover}분 있어요.{rate ? ' ' + month.toNext + '분 더 채우면 +' + won(rate) : ''}
                 </div>
               </>
             ) : (
