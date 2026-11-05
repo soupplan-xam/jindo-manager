@@ -12,6 +12,12 @@ export const PAINTS = [
   { c: '#F6DCE3', n: '분홍' }, { c: '#E3E1DC', n: '회색' }, { c: '#FFFFFF', n: '흰색' },
 ]
 const SAT = '#185FA5'
+// 할 일 글씨 색 — 중요도 표시
+export const TODO_COLORS = [
+  { k: '', c: '#191F28', n: '기본' }, { k: 'red', c: '#E03131', n: '빨강' },
+  { k: 'blue', c: '#1C6FD6', n: '파랑' }, { k: 'green', c: '#2B8A3E', n: '초록' },
+]
+const todoColor = k => (TODO_COLORS.find(x => x.k === (k || '')) || TODO_COLORS[0]).c
 const TERM = '#2B8A3E' // 절기 — 하늘색 강조·토요일 파랑과 구분되는 초록
 
 export default function MonthCalendar({ data, setData, setSnack }) {
@@ -20,6 +26,7 @@ export default function MonthCalendar({ data, setData, setSnack }) {
   const [ym, setYm] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() } })
   const [sel, setSel] = useState(today)
   const [draft, setDraft] = useState('')
+  const [draftColor, setDraftColor] = useState('')
   const [paint, setPaint] = useState(null) // null | 색 | 'erase'
   const drag = useRef(null)
   const todos = data.todos || {}
@@ -65,9 +72,17 @@ export default function MonthCalendar({ data, setData, setSnack }) {
   const addTodo = () => {
     const v = draft.trim()
     if (!v) return
-    setTodos(sel, [...(todos[sel] || []), { id: Date.now(), text: v, done: false }])
+    setTodos(sel, [...(todos[sel] || []), { id: Date.now(), text: v, done: false, ...(draftColor ? { color: draftColor } : null) }])
     setDraft('')
   }
+  // 색 점을 누르면 기본 → 빨강 → 파랑 → 초록 차례로 바뀐다
+  const cycleColor = id => setTodos(sel, (todos[sel] || []).map(t => {
+    if (t.id !== id) return t
+    const i = TODO_COLORS.findIndex(x => x.k === (t.color || ''))
+    const next = TODO_COLORS[(i + 1) % TODO_COLORS.length].k
+    const { color, ...rest } = t
+    return next ? { ...rest, color: next } : rest
+  }))
   const toggle = id => setTodos(sel, (todos[sel] || []).map(t => (t.id === id ? { ...t, done: !t.done } : t)))
   const remove = id => {
     const prev = data.todos || {}
@@ -146,7 +161,7 @@ export default function MonthCalendar({ data, setData, setSnack }) {
             const numColor = out ? LINE : i === 0 || hol ? RED : i === 6 ? SAT : INK
             const items = [
               ...evs.map(e => ({ k: 'e' + e.id, t: e.name, c: TYPE_COLOR[e.type] || SUB })),
-              ...tds.map(t => ({ k: 't' + t.id, t: t.text, c: t.done ? FAINT : INK, done: t.done, todo: true })),
+              ...tds.map(t => ({ k: 't' + t.id, t: t.text, c: t.done ? FAINT : todoColor(t.color), done: t.done, todo: true })),
             ]
             const max = isMobile ? 0 : 3
             return (
@@ -186,7 +201,7 @@ export default function MonthCalendar({ data, setData, setSnack }) {
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2, marginTop: 4 }}>
                     {(hol || term) && <span style={{ fontSize: 9, fontWeight: 700, color: hol ? RED : TERM, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hol || term}</span>}
                     {items.slice(0, 4).map(it => (
-                      <span key={it.k} style={{ width: 6, height: 6, borderRadius: '50%', background: it.todo ? (it.done ? LINE : INK) : it.c }} />
+                      <span key={it.k} style={{ width: 6, height: 6, borderRadius: '50%', background: it.todo && it.done ? LINE : it.c }} />
                     ))}
                   </div>
                 ) : (
@@ -241,18 +256,49 @@ export default function MonthCalendar({ data, setData, setSnack }) {
         {selTodos.map(t => (
           <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid ' + LINE_SOFT }}>
             <input type="checkbox" checked={t.done} onChange={() => toggle(t.id)} aria-label={t.text + (t.done ? ' 완료 취소' : ' 완료')} style={{ accentColor: GREEN, width: 16, height: 16, margin: 0, flex: 'none' }} />
-            <span style={{ flex: 1, minWidth: 0, fontSize: 14, color: t.done ? FAINT : INK, textDecoration: t.done ? 'line-through' : 'none', wordBreak: 'break-all' }}>{t.text}</span>
+            <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: t.color ? 600 : 400, color: t.done ? FAINT : todoColor(t.color), textDecoration: t.done ? 'line-through' : 'none', wordBreak: 'break-all' }}>{t.text}</span>
+            <button
+              type="button"
+              onClick={() => cycleColor(t.id)}
+              aria-label={t.text + ' 글씨 색 바꾸기 (지금 ' + (TODO_COLORS.find(x => x.k === (t.color || '')) || TODO_COLORS[0]).n + ')'}
+              title="글씨 색 바꾸기"
+              style={{ width: 22, height: 22, border: 'none', background: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}
+            >
+              <span style={{ width: 12, height: 12, borderRadius: '50%', background: todoColor(t.color), boxShadow: '0 0 0 2px #FFFFFF, 0 0 0 3px ' + LINE }} />
+            </button>
             <button type="button" onClick={() => remove(t.id)} aria-label={t.text + ' 지우기'} style={{ border: 'none', background: 'none', padding: '0 4px', cursor: 'pointer', color: FAINT, fontSize: 16, lineHeight: 1 }}>×</button>
           </div>
         ))}
       </div>
-      <form onSubmit={e => { e.preventDefault(); addTodo() }} style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+      <div role="radiogroup" aria-label="새 할 일 글씨 색" style={{ display: 'flex', gap: 6, marginTop: 12, alignItems: 'center' }}>
+        <span style={{ fontSize: 12, color: FAINT, marginRight: 2 }}>글씨 색</span>
+        {TODO_COLORS.map(x => {
+          const on = draftColor === x.k
+          return (
+            <button
+              key={x.n}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => setDraftColor(x.k)}
+              style={{
+                border: '1px solid ' + (on ? x.c : LINE), borderRadius: 999, padding: '3px 10px', cursor: 'pointer',
+                background: on ? '#FFFFFF' : 'transparent', color: x.c, fontSize: 12, fontWeight: on ? 700 : 500,
+                boxShadow: on ? '0 0 0 1px ' + x.c : 'none',
+              }}
+            >
+              {x.n}
+            </button>
+          )
+        })}
+      </div>
+      <form onSubmit={e => { e.preventDefault(); addTodo() }} style={{ display: 'flex', gap: 6, marginTop: 8 }}>
         <input
           id="todo-input"
           value={draft}
           onChange={e => setDraft(e.target.value)}
           placeholder="할 일 추가 (예: 자기소개서 채점)"
-          style={{ ...field, flex: 1, minWidth: 0 }}
+          style={{ ...field, flex: 1, minWidth: 0, color: todoColor(draftColor), fontWeight: draftColor ? 600 : 400 }}
         />
         <button type="submit" style={{ border: 'none', borderRadius: 8, background: draft.trim() ? GREEN : '#D1D6DB', color: '#FFFFFF', padding: '0 14px', fontSize: 14, fontWeight: 700, cursor: draft.trim() ? 'pointer' : 'default', flex: 'none' }}>추가</button>
       </form>
