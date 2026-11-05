@@ -13,9 +13,12 @@ assert.equal(dayOvertime(ot, data, '2026-11-05').minutes, 30)
 // 방과후 없는 날은 퇴근 기준시각(16:40)부터: 20:10 → 210 - 60 = 150
 ot.logs['2026-11-04'] = { end: '20:10' }
 assert.equal(dayOvertime(ot, data, '2026-11-04').minutes, 150)
-// 하루 최대 4시간
+// 1일 4시간 상한은 2026.10.1.부터 폐지: 화요일(방과후 18:40 끝) 23:50 퇴근 → 310 - 60 = 250 (4시간 넘어도 인정)
 ot.logs['2026-11-10'] = { end: '23:50' }
-assert.equal(dayOvertime(ot, data, '2026-11-10').minutes, 240)
+assert.equal(dayOvertime(ot, data, '2026-11-10').minutes, 250)
+// 그 전(9월)에는 4시간까지
+ot.logs['2026-09-29'] = { end: '23:50' }
+assert.equal(dayOvertime(ot, data, '2026-09-29').minutes, 240)
 // 공제보다 짧으면 0
 ot.logs['2026-11-11'] = { end: '17:20' }
 assert.equal(dayOvertime(ot, data, '2026-11-11').minutes, 0)
@@ -26,7 +29,7 @@ assert.equal(dayOvertime(ot, data, '2026-11-20').plans.length, 0)
 ot.logs['2026-11-07'] = { start: '10:00', end: '12:30' }
 assert.equal(dayOvertime(ot, data, '2026-11-07').minutes, 150)
 const m = monthOvertime(ot, data, 2026, 10, '2026-12-31')
-assert.equal(m.total, 30 + 150 + 240 + 0 + 150)
+assert.equal(m.total, 30 + 150 + 250 + 0 + 150)
 assert.equal(m.hours, Math.floor(m.total / 60))
 assert.equal(fmtMin(150), '2시간 30분')
 assert.equal(fmtMin(50), '50분')
@@ -52,24 +55,42 @@ await assert.rejects(fileText(new File([new Uint8Array(1)], 'a.hwp')), /HWPX나 
 // 표 칸이 나뉜 HWPX
 const p4 = parsePlanText('운영 계획서\n강좌명\n | 수학 심화반\n | 운영 기간\n | 2026. 9. 1. ~ 2026. 12. 18.\n | 운영 요일\n | 화, 목\n | 운영 시간\n | 16:50 ~ 18:30', '2026-08-17')
 assert.deepEqual([p4.name, p4.days, p4.from, p4.to, p4.start, p4.end], ['수학 심화반', [2, 4], '16:50', '18:30', '2026-09-01', '2026-12-18'])
-// 수당·다음 인정 단위 (초근초근 화면 예: 2시간 28분 + 17분 = 2시간 45분 → 인정 2시간, 15분 더)
+// 수당·다음 인정 단위 — 하루 1시간 미만(17분)인 날은 더하지 않는다(업무지침)
 const { allowance, monthOvertime: mo2, defaultOvertime: dot } = await import('../src/overtime.js')
 const o2 = dot(); o2.cfg.rate = 12795; o2.cfg.deduct = 0
 o2.logs = { '2026-11-02': { end: '19:08' }, '2026-11-03': { end: '16:57' } }
 const mm = mo2(o2, { events: [] }, 2026, 10, '2026-11-05')
-assert.deepEqual([mm.total, mm.hours, mm.leftover, mm.toNext], [165, 2, 45, 15])
+assert.deepEqual([mm.total, mm.hours, mm.leftover, mm.toNext], [148, 2, 28, 32])
 const al = allowance(o2.cfg, mm, 0)
-assert.deepEqual([al.perf, al.fixed, al.unpaid], [25590, 0, 9596])
+assert.deepEqual([al.perf, al.fixed], [25590, 0])
+// 정액분: 15일 미만이면 모자라는 하루마다 1/15 감액 (12일 → 3/15 감액)
+assert.equal(allowance(o2.cfg, mm, 12).fixed, Math.floor(127950 * 12 / 15))
 assert.equal(allowance(o2.cfg, mm, 20).fixed, 127950)
 assert.equal(allowance(o2.cfg, mm, 6).fixed, 51180)
 // 방과후 날에 퇴근 기록이 없으면 초과근무 0 — 예정으로 더하는 시간도 없다
 const mf = monthOvertime(ot, data, 2026, 10, '2026-11-05')
 assert.equal(mf.planned, 0)
-assert.equal(mf.total, 30 + 150 + 150 + 240 + 0)
+assert.equal(mf.total, 30 + 150 + 150 + 250 + 0)
 // 호봉별 단가
 const { rateByStep, effectiveRate } = await import('../src/overtime.js')
 assert.deepEqual([rateByStep(8), rateByStep(19), rateByStep(20), rateByStep(29), rateByStep(30), rateByStep(40), rateByStep(0), rateByStep(25, 'vice')], [12795, 12795, 14213, 14213, 15258, 15258, 0, 16300])
 assert.equal(effectiveRate({ step: 8, rate: 0 }), 12795)
 assert.equal(effectiveRate({ step: 8, rate: 13000 }), 13000)
 assert.equal(allowance({ step: 8, deduct: 0 }, mm, 0).perf, 25590)
+// 휴일 근무는 1시간 이상인 날만
+ot.logs['2026-11-14'] = { start: '10:00', end: '10:40' }
+assert.equal(dayOvertime(ot, data, '2026-11-14').minutes, 0)
+// 조기출근: 기준 08:40보다 1시간 이상 일찍(07:20 → 80분) + 퇴근 뒤와 합쳐 1시간 공제
+ot.logs['2026-11-18'] = { arrive: '07:20', end: '17:40' }
+assert.equal(dayOvertime(ot, data, '2026-11-18').minutes, 80 + 60 - 60)
+// 1시간 미만 조기출근(08:00 → 40분)은 빼고 퇴근 뒤만: 17:40 → 60 - 60 = 0
+ot.logs['2026-11-25'] = { arrive: '08:00', end: '17:40' }
+assert.equal(dayOvertime(ot, data, '2026-11-25').minutes, 0)
+// 조기출근만 1시간 30분 → 90 - 60 = 30
+ot.logs['2026-11-27'] = { arrive: '07:10' }
+assert.equal(dayOvertime(ot, data, '2026-11-27').minutes, 30)
+// 정액분 근무일수: 방학(학기 밖)·휴업일·공휴일 빼기
+const { workDaysIn } = await import('../src/overtime.js')
+assert.equal(workDaysIn({ events: [], semStart: '2026-08-17', semEnd: '2026-12-31' }, 2026, 10), 21)
+assert.equal(workDaysIn({ events: [{ id: 9, type: '휴업일', name: '재량휴업일', start: '2026-11-20', end: '2026-11-20' }], semStart: '2026-08-17', semEnd: '2026-11-13' }, 2026, 10), 10)
 console.log('PASS: overtime rules (after-school class time excluded, deduct, cap, weekend, holiday, skip, logs), plan text parsing, HWPX text')

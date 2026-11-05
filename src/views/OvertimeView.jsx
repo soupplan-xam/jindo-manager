@@ -197,19 +197,26 @@ export default function OvertimeView({ data, setData, setSnack }) {
         {day.off && <input type="time" aria-label="시작 시각" value={selLog.start || ''} onChange={e => setLog(sel, { start: e.target.value })} style={field} />}
         {day.off && <span style={{ color: FAINT }}>~</span>}
         <input type="time" aria-label={day.off ? '끝 시각' : '퇴근 시각'} value={selLog.end || ''} onChange={e => setLog(sel, { end: e.target.value })} style={field} />
-        {!day.off && day.plans.length > 0 && !selLog.end && <span style={{ fontSize: 12, color: FAINT }}>방과후({hm(day.planEnd)}) 끝난 뒤 남아 일했다면 넣으세요</span>}
       </div>
+      {!day.off && (
+        <div style={{ marginTop: 6, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: SUB, width: 62 }}>조기출근</span>
+          <input type="time" aria-label="조기출근 시각" value={selLog.arrive || ''} onChange={e => setLog(sel, { arrive: e.target.value })} style={field} />
+          <span style={{ fontSize: 12, color: FAINT }}>출근 기준 {cfg.onTime}보다 1시간 이상 일찍 온 날만</span>
+        </div>
+      )}
+      {!day.off && day.plans.length > 0 && !selLog.end && <div style={{ fontSize: 12, color: FAINT, marginTop: 4 }}>방과후({hm(day.planEnd)}) 끝난 뒤 남아 일했다면 퇴근 시각을 넣으세요</div>}
       <div style={{ marginTop: 10, padding: '10px 12px', background: '#F5F8FB', borderRadius: 10, fontSize: 13, color: SUB, lineHeight: 1.6 }}>
-        {day.end == null ? (day.planEnd != null ? '방과후 수업 시간은 초과근무에 넣지 않습니다. 방과후 끝(' + hm(day.planEnd) + ') 뒤부터 셉니다.' : '기록이 없습니다.') : day.off
-          ? <>{hm(day.start || 0)}~{hm(day.end)} = {fmtMin(day.raw)}{day.raw > cfg.dailyMax ? ' (하루 최대 ' + fmtMin(cfg.dailyMax) + ')' : ''}</>
-          : <>퇴근 {hm(day.end)} − {day.planEnd != null ? '방과후 끝 ' + hm(day.start) : '기준 ' + cfg.offTime} = {fmtMin(day.raw) || '0분'}{cfg.deduct ? ', 공제 ' + fmtMin(cfg.deduct) : ''}{day.raw - cfg.deduct > cfg.dailyMax ? ', 하루 최대 ' + fmtMin(cfg.dailyMax) : ''}</>}
+        {day.end == null && !day.early ? (day.planEnd != null ? '방과후 수업 시간은 초과근무에 넣지 않습니다. 방과후 끝(' + hm(day.planEnd) + ') 뒤부터 셉니다.' : '기록이 없습니다.') : day.off
+          ? <>{hm(day.start || 0)}~{hm(day.end)} = {fmtMin(day.raw) || '0분'}{day.raw > 0 && day.raw < 60 ? ' (1시간 미만은 인정 안 됨)' : ''}{day.raw > day.minutes && day.raw >= 60 ? ' (10.1. 전 하루 최대 ' + fmtMin(cfg.dailyMax) + ')' : ''}</>
+          : <>{day.end != null ? <>퇴근 {hm(day.end)} − {day.planEnd != null ? '방과후 끝 ' + hm(day.start) : '기준 ' + cfg.offTime} = {fmtMin(day.after) || '0분'}</> : null}{day.early ? <>{day.end != null ? ' + ' : ''}조기출근 {fmtMin(day.early)}</> : day.earlyRaw ? ' (조기출근 1시간 미만은 빼고)' : ''}{day.raw >= 60 ? (cfg.deduct ? ', 공제 ' + fmtMin(cfg.deduct) : '') : day.raw ? ' (1시간 미만은 인정 안 됨)' : ''}{day.raw >= 60 && day.raw - cfg.deduct > day.minutes ? ', 10.1. 전 하루 최대 ' + fmtMin(cfg.dailyMax) : ''}</>}
         <div style={{ fontSize: 15, fontWeight: 800, color: day.minutes ? GREEN : FAINT }}>인정 {day.minutes ? fmtMin(day.minutes) : '0분'}</div>
       </div>
       <input aria-label="메모" value={selLog.note || ''} onChange={e => setLog(sel, { note: e.target.value })} placeholder="메모 (예: 생기부 작업)" style={{ ...field, width: '100%', marginTop: 10 }} />
       <div style={{ display: 'flex', gap: 14, marginTop: 8, flexWrap: 'wrap' }}>
         {day.plans.length > 0 && <button type="button" onClick={() => skipDay(day, true)} style={link}>이 날 방과후 빼기</button>}
         {skipped.length > 0 && <button type="button" onClick={() => skipDay({ ...day, plans: [] }, false)} style={link}>빼 둔 방과후 되살리기</button>}
-        {(selLog.start || selLog.end || selLog.note) && <button type="button" onClick={() => setLog(sel, { start: '', end: '', note: '' })} style={{ ...link, color: WARN }}>기록 지우기</button>}
+        {(selLog.start || selLog.end || selLog.note || selLog.arrive) && <button type="button" onClick={() => setLog(sel, { start: '', end: '', note: '', arrive: '' })} style={{ ...link, color: WARN }}>기록 지우기</button>}
       </div>
     </section>
   )
@@ -253,11 +260,10 @@ export default function OvertimeView({ data, setData, setSnack }) {
           <span style={{ fontSize: 11, color: FAINT }}>{cfg.rate ? '직접 넣은 값 사용 · 지우면 호봉 자동' : autoRate ? '호봉으로 자동 ' + autoRate.toLocaleString('ko-KR') + '원' : ''}</span></label>
         <label>월 인정 상한(시간)<input type="number" min="1" max="200" value={cfg.monthMax} onChange={e => setCfg({ monthMax: Math.max(1, +e.target.value || 57) })} style={{ ...field, width: '100%', marginTop: 4 }} /></label>
         <label>평일 공제(분)<input type="number" min="0" max="240" step="10" value={cfg.deduct} onChange={e => setCfg({ deduct: Math.max(0, +e.target.value || 0) })} style={{ ...field, width: '100%', marginTop: 4 }} /></label>
-        <label>하루 최대(시간)<input type="number" min="1" max="12" step="0.5" value={cfg.dailyMax / 60} onChange={e => setCfg({ dailyMax: Math.round((+e.target.value || 4) * 60) })} style={{ ...field, width: '100%', marginTop: 4 }} /></label>
         <label>정액분(시간)<input type="number" min="0" max="20" value={cfg.fixedHours} onChange={e => setCfg({ fixedHours: Math.max(0, +e.target.value || 0) })} style={{ ...field, width: '100%', marginTop: 4 }} /></label>
       </div>
       <div style={{ fontSize: 11.5, color: FAINT, marginTop: 10, lineHeight: 1.6 }}>
-        시간당 단가({RATE_YEAR}년 교원 기준, 참고용): {RATES.map(r => r.label + ' ' + r.rate.toLocaleString('ko-KR') + '원').join(' · ')} · 교감 {VICE_RATE.toLocaleString('ko-KR')}원. 급여명세서와 다르면 단가를 직접 넣으세요. 평일은 퇴근 기준시각 뒤부터 세고 공제를 뺍니다. 방과후 있는 날은 방과후 수업 시간을 빼고 방과후가 끝나는 시각부터 셉니다. 주말·공휴일·휴업일은 공제 없이 셉니다. 실적분은 한 달 합계에서 1시간 미만을 버리고, 정액분은 15일 이상 출근 시 전액·미만이면 출근일 비율로 계산합니다(참고용 — 학교 기준이 다르면 위 값을 고쳐 주세요).
+        시간당 단가({RATE_YEAR}년 교원 기준, 참고용): {RATES.map(r => r.label + ' ' + r.rate.toLocaleString('ko-KR') + '원').join(' · ')} · 교감 {VICE_RATE.toLocaleString('ko-KR')}원. 급여명세서와 다르면 단가를 직접 넣으세요. 「공무원보수 등의 업무지침」 기준: 평일은 퇴근 기준시각 뒤(방과후 있는 날은 방과후 끝 뒤)와 1시간 이상 조기출근한 시간을 더해 1시간 이상이면 1시간을 공제합니다. 토요일·공휴일은 1시간 이상 근무한 날 공제 없이 셉니다. 하루 4시간 상한은 2026. 10. 1.부터 폐지되어 그 전 날짜에만 적용하고, 월 57시간 상한은 그대로입니다. 월 합계는 분까지 더한 뒤 1시간 미만을 버립니다. 정액분은 출근 근무일수 15일 이상이면 전액, 미만이면 모자라는 하루마다 1/15씩 줄어듭니다(방학은 근무일수에서 빠짐).
       </div>
     </section>
   )
