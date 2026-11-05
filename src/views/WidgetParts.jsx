@@ -64,6 +64,7 @@ export function MiniMonth({ data, setData, today }) {
   const [ym, setYm] = useState({ y: t0.getFullYear(), m: t0.getMonth() })
   const [sel, setSel] = useState(today)
   const [draft, setDraft] = useState('')
+  const [cellEdit, setCellEdit] = useState(null) // 더블클릭한 날 { iso, text }
   const todos = data.todos || {}
   const colors = data.dayColors || {}
   const first = new Date(ym.y, ym.m, 1)
@@ -93,6 +94,12 @@ export function MiniMonth({ data, setData, today }) {
     setDraft('')
   }
   const selD = fromISO(sel)
+  const commitCell = () => {
+    if (!cellEdit) return
+    const v = cellEdit.text.trim()
+    if (v) setTodos(cellEdit.iso, [...(todos[cellEdit.iso] || []), { id: Date.now(), text: v, done: false }])
+    setCellEdit(null)
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
@@ -118,7 +125,7 @@ export function MiniMonth({ data, setData, today }) {
               const isSel = iso === sel
               const bg = colors[iso] || (offDay(iso, i) ? '#EEF5FC' : '#FFFFFF')
               return (
-                <div key={iso} onClick={() => setSel(iso)}
+                <div key={iso} onClick={() => setSel(iso)} onDoubleClick={() => { setSel(iso); setCellEdit({ iso, text: '' }) }} title="더블클릭하면 할 일을 바로 넣습니다"
                   style={{ minWidth: 0, minHeight: 0, overflow: 'hidden', padding: '3px 4px', cursor: 'pointer', background: bg, opacity: out ? 0.45 : 1,
                     borderTop: wi ? '1px solid ' + LINE_SOFT : 'none', borderLeft: i ? '1px solid ' + LINE_SOFT : 'none', boxShadow: isSel ? 'inset 0 0 0 2px ' + GREEN : 'none', display: 'flex', flexDirection: 'column', gap: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, minWidth: 0 }}>
@@ -134,6 +141,23 @@ export function MiniMonth({ data, setData, today }) {
                       {x.done ? '✓' : '·'} {x.text}
                     </div>
                   ))}
+                  {cellEdit && cellEdit.iso === iso && (
+                    <input
+                      autoFocus
+                      aria-label={(d.getMonth() + 1) + '월 ' + d.getDate() + '일 할 일'}
+                      value={cellEdit.text}
+                      onChange={e => setCellEdit({ iso, text: e.target.value })}
+                      onClick={e => e.stopPropagation()}
+                      onDoubleClick={e => e.stopPropagation()}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); commitCell() }
+                        if (e.key === 'Escape') setCellEdit(null)
+                      }}
+                      onBlur={commitCell}
+                      placeholder="할 일"
+                      style={{ width: '100%', boxSizing: 'border-box', border: '1px solid ' + GREEN, borderRadius: 4, fontSize: 10.5, padding: '1px 4px', marginTop: 1, background: '#FFFFFF' }}
+                    />
+                  )}
                 </div>
               )
             })}
@@ -142,7 +166,7 @@ export function MiniMonth({ data, setData, today }) {
       </div>
       <form onSubmit={add} style={{ display: 'flex', gap: 6, marginTop: 6, alignItems: 'center' }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: SUB, flex: 'none' }}>{selD.getMonth() + 1}.{selD.getDate()} {DAYS[selD.getDay()]}</span>
-        <input aria-label="할 일 추가" value={draft} onChange={e => setDraft(e.target.value)} placeholder="할 일 추가" style={{ flex: 1, minWidth: 0, border: '1px solid ' + LINE, borderRadius: 8, fontSize: 12.5, padding: '5px 8px' }} />
+        <input aria-label="할 일 추가" value={draft} onChange={e => setDraft(e.target.value)} placeholder="할 일 추가 (날짜 더블클릭해도 돼요)" style={{ flex: 1, minWidth: 0, border: '1px solid ' + LINE, borderRadius: 8, fontSize: 12.5, padding: '5px 8px' }} />
         <button type="submit" style={{ border: 'none', borderRadius: 8, background: draft.trim() ? GREEN : '#D1D6DB', color: '#FFFFFF', fontSize: 12, fontWeight: 700, padding: '6px 10px', cursor: draft.trim() ? 'pointer' : 'default', flex: 'none' }}>추가</button>
       </form>
     </div>
