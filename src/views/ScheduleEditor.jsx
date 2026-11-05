@@ -197,7 +197,7 @@ export default function ScheduleEditor({ data, setData, computed, setSnack, maxH
               title="추가"
               style={{
                 width: 26, height: 26, border: 'none', borderRadius: '50%', flex: 'none',
-                background: sched.name.trim() ? GREEN : '#E4E1DA', color: '#FFFFFF',
+                background: sched.name.trim() ? GREEN : '#EBEEF2', color: '#FFFFFF',
                 cursor: sched.name.trim() ? 'pointer' : 'default', fontSize: 16, fontWeight: 700, lineHeight: 1,
               }}
             >
@@ -246,8 +246,8 @@ export default function ScheduleEditor({ data, setData, computed, setSnack, maxH
   )
 }
 
-const uInput = { border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 13, padding: '6px 8px', boxSizing: 'border-box' }
-const iconBtnS = { border: 'none', background: 'none', padding: 4, borderRadius: 6, cursor: 'pointer', color: SUB, display: 'flex', flex: 'none' }
+const uInput = { border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', fontSize: 13, padding: '6px 8px', boxSizing: 'border-box' }
+const iconBtnS = { border: 'none', background: 'none', padding: 4, borderRadius: 8, cursor: 'pointer', color: SUB, display: 'flex', flex: 'none' }
 
 // 유형 배지 — 한눈에 성격이 구분되도록 유형별 색을 준다
 const TYPE_BADGE = {
@@ -255,5 +255,5 @@ const TYPE_BADGE = {
   행사: { bg: '#F4E8CE', fg: '#854F0B' },
   휴업: { bg: '#E2E8E2', fg: '#3F5C4C' },
   개인: { bg: '#DFE6F2', fg: '#185FA5' },
-  기본: { bg: '#E4E1DA', fg: '#575757' },
+  기본: { bg: '#EBEEF2', fg: '#4E5968' },
 }

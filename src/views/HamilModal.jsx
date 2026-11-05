@@ -114,7 +114,7 @@ export default function HamilModal({ data, setData, setSnack, onClose }) {
             onKeyDown={e => { if (e.key === 'Enter') search() }}
             placeholder="학교 공용 암호"
             autoComplete="off"
-            style={{ width: '100%', boxSizing: 'border-box', border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 14, padding: '7px 9px' }}
+            style={{ width: '100%', boxSizing: 'border-box', border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', fontSize: 14, padding: '7px 9px' }}
           />
           <div style={{ marginTop: 6, fontSize: 12, color: FAINT }}>
             시간표 파일은 암호로 잠겨 있습니다. 한 번 입력하면 이 브라우저에 기억됩니다.
@@ -129,7 +129,7 @@ export default function HamilModal({ data, setData, setSnack, onClose }) {
           onKeyDown={e => { if (e.key === 'Enter') search() }}
           placeholder="교사 이름"
           autoFocus
-          style={{ flex: 1, border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 14, padding: '7px 9px' }}
+          style={{ flex: 1, border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', fontSize: 14, padding: '7px 9px' }}
         />
         <button onClick={search} style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 14, fontWeight: 700, color: GREEN, flex: 'none' }}>
           검색
@@ -150,7 +150,7 @@ export default function HamilModal({ data, setData, setSnack, onClose }) {
           </div>
           <div style={{ marginTop: 8, fontSize: 12, color: FAINT }}>적용하면 현재 데이터를 대체합니다. 적용 후 되돌리기가 가능합니다.</div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 14 }}>
-            <button onClick={apply} style={{ border: 'none', borderRadius: 6, padding: '8px 20px', background: GREEN, color: '#FFFFFF', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+            <button onClick={apply} style={{ border: 'none', borderRadius: 8, padding: '8px 20px', background: GREEN, color: '#FFFFFF', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
               적용
             </button>
           </div>

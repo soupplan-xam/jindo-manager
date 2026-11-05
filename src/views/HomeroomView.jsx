@@ -47,7 +47,7 @@ export default function HomeroomView({ data, setData, setSnack }) {
             onClick={() => onPick(v)}
             style={{
               border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 999, padding: '6px 14px', cursor: 'pointer',
-              background: on ? '#EAF1EE' : '#FFFFFF', color: on ? GREEN : SUB, fontSize: 14, fontWeight: on ? 700 : 500,
+              background: on ? '#E9F6FE' : '#FFFFFF', color: on ? GREEN : SUB, fontSize: 14, fontWeight: on ? 700 : 500,
             }}
           >
             {v}
@@ -64,7 +64,7 @@ export default function HomeroomView({ data, setData, setSnack }) {
     </div>
   )
 
-  const field = { border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 14, padding: '7px 10px', boxSizing: 'border-box' }
+  const field = { border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', fontSize: 14, padding: '7px 10px', boxSizing: 'border-box' }
 
   return (
     <div style={{ width: '100%', maxWidth: 1080, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) minmax(0, 1fr)', gap: isMobile ? 18 : 32, alignItems: 'start' }}>
@@ -170,14 +170,14 @@ export default function HomeroomView({ data, setData, setSnack }) {
           <button
             type="button"
             onClick={copy}
-            style={{ border: 'none', borderRadius: 6, background: GREEN, color: '#FFFFFF', padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+            style={{ border: 'none', borderRadius: 8, background: GREEN, color: '#FFFFFF', padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
           >
             메시지 복사
           </button>
           <button
             type="button"
             onClick={() => { nextStudent(); setTimeout(() => document.getElementById('hr-name')?.focus(), 0) }}
-            style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', color: SUB, padding: '10px 16px', fontSize: 14, cursor: 'pointer' }}
+            style={{ border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', color: SUB, padding: '10px 16px', fontSize: 14, cursor: 'pointer' }}
           >
             다음 학생
           </button>

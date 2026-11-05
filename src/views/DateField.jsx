@@ -60,7 +60,7 @@ export default function DateField({ value, onChange, near, min, placeholder = '�
           }
         }}
         style={{
-          width, boxSizing: 'border-box', border: '1px solid ' + (bad ? RED : LINE), borderRadius: 6,
+          width, boxSizing: 'border-box', border: '1px solid ' + (bad ? RED : LINE), borderRadius: 8,
           background: bad ? '#FCEFEC' : '#FFFFFF', fontSize: 13, padding: '6px 30px 6px 9px', outline: 'none',
           fontVariantNumeric: 'tabular-nums',
         }}
@@ -113,7 +113,7 @@ export function DateRangeField({ start, end, onChange, refDate, keepLength = fal
         title="달력에서 시작일과 종료일을 차례로 누르세요"
         aria-label="달력에서 기간 고르기"
         className="hov"
-        style={{ border: '1px solid ' + (open ? GREEN : LINE), background: open ? '#EAF1EE' : '#FFFFFF', color: open ? GREEN : SUB, borderRadius: 6, padding: '5px 8px', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, flex: 'none' }}
+        style={{ border: '1px solid ' + (open ? GREEN : LINE), background: open ? '#E9F6FE' : '#FFFFFF', color: open ? GREEN : SUB, borderRadius: 8, padding: '5px 8px', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, flex: 'none' }}
       >
         <CalIcon />{!isMobile && ' 기간'}
       </button>
@@ -240,7 +240,7 @@ function CalendarPopover({ anchor, start, end, min, range = false, onPick, onClo
               style={{
                 height: 32, border: 'none', cursor: disabled ? 'default' : 'pointer', fontSize: 13,
                 borderRadius: isEdge ? 6 : inside ? 0 : 6,
-                background: isEdge ? GREEN : inside ? '#DCEAE4' : 'transparent',
+                background: isEdge ? GREEN : inside ? '#D4EDFC' : 'transparent',
                 color: isEdge ? '#FFFFFF' : disabled ? LINE_SOFT : out ? LINE : wd === 0 ? RED : wd === 6 ? '#185FA5' : INK,
                 fontWeight: isEdge || iso === today ? 700 : 400,
                 boxShadow: iso === today && !isEdge ? 'inset 0 0 0 1px ' + GREEN : 'none',
@@ -260,7 +260,7 @@ function CalendarPopover({ anchor, start, end, min, range = false, onPick, onClo
   )
 }
 
-const navBtn = { border: 'none', background: 'none', width: 28, height: 28, borderRadius: 6, cursor: 'pointer', fontSize: 18, color: SUB, lineHeight: 1 }
+const navBtn = { border: 'none', background: 'none', width: 28, height: 28, borderRadius: 8, cursor: 'pointer', fontSize: 18, color: SUB, lineHeight: 1 }
 
 function CalIcon() {
   return (

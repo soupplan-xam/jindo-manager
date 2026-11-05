@@ -25,14 +25,14 @@ export function SyncButton({ sync, onClick, compact }) {
       aria-label={on ? '기기 연동 상태: ' + st.t : '기기 연동 로그인'}
       className="hov"
       style={{
-        border: 'none', background: 'none', borderRadius: 6, padding: '5px 6px', cursor: 'pointer',
+        border: 'none', background: 'none', borderRadius: 8, padding: '5px 6px', cursor: 'pointer',
         display: 'flex', alignItems: 'center', gap: 5, color: on ? SUB : FAINT, flex: 'none', position: 'relative', fontSize: 12.5, fontWeight: 600,
       }}
     >
       <CloudIcon />
       {!on && !compact && <span>연동</span>}
       {on && (
-        <span style={{ position: 'absolute', right: 3, bottom: 4, width: 7, height: 7, borderRadius: '50%', background: st.c, border: '1.5px solid #FCFCFA' }} />
+        <span style={{ position: 'absolute', right: 3, bottom: 4, width: 7, height: 7, borderRadius: '50%', background: st.c, border: '1.5px solid #F4F6F9' }} />
       )}
     </button>
   )
@@ -64,7 +64,7 @@ export function SyncModal({ sync, onClose }) {
             onClick={login}
             disabled={busy}
             style={{
-              marginTop: 16, width: '100%', border: '1px solid ' + LINE, background: '#FFFFFF', borderRadius: 6,
+              marginTop: 16, width: '100%', border: '1px solid ' + LINE, background: '#FFFFFF', borderRadius: 8,
               padding: '10px 12px', fontSize: 14, fontWeight: 700, cursor: busy ? 'default' : 'pointer', color: INK,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             }}
@@ -111,8 +111,8 @@ export function SyncConflictModal({ sync, data }) {
     <button
       onClick={onClick}
       style={{
-        textAlign: 'left', width: '100%', border: '1px solid ' + (primary ? GREEN : LINE), background: primary ? '#EAF1EE' : '#FFFFFF',
-        borderRadius: 6, padding: '11px 13px', cursor: 'pointer', color: INK,
+        textAlign: 'left', width: '100%', border: '1px solid ' + (primary ? GREEN : LINE), background: primary ? '#E9F6FE' : '#FFFFFF',
+        borderRadius: 8, padding: '11px 13px', cursor: 'pointer', color: INK,
       }}
     >
       <div style={{ fontSize: 14, fontWeight: 700 }}>{label}</div>

@@ -27,26 +27,27 @@ export const DEFAULT_TINTS = [
   '#F0DBE8', '#CFE8E6', '#EDE1CB', '#D8E3D8', '#E6DCEF', '#EFE6C9',
 ]
 
-export const GREEN = '#0F5C4D'
-export const INK = '#1A1A1A'
-export const SUB = '#575757'
-export const FAINT = '#8F8B86'
-export const LINE = '#C9C5BE'
-export const LINE_SOFT = '#E4E1DA'
-export const WARN = '#B4552D'
-export const RED = '#C2412D'
+// 강조색(하늘) — 이름은 예전 그대로 GREEN. 흰 바탕 글씨로도 읽히는 진하기
+export const GREEN = '#1284CA'
+export const INK = '#191F28'
+export const SUB = '#4E5968'
+export const FAINT = '#8B95A1'
+export const LINE = '#E1E5EA'
+export const LINE_SOFT = '#EBEEF2'
+export const WARN = '#D9480F'
+export const RED = '#E03131'
 
 // 화면 구획 제목 (요약 · 차시별 내용 · 일정 …)
-export const SECTION_TITLE = { fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: INK }
+export const SECTION_TITLE = { fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em', color: INK }
 
 // 화면 컨트롤 버튼 공통 모양 (수정 · 인쇄 · 요약 · 차시별 내용)
 export const CHIP_BTN = {
-  display: 'flex', alignItems: 'center', gap: 5, border: '1px solid #CBDED7', borderRadius: 6,
-  background: '#EAF1EE', color: GREEN, padding: '6px 12px', cursor: 'pointer',
+  display: 'flex', alignItems: 'center', gap: 5, border: '1px solid transparent', borderRadius: 10,
+  background: '#E9F6FE', color: GREEN, padding: '7px 13px', cursor: 'pointer',
   fontSize: 13, fontWeight: 700, lineHeight: 1, whiteSpace: 'nowrap', flex: 'none',
 }
-// 꺼져 있을 때 (요약·차시별 내용 접힌 상태)
-export const CHIP_BTN_OFF = { ...CHIP_BTN, border: '1px solid ' + LINE, background: '#FFFFFF', color: SUB }
+// 꺼져 있을 때 (요약·차시별 내용 접힌 상태) — 토스처럼 옅은 회색 면
+export const CHIP_BTN_OFF = { ...CHIP_BTN, background: '#F2F4F6', color: SUB }
 
 // 인쇄 크기 — 한 주를 어느 지면에 조판할지. 2주치는 같은 덩어리를 한 번 더 쌓으므로 지면이 배로 든다.
 // '크게'는 한 주만으로 A4 한 장을 다 쓰는 크기라 2주치에서는 고를 수 없다 (note에 2가 없다).

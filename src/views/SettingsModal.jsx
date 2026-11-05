@@ -76,7 +76,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
     <button
       onClick={onClick}
       style={{
-        width: 30, height: 16, border: '1px solid ' + (on ? GREEN : '#BDB9B2'), borderRadius: 9,
+        width: 30, height: 16, border: '1px solid ' + (on ? GREEN : '#C5CCD3'), borderRadius: 9,
         background: on ? GREEN : '#FFFFFF', position: 'relative', cursor: 'pointer', padding: 0, flex: 'none',
       }}
     >
@@ -96,7 +96,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
           style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             width: 20, height: 20, borderRadius: 5, flex: 'none',
-            background: open[id] ? GREEN : '#E8E5DE',
+            background: open[id] ? GREEN : '#E8EBEE',
             color: open[id] ? '#FFFFFF' : SUB,
             transition: 'background 150ms, color 150ms',
           }}
@@ -193,7 +193,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
                   key={v}
                   onClick={() => setCfg({ fontScale: v })}
                   style={{
-                    flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 6, cursor: 'pointer',
+                    flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 8, cursor: 'pointer',
                     background: on ? GREEN : '#FFFFFF', color: on ? '#FFFFFF' : SUB,
                     padding: '9px 0', fontSize: 12 + (v - 1) * 10, fontWeight: on ? 700 : 500,
                   }}
@@ -225,7 +225,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
                     // 크기가 그 범위에 없으면(크게 + 2주치) 함께 내려 준다 — 저장본이 어긋나지 않게
                     onClick={() => setCfg({ printWeeks: n, printScale: fitScale(cfg.printScale || 'l', n) })}
                     style={{
-                      flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 6, cursor: 'pointer',
+                      flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 8, cursor: 'pointer',
                       background: on ? GREEN : '#FFFFFF', color: on ? '#FFFFFF' : SUB,
                       padding: '9px 0', fontSize: 13, fontWeight: on ? 700 : 500,
                     }}
@@ -244,7 +244,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
                     key={k}
                     onClick={() => setCfg({ printScale: k })}
                     style={{
-                      flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 6, cursor: 'pointer',
+                      flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 8, cursor: 'pointer',
                       background: on ? GREEN : '#FFFFFF', color: on ? '#FFFFFF' : SUB,
                       padding: '9px 0', fontSize: 13, fontWeight: on ? 700 : 500,
                     }}
@@ -270,7 +270,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
             ) : (
               <>
                 {canInstall && (
-                  <button onClick={install} style={{ border: 'none', borderRadius: 6, background: GREEN, color: '#FFFFFF', padding: '8px 16px', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', marginBottom: 10 }}>
+                  <button onClick={install} style={{ border: 'none', borderRadius: 8, background: GREEN, color: '#FFFFFF', padding: '8px 16px', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', marginBottom: 10 }}>
                     이 컴퓨터에 앱으로 설치
                   </button>
                 )}
@@ -365,7 +365,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
                 onClose()
                 onResetSetup()
               }}
-              style={{ border: 'none', borderRadius: 6, padding: '8px 18px', background: RED, color: '#FFFFFF', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+              style={{ border: 'none', borderRadius: 8, padding: '8px 18px', background: RED, color: '#FFFFFF', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
             >
               초기화
             </button>

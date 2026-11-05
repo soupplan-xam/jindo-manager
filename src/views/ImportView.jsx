@@ -93,7 +93,7 @@ export default function ImportView({ data, setData, go, goImport, setSnack, kind
               <>
                 <div style={{ fontSize: 15, fontWeight: 700, marginTop: 16 }}>{kind === 'timetable' ? '시간표' : '학사일정'} 파일 올리기</div>
                 <div style={{ fontSize: 13, color: SUB, marginTop: 7 }}>누르거나 파일을 끌어다 놓으세요</div>
-                <div style={{ display: 'inline-block', marginTop: 14, fontSize: 12, color: FAINT, background: '#F4F2ED', borderRadius: 999, padding: '4px 12px' }}>엑셀 · CSV · PDF · 이미지</div>
+                <div style={{ display: 'inline-block', marginTop: 14, fontSize: 12, color: FAINT, background: '#F2F4F6', borderRadius: 999, padding: '4px 12px' }}>엑셀 · CSV · PDF · 이미지</div>
               </>
             ) : (
               <>
@@ -102,7 +102,7 @@ export default function ImportView({ data, setData, go, goImport, setSnack, kind
               </>
             )}
           </div>
-          {error && <div style={{ maxWidth: 520, margin: '14px auto 0', fontSize: 13, color: '#B4552D', textAlign: 'center' }}>{error}</div>}
+          {error && <div style={{ maxWidth: 520, margin: '14px auto 0', fontSize: 13, color: '#D9480F', textAlign: 'center' }}>{error}</div>}
           <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv,.pdf,image/*" style={{ display: 'none' }} onChange={e => run(e.target.files[0])} />
         </div>
       )}
@@ -114,7 +114,7 @@ export default function ImportView({ data, setData, go, goImport, setSnack, kind
       {stage === 'review' && (
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 22 : 30, alignItems: 'start' }}>
           <div>
-            <div style={{ border: '1px solid ' + LINE, borderRadius: 6, padding: 16, background: '#FFFFFF' }}>
+            <div style={{ border: '1px solid ' + LINE, borderRadius: 8, padding: 16, background: '#FFFFFF' }}>
               {imp.preview.kind === 'image' ? (
                 <img src={imp.preview.src} alt="원본" style={{ width: '100%', display: 'block', filter: 'grayscale(1) contrast(0.9)', opacity: 0.9 }} />
               ) : (
@@ -195,7 +195,7 @@ function TimetableReview({ data, imp, setImp }) {
     )
   }
   return (
-    <div style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', userSelect: 'none' }}>
+    <div style={{ border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', userSelect: 'none' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '48px repeat(5,1fr)' }}>
         <div />
         {eDays.map(d => (
@@ -220,7 +220,7 @@ function ScheduleReview({ imp, setImp }) {
     return d1.getMonth() + 1 + '.' + d1.getDate() + '–' + (d2.getMonth() + 1) + '.' + d2.getDate()
   }
   return (
-    <div style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', padding: '4px 16px' }}>
+    <div style={{ border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', padding: '4px 16px' }}>
       {imp.rows.map((r, i) => (
         <div
           key={i}
@@ -236,7 +236,7 @@ function ScheduleReview({ imp, setImp }) {
           <div style={{ color: SUB, fontSize: 13 }}>{fmt(r)}</div>
           <div style={{ fontWeight: 500 }}>{r.name}</div>
           <div style={{ color: FAINT, fontSize: 13 }}>{r.type === '휴업일' ? '휴업' : r.type}</div>
-          <div style={{ fontSize: 12, color: r.uncertain ? '#B4552D' : 'transparent' }}>확인 필요</div>
+          <div style={{ fontSize: 12, color: r.uncertain ? '#D9480F' : 'transparent' }}>확인 필요</div>
         </div>
       ))}
     </div>

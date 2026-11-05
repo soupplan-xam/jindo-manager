@@ -159,7 +159,7 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose, 
               onChange={e => setQ(e.target.value)}
               placeholder="학교 이름 (두 글자 이상)"
               autoFocus
-              style={{ flex: 1, minWidth: 0, border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 14, padding: '8px 10px' }}
+              style={{ flex: 1, minWidth: 0, border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', fontSize: 14, padding: '8px 10px' }}
             />
           </div>
 
@@ -170,7 +170,7 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose, 
           </div>
 
           {error && (
-            <div style={{ marginTop: 14, border: '1px solid #E8CFC6', background: '#FBF1ED', borderRadius: 6, padding: '11px 13px' }}>
+            <div style={{ marginTop: 14, border: '1px solid #E8CFC6', background: '#FBF1ED', borderRadius: 8, padding: '11px 13px' }}>
               <div style={{ fontSize: 13, color: WARN, lineHeight: 1.6 }}>{error}</div>
               <button onClick={() => { setError(''); setRetry(r => r + 1) }} style={{ ...linkBtn, marginTop: 7, fontWeight: 700 }}>
                 다시 시도
@@ -219,7 +219,7 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose, 
 
           {events && !events.length && (
             error ? (
-              <div style={{ marginTop: 18, border: '1px solid #E8CFC6', background: '#FBF1ED', borderRadius: 6, padding: '11px 13px' }}>
+              <div style={{ marginTop: 18, border: '1px solid #E8CFC6', background: '#FBF1ED', borderRadius: 8, padding: '11px 13px' }}>
                 <div style={{ fontSize: 13, color: WARN, lineHeight: 1.6 }}>{error}</div>
                 <button onClick={() => open(school)} style={{ ...linkBtn, marginTop: 7, fontWeight: 700 }}>다시 시도</button>
               </div>
@@ -305,8 +305,8 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose, 
                   onClick={apply}
                   disabled={!pickedRows.length}
                   style={{
-                    border: 'none', borderRadius: 6, padding: '8px 20px', fontSize: 14, fontWeight: 700,
-                    background: pickedRows.length ? GREEN : '#D9D5CE', color: '#FFFFFF',
+                    border: 'none', borderRadius: 8, padding: '8px 20px', fontSize: 14, fontWeight: 700,
+                    background: pickedRows.length ? GREEN : '#D1D6DB', color: '#FFFFFF',
                     cursor: pickedRows.length ? 'pointer' : 'default', flex: 'none',
                   }}
                 >
@@ -322,8 +322,8 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose, 
 }
 
 const chip = on => ({
-  border: '1px solid ' + (on ? '#CBDED7' : LINE), borderRadius: 999, padding: '5px 11px', cursor: 'pointer',
-  background: on ? '#EAF1EE' : '#FFFFFF', color: on ? GREEN : SUB, fontSize: 12.5, fontWeight: on ? 700 : 500, flex: 'none',
+  border: '1px solid ' + (on ? '#C6E6FA' : LINE), borderRadius: 999, padding: '5px 11px', cursor: 'pointer',
+  background: on ? '#E9F6FE' : '#FFFFFF', color: on ? GREEN : SUB, fontSize: 12.5, fontWeight: on ? 700 : 500, flex: 'none',
 })
 
 const linkBtn = { border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 12.5, color: GREEN, flex: 'none' }

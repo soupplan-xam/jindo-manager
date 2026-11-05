@@ -47,7 +47,7 @@ export default function Snackbar({ snack, setSnack, data, setData }) {
       data-print="hide"
       style={{
         position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 26,
-        background: '#FFFFFF', border: '1px solid #E7E5E0', borderRadius: 6,
+        background: '#FFFFFF', border: '1px solid #E5E8EB', borderRadius: 8,
         boxShadow: '0 8px 24px rgba(26,26,26,0.10)', padding: '12px 18px',
         display: 'flex', gap: 26, alignItems: 'center', width: 'max-content', minWidth: 'min(440px, calc(100vw - 32px))',
         maxWidth: 'min(680px, calc(100vw - 32px))', zIndex: 60, boxSizing: 'border-box',

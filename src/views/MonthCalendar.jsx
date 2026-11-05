@@ -12,6 +12,7 @@ export const PAINTS = [
   { c: '#F6DCE3', n: '분홍' }, { c: '#E3E1DC', n: '회색' },
 ]
 const SAT = '#185FA5'
+const TERM = '#2B8A3E' // 절기 — 하늘색 강조·토요일 파랑과 구분되는 초록
 
 export default function MonthCalendar({ data, setData, setSnack }) {
   const { isMobile } = useWindowWidth()
@@ -112,9 +113,9 @@ export default function MonthCalendar({ data, setData, setSnack }) {
       onPointerMove={onMove}
       onPointerUp={onUp}
             onPointerCancel={onUp}
-      style={{ border: '1px solid ' + LINE, borderRadius: 8, overflow: 'hidden', background: '#FFFFFF', touchAction: paint ? 'none' : 'auto', userSelect: paint ? 'none' : 'auto' }}
+      style={{ border: '1px solid ' + LINE, borderRadius: 12, overflow: 'hidden', background: '#FFFFFF', touchAction: paint ? 'none' : 'auto', userSelect: paint ? 'none' : 'auto' }}
     >
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', background: '#F4F2ED', borderBottom: '1px solid ' + LINE }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', background: '#F2F4F6', borderBottom: '1px solid ' + LINE }}>
         {DAYS.split('').map((w, i) => (
           <div key={w} style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, padding: '6px 0', color: i === 0 ? RED : i === 6 ? SAT : SUB }}>{w}</div>
         ))}
@@ -149,7 +150,7 @@ export default function MonthCalendar({ data, setData, setSnack }) {
                 style={{
                   minHeight: cellH, minWidth: 0, padding: isMobile ? '4px 4px' : '6px 7px', boxSizing: 'border-box', cursor: paint ? 'crosshair' : 'pointer',
                   borderTop: wi ? '1px solid ' + LINE_SOFT : 'none', borderLeft: i ? '1px solid ' + LINE_SOFT : 'none',
-                  background: colors[iso] || (out ? '#FAF9F6' : '#FFFFFF'),
+                  background: colors[iso] || (out ? '#F9FAFB' : '#FFFFFF'),
                   boxShadow: isSel ? 'inset 0 0 0 2px ' + GREEN : 'none',
                   opacity: out ? 0.6 : 1, overflow: 'hidden',
                 }}
@@ -164,14 +165,14 @@ export default function MonthCalendar({ data, setData, setSnack }) {
                     {d.getDate()}
                   </span>
                   {!isMobile && (hol || term) && (
-                    <span style={{ fontSize: 11, fontWeight: 700, color: hol ? RED : GREEN, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: hol ? RED : TERM, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {[hol, term].filter(Boolean).join(' · ')}
                     </span>
                   )}
                 </div>
                 {isMobile ? (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2, marginTop: 4 }}>
-                    {(hol || term) && <span style={{ fontSize: 9, fontWeight: 700, color: hol ? RED : GREEN, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hol || term}</span>}
+                    {(hol || term) && <span style={{ fontSize: 9, fontWeight: 700, color: hol ? RED : TERM, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hol || term}</span>}
                     {items.slice(0, 4).map(it => (
                       <span key={it.k} style={{ width: 6, height: 6, borderRadius: '50%', background: it.todo ? (it.done ? LINE : INK) : it.c }} />
                     ))}
@@ -194,7 +195,7 @@ export default function MonthCalendar({ data, setData, setSnack }) {
     </div>
   )
 
-  const field = { border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 14, padding: '7px 10px', boxSizing: 'border-box' }
+  const field = { border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', fontSize: 14, padding: '7px 10px', boxSizing: 'border-box' }
 
   const detail = (
     <section aria-label="고른 날" style={{ minWidth: 0 }}>
@@ -205,7 +206,7 @@ export default function MonthCalendar({ data, setData, setSnack }) {
         <div style={{ marginTop: 4, fontSize: 13, fontWeight: 700 }}>
           {selHoliday && <span style={{ color: RED }}>{selHoliday}</span>}
           {selHoliday && selTerm && <span style={{ color: FAINT }}> · </span>}
-          {selTerm && <span style={{ color: GREEN }}>{selTerm}</span>}
+          {selTerm && <span style={{ color: TERM }}>{selTerm}</span>}
         </div>
       )}
       {selEvents.length > 0 && (
@@ -238,7 +239,7 @@ export default function MonthCalendar({ data, setData, setSnack }) {
           placeholder="할 일 추가 (예: 자기소개서 채점)"
           style={{ ...field, flex: 1, minWidth: 0 }}
         />
-        <button type="submit" style={{ border: 'none', borderRadius: 6, background: draft.trim() ? GREEN : '#D9D5CE', color: '#FFFFFF', padding: '0 14px', fontSize: 14, fontWeight: 700, cursor: draft.trim() ? 'pointer' : 'default', flex: 'none' }}>추가</button>
+        <button type="submit" style={{ border: 'none', borderRadius: 8, background: draft.trim() ? GREEN : '#D1D6DB', color: '#FFFFFF', padding: '0 14px', fontSize: 14, fontWeight: 700, cursor: draft.trim() ? 'pointer' : 'default', flex: 'none' }}>추가</button>
       </form>
       <div style={{ marginTop: 14, fontSize: 11.5, color: FAINT, lineHeight: 1.6 }}>
         학사일정은 [수정] 화면의 일정에서 넣은 것이 함께 보입니다. 공휴일은 참고용이며 학교 학사일정이 우선입니다.
@@ -252,7 +253,7 @@ export default function MonthCalendar({ data, setData, setSnack }) {
         <button type="button" onClick={() => move(-1)} aria-label="이전 달" className="hov" style={navBtn}>‹</button>
         <div style={{ fontSize: isMobile ? 17 : 19, fontWeight: 800, minWidth: isMobile ? 110 : 130, textAlign: 'center', letterSpacing: '-0.02em' }}>{ym.y}년 {ym.m + 1}월</div>
         <button type="button" onClick={() => move(1)} aria-label="다음 달" className="hov" style={navBtn}>›</button>
-        <button type="button" onClick={goToday} style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', color: SUB, padding: '5px 10px', fontSize: 13, cursor: 'pointer', marginLeft: 4 }}>오늘</button>
+        <button type="button" onClick={goToday} style={{ border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', color: SUB, padding: '5px 10px', fontSize: 13, cursor: 'pointer', marginLeft: 4 }}>오늘</button>
         <div style={{ flex: 1 }} />
         <div role="group" aria-label="기간 색칠" style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 12.5, color: paint ? GREEN : FAINT, fontWeight: 700 }}>{paint ? '칠하는 중' : '칠하기'}</span>
@@ -271,7 +272,7 @@ export default function MonthCalendar({ data, setData, setSnack }) {
             type="button"
             aria-pressed={paint === 'erase'}
             onClick={() => setPaint(paint === 'erase' ? null : 'erase')}
-            style={{ border: '1px solid ' + (paint === 'erase' ? GREEN : LINE), borderRadius: 5, background: paint === 'erase' ? '#EAF1EE' : '#FFFFFF', color: paint === 'erase' ? GREEN : SUB, fontSize: 12, padding: '4px 8px', cursor: 'pointer' }}
+            style={{ border: '1px solid ' + (paint === 'erase' ? GREEN : LINE), borderRadius: 5, background: paint === 'erase' ? '#E9F6FE' : '#FFFFFF', color: paint === 'erase' ? GREEN : SUB, fontSize: 12, padding: '4px 8px', cursor: 'pointer' }}
           >
             지우개
           </button>
@@ -289,4 +290,4 @@ export default function MonthCalendar({ data, setData, setSnack }) {
   )
 }
 
-const navBtn = { border: 'none', background: 'none', width: 32, height: 32, borderRadius: 6, cursor: 'pointer', fontSize: 22, color: SUB, lineHeight: 1 }
+const navBtn = { border: 'none', background: 'none', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', fontSize: 22, color: SUB, lineHeight: 1 }

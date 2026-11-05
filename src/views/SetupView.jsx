@@ -81,7 +81,7 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
       {calView ? (
         <ScheduleCalendar data={data} setData={setData} setSnack={setSnack} actions={regButtons} paintable />
       ) : (
-        <div style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', padding: '0 12px 10px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', padding: '0 12px 10px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <ScheduleEditor data={data} setData={setData} computed={computed} setSnack={setSnack} onImport={() => goImport('schedule')} onSchools={openSchools} actions={regButtons} fill />
         </div>
       )}
@@ -96,7 +96,7 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
         onClick={() => setMtab(id)}
         style={{
           flex: 1, border: 'none', background: mtab === id ? '#FFFFFF' : 'transparent',
-          borderRadius: 6, padding: '7px 0', cursor: 'pointer',
+          borderRadius: 8, padding: '7px 0', cursor: 'pointer',
           fontSize: 13, fontWeight: mtab === id ? 700 : 500, color: mtab === id ? INK : SUB,
           boxShadow: mtab === id ? '0 1px 3px rgba(26,26,26,0.10)' : 'none',
         }}
@@ -107,7 +107,7 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
     return (
       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         {semRow}
-        <div style={{ display: 'flex', gap: 3, background: '#EFEDE8', borderRadius: 8, padding: 3, marginBottom: 10, flex: 'none' }}>
+        <div style={{ display: 'flex', gap: 3, background: '#E8EBEF', borderRadius: 12, padding: 3, marginBottom: 10, flex: 'none' }}>
           {tab('grid', '시간표')}
           {tab('sched', '일정')}
         </div>
@@ -128,7 +128,7 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
           title="드래그해서 너비 조절"
           style={{ width: 18, alignSelf: 'stretch', cursor: 'col-resize', display: 'flex', justifyContent: 'center', flex: 'none' }}
         >
-          <div style={{ width: 3, borderRadius: 2, background: dragging ? GREEN : '#DEDAD3' }} />
+          <div style={{ width: 3, borderRadius: 2, background: dragging ? GREEN : '#DDE2E7' }} />
         </div>
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           {schedule}

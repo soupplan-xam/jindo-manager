@@ -125,7 +125,7 @@ export default function TimetableEditor({ data, setData, setSnack, cellHeight = 
             borderTop: '1px solid ' + LINE_SOFT, borderLeft: '1px solid ' + LINE_SOFT,
             cursor: 'pointer', display: 'flex', alignItems: 'center',
             justifyContent: isMobile ? 'center' : 'flex-start',
-            background: name ? colorOf(data, name) : isSel ? 'rgba(15,92,77,0.07)' : '#FFFFFF',
+            background: name ? colorOf(data, name) : isSel ? 'rgba(18, 132, 202,0.07)' : '#FFFFFF',
             boxShadow: isSel ? 'inset 0 0 0 2px ' + GREEN : 'none',
           }}
         >
@@ -191,7 +191,7 @@ export default function TimetableEditor({ data, setData, setSnack, cellHeight = 
       </datalist>
       <button
         onClick={register}
-        style={{ border: 'none', borderRadius: 6, background: GREEN, color: '#FFFFFF', padding: '7px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 700, flex: 'none' }}
+        style={{ border: 'none', borderRadius: 8, background: GREEN, color: '#FFFFFF', padding: '7px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 700, flex: 'none' }}
       >
         등록
       </button>
@@ -232,7 +232,7 @@ export default function TimetableEditor({ data, setData, setSnack, cellHeight = 
                 title="누르면 칠하기 · 두 번 누르면 색·과목"
                 style={{
                   border: selTool === c ? '2px solid ' + GREEN : '1px solid rgba(26,26,26,0.18)',
-                  borderRadius: 6, background: colorOf(data, c), color: INK,
+                  borderRadius: 8, background: colorOf(data, c), color: INK,
                   padding: selTool === c ? '4px 9px' : '5px 10px', cursor: 'pointer',
                   fontSize: 13, fontWeight: 700, lineHeight: 1, boxSizing: 'border-box', whiteSpace: 'nowrap',
                 }}
@@ -260,7 +260,7 @@ export default function TimetableEditor({ data, setData, setSnack, cellHeight = 
                 onClick={e => e.stopPropagation()}
                 style={{
                   position: 'absolute', left: 0, top: 30, width: 196, background: '#FFFFFF',
-                  border: '1px solid ' + LINE, borderRadius: 6, boxShadow: '0 8px 24px rgba(26,26,26,0.12)',
+                  border: '1px solid ' + LINE, borderRadius: 8, boxShadow: '0 8px 24px rgba(26,26,26,0.12)',
                   padding: 12, zIndex: 50, cursor: 'default',
                 }}
               >
@@ -284,7 +284,7 @@ export default function TimetableEditor({ data, setData, setSnack, cellHeight = 
           onClick={() => setSelTool(selTool === 'erase' ? 'select' : 'erase')}
           title="지우개"
           style={{
-            border: selTool === 'erase' ? '2px solid ' + GREEN : '1px solid ' + LINE, borderRadius: 6,
+            border: selTool === 'erase' ? '2px solid ' + GREEN : '1px solid ' + LINE, borderRadius: 8,
             background: '#FFFFFF', padding: min ? 3 : 5, cursor: 'pointer', display: 'flex',
             color: selTool === 'erase' ? GREEN : SUB, flex: 'none', boxSizing: 'border-box',
           }}
@@ -297,7 +297,7 @@ export default function TimetableEditor({ data, setData, setSnack, cellHeight = 
             onClick={() => setEditing(v => !v)}
             title={editing ? '반 편집 끝내기' : '반 삭제하기'}
             style={{
-              border: editing ? '2px solid ' + GREEN : '1px solid ' + LINE, borderRadius: 6,
+              border: editing ? '2px solid ' + GREEN : '1px solid ' + LINE, borderRadius: 8,
               background: '#FFFFFF', padding: min ? 3 : 5, cursor: 'pointer', display: 'flex',
               color: editing ? GREEN : SUB, flex: 'none', boxSizing: 'border-box',
             }}
@@ -315,7 +315,7 @@ export default function TimetableEditor({ data, setData, setSnack, cellHeight = 
                   title={'선택한 ' + selCount + '칸을 반으로 등록'}
                   style={{
                     width: 26, height: 26, border: 'none', borderRadius: '50%',
-                    background: selCount ? GREEN : '#E4E1DA', color: selCount ? '#FFFFFF' : FAINT,
+                    background: selCount ? GREEN : '#EBEEF2', color: selCount ? '#FFFFFF' : FAINT,
                     cursor: selCount ? 'pointer' : 'default', fontSize: 16, fontWeight: 700, lineHeight: 1, flex: 'none',
                   }}
                 >
@@ -325,7 +325,7 @@ export default function TimetableEditor({ data, setData, setSnack, cellHeight = 
                 <button
                   onClick={() => { if (selCount) setRegOpen(true) }}
                   style={{
-                    border: '1px solid ' + (selCount ? GREEN : LINE), borderRadius: 6, padding: '6px 14px',
+                    border: '1px solid ' + (selCount ? GREEN : LINE), borderRadius: 8, padding: '6px 14px',
                     background: selCount ? GREEN : '#FFFFFF', color: selCount ? '#FFFFFF' : FAINT,
                     cursor: selCount ? 'pointer' : 'default', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap',
                   }}
@@ -344,7 +344,7 @@ export default function TimetableEditor({ data, setData, setSnack, cellHeight = 
           {regOpen ? registerForm : selCount ? (
             <button
               onClick={() => setRegOpen(true)}
-              style={{ flex: 1, border: 'none', borderRadius: 6, background: GREEN, color: '#FFFFFF', padding: '10px 0', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}
+              style={{ flex: 1, border: 'none', borderRadius: 8, background: GREEN, color: '#FFFFFF', padding: '10px 0', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}
             >
               선택한 {selCount}칸을 반으로 등록
             </button>
@@ -359,7 +359,7 @@ export default function TimetableEditor({ data, setData, setSnack, cellHeight = 
       <div style={{ flex: fill ? 1 : 'none', minHeight: 0 }}>
         <div
           data-intro-grid
-          style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', userSelect: 'none', height: fill ? '100%' : undefined, overflow: 'hidden' }}
+          style={{ border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', userSelect: 'none', height: fill ? '100%' : undefined, overflow: 'hidden' }}
         >
           <div
             style={{
@@ -367,13 +367,13 @@ export default function TimetableEditor({ data, setData, setSnack, cellHeight = 
               gridTemplateRows: fill ? 'auto repeat(7, minmax(0,1fr))' : undefined, height: fill ? '100%' : undefined,
             }}
           >
-            <div style={{ background: '#F4F2ED' }} />
+            <div style={{ background: '#F2F4F6' }} />
             {eDays.map(d => (
               <div
                 key={d}
                 style={{
                   padding: isMobile ? '6px 0 5px' : '9px 12px 8px', borderLeft: '1px solid ' + LINE_SOFT,
-                  fontSize: isMobile ? 11 : 13, color: SUB, fontWeight: 700, background: '#F4F2ED',
+                  fontSize: isMobile ? 11 : 13, color: SUB, fontWeight: 700, background: '#F2F4F6',
                   textAlign: isMobile ? 'center' : 'left',
                 }}
               >
@@ -395,7 +395,7 @@ export default function TimetableEditor({ data, setData, setSnack, cellHeight = 
 }
 
 const fieldStyle = {
-  border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF',
+  border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF',
   fontSize: 14, padding: '7px 9px', boxSizing: 'border-box',
 }
 

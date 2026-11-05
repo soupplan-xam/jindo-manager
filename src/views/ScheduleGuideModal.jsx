@@ -12,7 +12,7 @@ export default function ScheduleGuideModal({ onSearch, onClose }) {
         하나씩 입력하지 않아도 됩니다.
       </div>
 
-      <div style={{ marginTop: 16, border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', padding: '4px 14px' }}>
+      <div style={{ marginTop: 16, border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', padding: '4px 14px' }}>
         {[
           ['학교 이름 검색', '전국 초·중·고'],
           ['넣을 일정 고르기', '휴업일·고사는 미리 골라 둡니다'],
@@ -22,7 +22,7 @@ export default function ScheduleGuideModal({ onSearch, onClose }) {
             key={title}
             style={{
               display: 'flex', alignItems: 'baseline', gap: 10, padding: '11px 0',
-              borderTop: i ? '1px solid #EFEDE8' : 'none',
+              borderTop: i ? '1px solid #F2F4F6' : 'none',
             }}
           >
             <span
@@ -53,7 +53,7 @@ export default function ScheduleGuideModal({ onSearch, onClose }) {
         <button
           onClick={onSearch}
           style={{
-            display: 'flex', alignItems: 'center', gap: 7, border: 'none', borderRadius: 6,
+            display: 'flex', alignItems: 'center', gap: 7, border: 'none', borderRadius: 8,
             padding: '9px 18px', background: GREEN, color: '#FFFFFF',
             fontSize: 14, fontWeight: 700, cursor: 'pointer', flex: 'none',
           }}

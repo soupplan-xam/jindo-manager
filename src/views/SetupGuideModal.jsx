@@ -30,7 +30,7 @@ export default function SetupGuideModal({ data, patch, onClose }) {
       {/* 단계 표시 */}
       <div style={{ display: 'flex', gap: 5, marginTop: 10 }}>
         {[1, 2].map(n => (
-          <span key={n} style={{ width: 22, height: 4, borderRadius: 2, background: n <= step ? GREEN : '#E4E1DA' }} />
+          <span key={n} style={{ width: 22, height: 4, borderRadius: 2, background: n <= step ? GREEN : '#EBEEF2' }} />
         ))}
       </div>
 
@@ -41,7 +41,7 @@ export default function SetupGuideModal({ data, patch, onClose }) {
             우리 학교와 다르면 고쳐주세요. 이 기간의 평일에 차시가 계산됩니다.
           </div>
 
-          <div style={{ marginTop: 16, border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', padding: '16px 18px' }}>
+          <div style={{ marginTop: 16, border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', padding: '16px 18px' }}>
             {/* 방학 중에 다음 학기를 준비할 수도 있다 — 학기를 누르면 그 학기 날짜로 다시 잡는다 */}
             <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
               {[1, 2].map(n => (
@@ -64,8 +64,8 @@ export default function SetupGuideModal({ data, patch, onClose }) {
             <button
               onClick={() => ok && setStep(2)}
               style={{
-                border: 'none', borderRadius: 6, padding: '9px 22px', fontSize: 14, fontWeight: 700,
-                background: ok ? GREEN : '#D9D5CE', color: '#FFFFFF', cursor: ok ? 'pointer' : 'default', flex: 'none',
+                border: 'none', borderRadius: 8, padding: '9px 22px', fontSize: 14, fontWeight: 700,
+                background: ok ? GREEN : '#D1D6DB', color: '#FFFFFF', cursor: ok ? 'pointer' : 'default', flex: 'none',
               }}
             >
               다음
@@ -91,7 +91,7 @@ export default function SetupGuideModal({ data, patch, onClose }) {
             <div style={{ flex: 1 }} />
             <button
               onClick={onClose}
-              style={{ border: 'none', borderRadius: 6, padding: '9px 22px', fontSize: 14, fontWeight: 700, background: GREEN, color: '#FFFFFF', cursor: 'pointer', flex: 'none' }}
+              style={{ border: 'none', borderRadius: 8, padding: '9px 22px', fontSize: 14, fontWeight: 700, background: GREEN, color: '#FFFFFF', cursor: 'pointer', flex: 'none' }}
             >
               시간표 만들러 가기
             </button>
@@ -105,8 +105,8 @@ export default function SetupGuideModal({ data, patch, onClose }) {
 
 // 학기 전환 칩 — 학사일정 검색의 학년 칩과 같은 모양
 const semChip = on => ({
-  border: '1px solid ' + (on ? '#CBDED7' : LINE), borderRadius: 999, padding: '5px 13px',
-  background: on ? '#EAF1EE' : '#FFFFFF', color: on ? GREEN : SUB,
+  border: '1px solid ' + (on ? '#C6E6FA' : LINE), borderRadius: 999, padding: '5px 13px',
+  background: on ? '#E9F6FE' : '#FFFFFF', color: on ? GREEN : SUB,
   fontSize: 12.5, fontWeight: on ? 700 : 500, cursor: on ? 'default' : 'pointer', flex: 'none',
 })
 
@@ -176,7 +176,7 @@ export function TimetableDemo() {
     const done = registered && DEMO_CELLS.includes(key)
     return {
       borderTop: '1px solid ' + LINE_SOFT, borderLeft: '1px solid ' + LINE_SOFT,
-      background: done ? DEMO_COLOR : on ? 'rgba(15,92,77,0.07)' : '#FFFFFF',
+      background: done ? DEMO_COLOR : on ? 'rgba(18, 132, 202,0.07)' : '#FFFFFF',
       boxShadow: on ? 'inset 0 0 0 2px ' + GREEN : 'none',
       display: 'flex', alignItems: 'center', padding: '0 10px', boxSizing: 'border-box',
       fontSize: 13, fontWeight: 600, color: INK, transition: 'background 250ms',
@@ -184,12 +184,12 @@ export function TimetableDemo() {
   }
 
   return (
-    <div style={{ marginTop: 14, position: 'relative', border: '1px solid ' + LINE, borderRadius: 8, background: '#FCFCFA', padding: '10px 12px 12px', overflow: 'hidden', userSelect: 'none', pointerEvents: 'none' }}>
+    <div style={{ marginTop: 14, position: 'relative', border: '1px solid ' + LINE, borderRadius: 12, background: '#F9FAFB', padding: '10px 12px 12px', overflow: 'hidden', userSelect: 'none', pointerEvents: 'none' }}>
       {/* 팔레트 줄 — 선택 도구 · 반 칩 · [반 등록] */}
       <div style={{ height: PAL_H, display: 'flex', alignItems: 'center', gap: 14, boxSizing: 'border-box', paddingBottom: 8 }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: INK, borderBottom: '2px solid ' + GREEN, padding: '2px 0 3px' }}>선택</span>
         {registered && (
-          <span style={{ border: '1px solid rgba(26,26,26,0.18)', borderRadius: 6, background: DEMO_COLOR, color: INK, padding: '5px 10px', fontSize: 12, fontWeight: 700, lineHeight: 1 }}>
+          <span style={{ border: '1px solid rgba(26,26,26,0.18)', borderRadius: 8, background: DEMO_COLOR, color: INK, padding: '5px 10px', fontSize: 12, fontWeight: 700, lineHeight: 1 }}>
             2-1
           </span>
         )}
@@ -197,13 +197,13 @@ export function TimetableDemo() {
         {formOpen ? (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
             <span style={demoField(54)}>{typed}<Caret on={typed.length < 3} /></span>
-            <span style={{ ...demoField(44), color: typed.length >= 3 ? INK : '#B0ACA5' }}>{typed.length >= 3 ? '수학' : '과목'}</span>
-            <span style={{ border: 'none', borderRadius: 6, background: GREEN, color: '#FFFFFF', padding: '6px 11px', fontSize: 12, fontWeight: 700, lineHeight: 1 }}>등록</span>
+            <span style={{ ...demoField(44), color: typed.length >= 3 ? INK : '#B0B8C1' }}>{typed.length >= 3 ? '수학' : '과목'}</span>
+            <span style={{ border: 'none', borderRadius: 8, background: GREEN, color: '#FFFFFF', padding: '6px 11px', fontSize: 12, fontWeight: 700, lineHeight: 1 }}>등록</span>
           </span>
         ) : (
           <span
             style={{
-              border: '1px solid ' + (selCount ? GREEN : LINE), borderRadius: 6, padding: '6px 12px',
+              border: '1px solid ' + (selCount ? GREEN : LINE), borderRadius: 8, padding: '6px 12px',
               background: selCount ? GREEN : '#FFFFFF', color: selCount ? '#FFFFFF' : FAINT,
               fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', lineHeight: 1, transition: 'background 200ms',
             }}
@@ -214,11 +214,11 @@ export function TimetableDemo() {
       </div>
 
       {/* 시간표 격자 */}
-      <div style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', overflow: 'hidden' }}>
+      <div style={{ border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', overflow: 'hidden' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '38px repeat(5,minmax(0,1fr))' }}>
-          <div style={{ background: '#F4F2ED', height: HEAD_H }} />
+          <div style={{ background: '#F2F4F6', height: HEAD_H }} />
           {['월', '화', '수', '목', '금'].map(d => (
-            <div key={d} style={{ height: HEAD_H, boxSizing: 'border-box', padding: '8px 10px 0', borderLeft: '1px solid ' + LINE_SOFT, fontSize: 12, color: SUB, fontWeight: 700, background: '#F4F2ED' }}>
+            <div key={d} style={{ height: HEAD_H, boxSizing: 'border-box', padding: '8px 10px 0', borderLeft: '1px solid ' + LINE_SOFT, fontSize: 12, color: SUB, fontWeight: 700, background: '#F2F4F6' }}>
               {d}
             </div>
           ))}
@@ -250,10 +250,10 @@ export function TimetableDemo() {
         }}
       >
         {clicking && (
-          <span key={step} style={{ position: 'absolute', left: -9, top: -9, width: 24, height: 24, borderRadius: '50%', background: 'rgba(15,92,77,0.28)', animation: 'demoPulse 450ms ease-out both' }} />
+          <span key={step} style={{ position: 'absolute', left: -9, top: -9, width: 24, height: 24, borderRadius: '50%', background: 'rgba(18, 132, 202,0.28)', animation: 'demoPulse 450ms ease-out both' }} />
         )}
         <svg width="20" height="20" viewBox="0 0 24 24" style={{ filter: 'drop-shadow(0 1px 2px rgba(26,26,26,0.35))', position: 'relative' }}>
-          <path d="M5 3l14 8-6.5 1.5L9 19z" fill="#1A1A1A" stroke="#FFFFFF" strokeWidth="1.6" strokeLinejoin="round" />
+          <path d="M5 3l14 8-6.5 1.5L9 19z" fill="#191F28" stroke="#FFFFFF" strokeWidth="1.6" strokeLinejoin="round" />
         </svg>
       </div>
     </div>
@@ -262,7 +262,7 @@ export function TimetableDemo() {
 
 const demoField = w => ({
   display: 'inline-flex', alignItems: 'center', width: w, height: 26, boxSizing: 'border-box',
-  border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 12, padding: '0 7px',
+  border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', fontSize: 12, padding: '0 7px',
   color: INK, overflow: 'hidden', whiteSpace: 'nowrap',
 })
 

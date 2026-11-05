@@ -12,36 +12,36 @@
 }
 body {
   margin: 0;
-  background: #FCFCFA;
-  color: #1A1A1A;
+  background: #F4F6F9;
+  color: #191F28;
   font-family: 'Pretendard Variable', Pretendard, sans-serif;
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
-a { color: #0F5C4D; text-decoration: none; }
+a { color: #1284CA; text-decoration: none; }
 a:hover { text-decoration: underline; }
 input, select, button, textarea { font-family: inherit; color: inherit; }
-input::placeholder, textarea::placeholder { color: #B0ACA5; }
-::selection { background: rgba(15, 92, 77, 0.15); }
-:focus-visible { outline: 2px solid #0F5C4D; outline-offset: 2px; }
-.hov:hover { background: #EFEDE8; }
-.hov2:hover { background: #F7F5F1; }
+input::placeholder, textarea::placeholder { color: #B0B8C1; }
+::selection { background: rgba(18, 132, 202, 0.15); }
+:focus-visible { outline: 2px solid #1284CA; outline-offset: 2px; }
+.hov:hover { background: #F2F4F6; }
+.hov2:hover { background: #F5F8FB; }
 
 /* 표가 화면보다 넓으면 표 안에서만 가로 스크롤 (모바일 전용) */
 .table-scroll { overflow-x: auto; }
 .table-scroll > .table-min { min-width: 640px; }
 
 /* 패널 내부 세로 스크롤 — 얇고 조용한 스크롤바 */
-.soft-scroll { scrollbar-width: thin; scrollbar-color: #CFCAC2 transparent; }
+.soft-scroll { scrollbar-width: thin; scrollbar-color: #D1D6DB transparent; }
 .soft-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
 .soft-scroll::-webkit-scrollbar-track { background: transparent; }
 .soft-scroll::-webkit-scrollbar-thumb {
-  background: #D6D1C9;
+  background: #D1D6DB;
   border-radius: 99px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
-.soft-scroll:hover::-webkit-scrollbar-thumb { background: #BDB7AE; background-clip: content-box; }
+.soft-scroll:hover::-webkit-scrollbar-thumb { background: #B0B8C1; background-clip: content-box; }
 
 /* 인쇄 전용 시트 — 화면에서는 숨기고, 인쇄할 때 화면 UI 대신 이것만 내보낸다 */
 .print-sheet { display: none; }

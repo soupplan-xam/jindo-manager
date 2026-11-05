@@ -173,10 +173,10 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
         data-row={n}
         style={{
           display: 'flex', alignItems: 'baseline', gap: 10, padding: '5px 6px',
-          borderBottom: inWeek && !last ? '1px solid rgba(15,92,77,0.10)' : '1px solid ' + LINE_SOFT,
-          background: inWeek ? 'rgba(15,92,77,0.06)' : 'transparent',
+          borderBottom: inWeek && !last ? '1px solid rgba(18, 132, 202,0.10)' : '1px solid ' + LINE_SOFT,
+          background: inWeek ? 'rgba(18, 132, 202,0.06)' : 'transparent',
           borderRadius: first && last ? 5 : first ? '5px 5px 0 0' : last ? '0 0 5px 5px' : 0,
-          boxShadow: inWeek ? 'inset 2px 0 0 rgba(15,92,77,0.35)' : 'none',
+          boxShadow: inWeek ? 'inset 2px 0 0 rgba(18, 132, 202,0.35)' : 'none',
         }}
       >
         <div style={{ width: 26, textAlign: 'right', fontSize: 13, fontWeight: isCur || inWeek ? 700 : 400, color: isCur ? GREEN : inWeek ? INK : FAINT, flex: 'none' }}>{n}</div>
@@ -251,7 +251,7 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
           title={calView ? '목록으로 보기' : '달력으로 보기'}
           className="hov"
           style={{
-            border: 'none', borderRadius: 6, background: calView ? '#EAF1EE' : 'none',
+            border: 'none', borderRadius: 8, background: calView ? '#E9F6FE' : 'none',
             color: calView ? GREEN : SUB, padding: 5, cursor: 'pointer', display: 'flex', flex: 'none',
           }}
         >
@@ -261,7 +261,7 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
           <button
             onClick={applyEdit}
             style={{
-              border: 'none', borderRadius: 6, background: GREEN, color: '#FFFFFF',
+              border: 'none', borderRadius: 8, background: GREEN, color: '#FFFFFF',
               padding: '6px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 700, lineHeight: 1,
             }}
           >
@@ -272,7 +272,7 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
             onClick={openEdit}
             title="과목 이름 한꺼번에 수정"
             style={{
-              display: 'flex', alignItems: 'center', border: 'none', borderRadius: 6, background: '#EFEDE8',
+              display: 'flex', alignItems: 'center', border: 'none', borderRadius: 8, background: '#F2F4F6',
               padding: '6px 9px', cursor: 'pointer', color: SUB, lineHeight: 1,
             }}
           >
@@ -298,7 +298,7 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
       <div
         className="chip-scroll"
         style={{
-          display: 'flex', gap: 12, alignItems: 'center', background: '#F4F2ED',
+          display: 'flex', gap: 12, alignItems: 'center', background: '#F2F4F6',
           border: '1px solid ' + LINE, borderRadius: '6px 6px 0 0', borderBottom: 'none',
           padding: '5px 10px', flex: 'none',
         }}
@@ -345,7 +345,7 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
                   title={s.key === weekSec ? '보고 있는 주의 구간' : ''}
                   style={{
                     border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 999, padding: '3px 10px', cursor: 'pointer', flex: 'none',
-                    background: on ? '#EAF1EE' : '#FFFFFF', color: on ? GREEN : SUB, fontSize: 12, fontWeight: on ? 700 : 500,
+                    background: on ? '#E9F6FE' : '#FFFFFF', color: on ? GREEN : SUB, fontSize: 12, fontWeight: on ? 700 : 500,
                   }}
                 >
                   {s.label}

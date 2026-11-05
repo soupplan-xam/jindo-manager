@@ -158,7 +158,7 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
         <div style={{ flex: 1 }} />
         {actions}
         {onToggleView && (
-          <button className="hov" onClick={onToggleView} title="목록으로 보기" style={{ border: 'none', background: 'none', padding: 5, borderRadius: 6, cursor: 'pointer', color: SUB, display: 'flex', flex: 'none' }}>
+          <button className="hov" onClick={onToggleView} title="목록으로 보기" style={{ border: 'none', background: 'none', padding: 5, borderRadius: 8, cursor: 'pointer', color: SUB, display: 'flex', flex: 'none' }}>
             <ListIcon />
           </button>
         )}
@@ -171,7 +171,7 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
         onTouchEnd={up}
         onTouchCancel={up}
         style={{
-          border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', overflow: 'hidden',
+          border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', overflow: 'hidden',
           flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
           userSelect: 'none', WebkitUserSelect: 'none',
           // 길게 눌러도 복사 메뉴가 뜨지 않고, 탭할 때 회색 사각형이 번쩍이지 않게
@@ -179,7 +179,7 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
           touchAction: paintable ? 'none' : 'auto',
         }}
       >
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', background: '#F4F2ED', flex: 'none' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', background: '#F2F4F6', flex: 'none' }}>
           {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (
             <div key={d} style={{ padding: '5px 0', textAlign: 'center', fontSize: 11, fontWeight: 700, color: i === 0 ? '#B0574A' : i === 6 ? '#4A6B9B' : SUB }}>{d}</div>
           ))}
@@ -204,7 +204,7 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
                     style={{
                       position: 'relative', minHeight: isMobile ? 44 : 0, padding: '4px 0 2px',
                       borderLeft: '1px solid ' + LINE_SOFT, cursor: paintable ? 'pointer' : 'default', boxSizing: 'border-box',
-                      background: off ? (TYPE_BG[types[0]] || '#EFEDE8') : '#FFFFFF',
+                      background: off ? (TYPE_BG[types[0]] || '#F2F4F6') : '#FFFFFF',
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
                       opacity: cell.inMonth ? 1 : 0.32, overflow: 'hidden',
                     }}
@@ -306,6 +306,6 @@ export function XMark({ color }) {
 
 // 월 이동 — 제목 옆에서 바로 눈에 띄도록 테두리를 준다
 const calNav = {
-  border: '1px solid ' + LINE, background: '#FFFFFF', borderRadius: 6, cursor: 'pointer', color: INK,
+  border: '1px solid ' + LINE, background: '#FFFFFF', borderRadius: 8, cursor: 'pointer', color: INK,
   padding: '0 9px 3px', fontSize: 17, lineHeight: '22px', height: 26, flex: 'none', fontWeight: 700,
 }

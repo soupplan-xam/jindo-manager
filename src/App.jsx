@@ -85,7 +85,7 @@ export default function App() {
   // 화면 전환: 진도표 · 달력 · 담임
   const NAV = [['grid', '진도표'], ['calendar', '달력'], ['homeroom', '담임']]
   const nav = view !== 'setup' && data.setupDone ? (
-    <div role="tablist" aria-label="화면" style={{ display: 'flex', background: '#EFEDE8', borderRadius: 7, padding: 2, gap: 2, flex: isMobile ? 1 : 'none' }}>
+    <div role="tablist" aria-label="화면" style={{ display: 'flex', background: '#E8EBEF', borderRadius: 10, padding: 3, gap: 2, flex: isMobile ? 1 : 'none' }}>
       {NAV.map(([v, label]) => {
         const on = view === v || (v === 'grid' && view === 'import')
         return (
@@ -95,7 +95,7 @@ export default function App() {
             aria-selected={on}
             onClick={() => go(v)}
             style={{
-              flex: isMobile ? 1 : 'none', border: 'none', borderRadius: 5, padding: '5px 12px', cursor: 'pointer', fontSize: 13, fontWeight: on ? 700 : 500,
+              flex: isMobile ? 1 : 'none', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 13, fontWeight: on ? 700 : 500,
               background: on ? '#FFFFFF' : 'transparent', color: on ? GREEN : SUB, boxShadow: on ? '0 1px 2px rgba(26,26,26,0.12)' : 'none',
             }}
           >
@@ -144,7 +144,7 @@ export default function App() {
         data-print="hide"
         style={{
           width: '100%', maxWidth: 1320, margin: '0 auto ' + (isMobile ? 10 : fit ? 8 : 20) + 'px',
-          display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 14, borderBottom: '1px solid #C9C5BE',
+          display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 14, borderBottom: '1px solid #E1E5EA',
           paddingBottom: fit ? 8 : 12, flex: 'none', boxSizing: 'border-box', minWidth: 0,
         }}
       >
@@ -166,7 +166,7 @@ export default function App() {
             onClick={() => setHamilOpen(true)}
             title="해밀고 시간표 불러오기"
             className="hov"
-            style={{ border: 'none', background: 'none', borderRadius: 6, padding: 3, cursor: 'pointer', display: 'flex', alignItems: 'center', flex: 'none' }}
+            style={{ border: 'none', background: 'none', borderRadius: 8, padding: 3, cursor: 'pointer', display: 'flex', alignItems: 'center', flex: 'none' }}
           >
             <HamilMark />
           </button>
@@ -179,7 +179,7 @@ export default function App() {
           onClick={() => setData(d => ({ ...d, cfg: { ...d.cfg, minimal: !d.cfg.minimal } }))}
           title={data.cfg.minimal ? '미니멀 모드 끄기' : '미니멀 모드 켜기'}
           style={{
-            width: 34, height: 19, border: '1px solid ' + (data.cfg.minimal ? GREEN : '#BDB9B2'), borderRadius: 999,
+            width: 34, height: 19, border: '1px solid ' + (data.cfg.minimal ? GREEN : '#C5CCD3'), borderRadius: 999,
             background: data.cfg.minimal ? GREEN : '#FFFFFF', position: 'relative', cursor: 'pointer', padding: 0, flex: 'none',
           }}
         >
@@ -187,7 +187,7 @@ export default function App() {
             style={{
               position: 'absolute', top: 2.5, left: data.cfg.minimal ? 17 : 2.5,
               width: 12, height: 12, borderRadius: '50%',
-              background: data.cfg.minimal ? '#FFFFFF' : '#B4B0A9', transition: 'left 150ms',
+              background: data.cfg.minimal ? '#FFFFFF' : '#B0B8C1', transition: 'left 150ms',
             }}
           />
         </button>
@@ -221,8 +221,8 @@ export default function App() {
             data-intro-start
             onClick={() => setupReady(data) && finishSetup()}
             style={{
-              border: 'none', borderRadius: 6, padding: isMobile ? '6px 12px' : '7px 18px', fontSize: 14, fontWeight: 700, flex: 'none',
-              background: setupReady(data) ? GREEN : '#D9D5CE', color: '#FFFFFF',
+              border: 'none', borderRadius: 8, padding: isMobile ? '6px 12px' : '7px 18px', fontSize: 14, fontWeight: 700, flex: 'none',
+              background: setupReady(data) ? GREEN : '#D1D6DB', color: '#FFFFFF',
               cursor: setupReady(data) ? 'pointer' : 'default',
             }}
           >
@@ -288,7 +288,7 @@ export default function App() {
 }
 
 // 학교 로고: public/haemil.png 가 있으면 그 이미지를, 없으면 글자 배지를 쓴다.
-const iconBtn = { border: 'none', background: 'none', padding: 5, borderRadius: 6, cursor: 'pointer', display: 'flex', color: SUB, flex: 'none' }
+const iconBtn = { border: 'none', background: 'none', padding: 5, borderRadius: 8, cursor: 'pointer', display: 'flex', color: SUB, flex: 'none' }
 
 function GuideIcon() {
   return (

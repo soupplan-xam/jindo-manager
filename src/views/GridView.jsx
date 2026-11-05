@@ -226,7 +226,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
       onClick={e => e.stopPropagation()}
       data-print="hide"
       style={{
-        position: 'fixed', width: W, background: '#FFFFFF', border: '1px solid ' + LINE, borderRadius: 6,
+        position: 'fixed', width: W, background: '#FFFFFF', border: '1px solid ' + LINE, borderRadius: 8,
         boxShadow: '0 10px 28px rgba(26,26,26,0.16)', zIndex: 80, textAlign: 'left', cursor: 'default',
         maxHeight: 'calc(100vh - 16px)', overflowY: 'auto', boxSizing: 'border-box',
         left: Math.max(8, Math.min(pop.x, window.innerWidth - W - 8)),
@@ -294,7 +294,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             placeholder="예: 3, 15번 결시"
             rows={3}
             autoFocus
-            style={{ width: '100%', boxSizing: 'border-box', border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 13, padding: '6px 8px', resize: 'vertical', fontFamily: 'inherit' }}
+            style={{ width: '100%', boxSizing: 'border-box', border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', fontSize: 13, padding: '6px 8px', resize: 'vertical', fontFamily: 'inherit' }}
           />
           <div style={{ display: 'flex', alignItems: 'center', marginTop: 8 }}>
             <span style={{ fontSize: 11, color: FAINT, flex: 1 }}>Shift+Enter 줄바꿈</span>
@@ -317,7 +317,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             onChange={e => setPop({ ...pop, reason: e.target.value })}
             placeholder="예: 출장"
             autoFocus
-            style={{ width: '100%', boxSizing: 'border-box', border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 13, padding: '6px 8px' }}
+            style={{ width: '100%', boxSizing: 'border-box', border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', fontSize: 13, padding: '6px 8px' }}
           />
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 8 }}>
             {LOSS_REASONS.map(r => (
@@ -327,7 +327,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
                 onClick={() => setPop({ ...pop, reason: r })}
                 style={{
                   border: '1px solid ' + (pop.reason === r ? GREEN : LINE), borderRadius: 999, padding: '3px 9px', cursor: 'pointer',
-                  background: pop.reason === r ? '#EAF1EE' : '#FFFFFF', color: pop.reason === r ? GREEN : SUB, fontSize: 12,
+                  background: pop.reason === r ? '#E9F6FE' : '#FFFFFF', color: pop.reason === r ? GREEN : SUB, fontSize: 12,
                 }}
               >
                 {r}
@@ -352,8 +352,8 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
                   aria-checked={on}
                   onClick={() => setPop({ ...pop, kind: k })}
                   style={{
-                    flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 6, padding: '5px 4px', cursor: 'pointer',
-                    background: on ? '#EAF1EE' : '#FFFFFF', color: on ? GREEN : SUB, lineHeight: 1.25,
+                    flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 8, padding: '5px 4px', cursor: 'pointer',
+                    background: on ? '#E9F6FE' : '#FFFFFF', color: on ? GREEN : SUB, lineHeight: 1.25,
                   }}
                 >
                   <span style={{ display: 'block', fontSize: 13, fontWeight: 700 }}>{t}</span>
@@ -372,7 +372,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
                   onChange={e => setPop({ ...pop, place: e.target.value })}
                   placeholder="예: 2-9 교실, 과학실"
                   autoFocus
-                  style={{ flex: 1, minWidth: 0, border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 13, padding: '6px 8px' }}
+                  style={{ flex: 1, minWidth: 0, border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', fontSize: 13, padding: '6px 8px' }}
                 />
                 <button type="submit" style={{ ...linkBtn, fontWeight: 700, flex: 'none' }}>저장</button>
               </div>
@@ -415,7 +415,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
               onChange={e => setPop({ ...pop, draft: e.target.value })}
               onKeyDown={e => { if (e.key === 'Enter' && (pop.draft || '').trim()) setExtra(pop.key, pop.draft.trim(), pop.kind || 'swap') }}
               placeholder="새 반 이름"
-              style={{ flex: 1, minWidth: 0, border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 13, padding: '6px 8px' }}
+              style={{ flex: 1, minWidth: 0, border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', fontSize: 13, padding: '6px 8px' }}
             />
             <button
               onClick={() => { const v = (pop.draft || '').trim(); if (v) setExtra(pop.key, v, pop.kind || 'swap') }}
@@ -440,7 +440,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             onChange={e => setPop({ ...pop, draft: e.target.value })}
             placeholder="내용"
             autoFocus
-            style={{ width: '100%', boxSizing: 'border-box', border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 13, padding: '6px 8px' }}
+            style={{ width: '100%', boxSizing: 'border-box', border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', fontSize: 13, padding: '6px 8px' }}
           />
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
             <button
@@ -534,7 +534,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             display: 'flex', flexDirection: 'column',
             borderTop: '1px solid ' + LINE_SOFT, borderLeft: '1px solid ' + LINE_SOFT,
             cursor: clickable ? 'pointer' : 'default',
-            boxShadow: day.isToday ? 'inset 1px 0 0 rgba(15,92,77,0.4), inset -1px 0 0 rgba(15,92,77,0.4)' : 'none',
+            boxShadow: day.isToday ? 'inset 1px 0 0 rgba(18, 132, 202,0.4), inset -1px 0 0 rgba(18, 132, 202,0.4)' : 'none',
             background: s && s.makeup ? MAKEUP_BG : s && !s.canceled ? colorOf(data, s.cls) : '#FFFFFF',
           }}
         >
@@ -646,7 +646,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
           onClick={e => e.stopPropagation()}
           style={{
             position: 'absolute', left: 0, top: 34, width: 208, background: '#FFFFFF', border: '1px solid ' + LINE,
-            borderRadius: 6, boxShadow: '0 8px 24px rgba(26,26,26,0.12)', padding: '6px 0', zIndex: 60,
+            borderRadius: 8, boxShadow: '0 8px 24px rgba(26,26,26,0.12)', padding: '6px 0', zIndex: 60,
           }}
         >
           <div style={{ padding: '2px 12px 8px', borderBottom: '1px solid ' + LINE_SOFT, marginBottom: 4 }}>
@@ -658,7 +658,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
                     key={n}
                     onClick={() => setPickWeeks(n)}
                     style={{
-                      flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 6, cursor: 'pointer',
+                      flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 8, cursor: 'pointer',
                       background: on ? GREEN : '#FFFFFF', color: on ? '#FFFFFF' : SUB,
                       padding: '6px 0', fontSize: 12.5, fontWeight: on ? 700 : 500,
                     }}
@@ -743,7 +743,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   const table = (
     <div
       ref={gridRef}
-      style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', overflow: 'hidden', height: fit ? '100%' : undefined }}
+      style={{ border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', overflow: 'hidden', height: fit ? '100%' : undefined }}
     >
       <div
         style={{
@@ -751,14 +751,14 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
           gridTemplateRows: fit ? 'auto repeat(7, minmax(0,1fr))' : undefined, height: fit ? '100%' : undefined,
         }}
       >
-        <div style={{ background: '#F4F2ED' }} />
+        <div style={{ background: '#F2F4F6' }} />
         {days.map(day => (
           <div
             key={day.iso}
             style={{
               padding: isMobile ? '6px 4px 5px' : '8px 10px 7px', borderLeft: '1px solid ' + LINE_SOFT,
               fontSize: isMobile ? 11 : 13, textAlign: isMobile ? 'center' : 'left',
-              color: day.isToday ? GREEN : SUB, background: day.isToday ? '#E7EFEC' : '#F4F2ED',
+              color: day.isToday ? GREEN : SUB, background: day.isToday ? '#E9F6FE' : '#F2F4F6',
               ...ellipBase,
             }}
           >
@@ -784,8 +784,8 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
     m: { width: '100%', rowH: 52, cls: 10, num: 13, cont: 9.5, title: 15, sub: 10.5, day: 10.5, dayPad: '4px 3px', pcol: 20, showCont: true },
     s: { width: '50%', rowH: 34, cls: 9, num: 11.5, cont: 0, title: 12.5, sub: 9.5, day: 9.5, dayPad: '3px 2px', pcol: 15, showCont: false },
   }[pscale]
-  const pth = { border: '1px solid #ACA8A0', background: '#EFEDE6', padding: P.dayPad, fontSize: P.day, fontWeight: 700, textAlign: 'center', color: '#333' }
-  const ptd = { border: '1px solid #ACA8A0', height: P.rowH, verticalAlign: 'top', padding: 0, overflow: 'hidden' }
+  const pth = { border: '1px solid #A7B0BA', background: '#EEF1F4', padding: P.dayPad, fontSize: P.day, fontWeight: 700, textAlign: 'center', color: '#333' }
+  const ptd = { border: '1px solid #A7B0BA', height: P.rowH, verticalAlign: 'top', padding: 0, overflow: 'hidden' }
   // 한 주 = 제목줄 + 표 한 벌. 2주치는 이 덩어리를 두 번 쌓는다.
   // break-inside: avoid 덕분에 한 주가 지면에 다 안 들어가면 통째로 다음 장으로 넘어간다.
   const weekBlock = (w, i) => (
@@ -810,7 +810,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
         <tbody>
           {[1, 2, 3, 4, 5, 6, 7].map(p => (
             <tr key={p}>
-              <td style={{ ...ptd, background: '#F3F1EB', textAlign: 'center', verticalAlign: 'middle', fontSize: Math.max(9, P.day - 1.5), color: '#777' }}>{p}</td>
+              <td style={{ ...ptd, background: '#F2F4F6', textAlign: 'center', verticalAlign: 'middle', fontSize: Math.max(9, P.day - 1.5), color: '#777' }}>{p}</td>
               {w.days.map(day => {
                 const s = sessions[day.iso + '|' + p]
                 if (!s) return <td key={day.iso} style={ptd} />
@@ -826,7 +826,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
                 }
                 if (s.canceled && !s.perf) {
                   return (
-                    <td key={day.iso} style={{ ...ptd, background: 'repeating-linear-gradient(45deg,#FFF 0,#FFF 5px,#EFEDE8 5px,#EFEDE8 6px)' }}>
+                    <td key={day.iso} style={{ ...ptd, background: 'repeating-linear-gradient(45deg,#FFF 0,#FFF 5px,#F2F4F6 5px,#F2F4F6 6px)' }}>
                       <div style={{ display: 'flex', flexDirection: P.showCont ? 'column' : 'row', gap: P.showCont ? 0 : 4, alignItems: P.showCont ? 'stretch' : 'center', height: P.showCont ? undefined : '100%', padding: P.showCont ? '4px 6px' : '0 5px' }}>
                         <span style={{ fontSize: P.cls, fontWeight: 700, color: '#999' }}>{s.cls}</span>
                         {P.showCont && <span style={{ fontSize: Math.max(8.5, P.cls - 1), color: '#777' }}>{s.reason}</span>}
@@ -900,7 +900,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
         onClick={() => setMtab(id)}
         style={{
           flex: 1, border: 'none', background: mtab === id ? '#FFFFFF' : 'transparent',
-          borderRadius: 6, padding: '7px 0', cursor: 'pointer',
+          borderRadius: 8, padding: '7px 0', cursor: 'pointer',
           fontSize: 13, fontWeight: mtab === id ? 700 : 500, color: mtab === id ? INK : SUB,
           boxShadow: mtab === id ? '0 1px 3px rgba(26,26,26,0.10)' : 'none',
         }}
@@ -911,7 +911,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
     return (
       <>
       <div data-print="hide" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        <div style={{ display: 'flex', gap: 3, background: '#EFEDE8', borderRadius: 8, padding: 3, marginBottom: 10, flex: 'none' }}>
+        <div style={{ display: 'flex', gap: 3, background: '#E8EBEF', borderRadius: 12, padding: 3, marginBottom: 10, flex: 'none' }}>
           {tab('grid', '진도표')}
           {tab('dash', '대시보드')}
           {tab('contents', '차시별 내용')}
@@ -972,7 +972,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             title="드래그해서 너비 조절"
             style={{ width: 18, alignSelf: 'stretch', cursor: 'col-resize', display: 'flex', justifyContent: 'center', flex: 'none' }}
           >
-            <div style={{ width: 3, borderRadius: 2, background: dragging ? GREEN : '#DEDAD3' }} />
+            <div style={{ width: 3, borderRadius: 2, background: dragging ? GREEN : '#DDE2E7' }} />
           </div>
         )}
         {showContents && (
@@ -1196,15 +1196,15 @@ function Tile({ label, sub, children, grow, min }) {
   return (
     <div
       style={{
-        border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', padding: '9px 12px 11px',
+        border: 'none', borderRadius: 16, background: '#FFFFFF', padding: '12px 16px 14px', boxShadow: '0 1px 3px rgba(25,31,40,0.05)',
         minWidth: 0, flex: grow ? grow + ' 1 0' : undefined, boxSizing: 'border-box',
       }}
     >
       {/* 미니멀: 라벨은 걷어내되 날짜·기간 같은 정보(sub)는 남긴다 */}
       {(!min || sub) && (
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 7 }}>
-          {!min && <span style={{ fontSize: 11, fontWeight: 700, color: SUB, letterSpacing: '0.04em' }}>{label}</span>}
-          {sub && <span style={{ fontSize: 11, color: FAINT }}>{sub}</span>}
+          {!min && <span style={{ fontSize: 13, fontWeight: 700, color: INK, letterSpacing: '-0.01em' }}>{label}</span>}
+          {sub && <span style={{ fontSize: 12, color: FAINT }}>{sub}</span>}
         </div>
       )}
       {children}
@@ -1265,14 +1265,14 @@ function popTitle(key, sessions) {
 const ellipBase = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
 const ellip = (size, weight) => ({ fontSize: size, fontWeight: weight, lineHeight: 1.3, ...ellipBase })
 // 보강 칸 — 진도를 세지 않는 수업이라 반 색 대신 회색
-const MAKEUP_BG = '#E6E4E0'
+const MAKEUP_BG = '#E8EBEF'
 // 칸 메모 글씨 — 진한 갈색이라 파랑·노랑·회색 칸 위에서 모두 읽힌다
 const NOTE_FG = '#7A4B12'
 const LOSS_REASONS = ['출장', '연수', '학교 행사', '학급 사정', '시험 감독']
 const menuItem = first => ({ padding: first ? '9px 14px' : '9px 14px', fontSize: 14, cursor: 'pointer', fontWeight: first ? 600 : 400 })
 const linkBtn = { border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: GREEN }
 const navBtn = kind => ({
-  border: 'none', background: 'none', borderRadius: 6, cursor: 'pointer', color: SUB,
+  border: 'none', background: 'none', borderRadius: 8, cursor: 'pointer', color: SUB,
   padding: kind === 'arrow' ? '3px 9px 5px' : '6px 9px',
   fontSize: kind === 'arrow' ? 19 : 13, fontWeight: kind === 'arrow' ? 400 : 600, lineHeight: 1,
 })

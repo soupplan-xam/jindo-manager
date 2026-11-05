@@ -12,21 +12,21 @@ export default function Modal({ title, onClose, children, width = 560, noClose =
     <div
       onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}
       style={{
-        position: 'fixed', inset: 0, background: 'rgba(26,26,26,0.35)', zIndex: 100,
+        position: 'fixed', inset: 0, background: 'rgba(25,31,40,0.42)', zIndex: 100,
         display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '7vh 16px 16px',
         overflowY: 'auto',
       }}
     >
       <div
         style={{
-          width: '100%', maxWidth: width, background: '#FCFCFA', border: '1px solid ' + LINE,
-          borderRadius: 8, boxShadow: '0 16px 48px rgba(26,26,26,0.2)', padding: '22px 26px 26px', boxSizing: 'border-box',
+          width: '100%', maxWidth: width, background: '#FFFFFF', border: 'none',
+          borderRadius: 20, boxShadow: '0 20px 60px rgba(25,31,40,0.18)', padding: '24px 26px 26px', boxSizing: 'border-box',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'baseline' }}>
-          <div style={{ fontSize: 16, fontWeight: 700 }}>{title}</div>
+          <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em' }}>{title}</div>
           <div style={{ flex: 1 }} />
-          {!noClose && <button onClick={onClose} style={{ border: 'none', background: 'none', padding: '0 2px', cursor: 'pointer', fontSize: 17, lineHeight: 1, color: '#8F8B86' }}>×</button>}
+          {!noClose && <button onClick={onClose} style={{ border: 'none', background: 'none', padding: '0 2px', cursor: 'pointer', fontSize: 17, lineHeight: 1, color: '#8B95A1' }}>×</button>}
         </div>
         {children}
       </div>
