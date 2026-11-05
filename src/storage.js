@@ -67,7 +67,7 @@ function normalize(d) {
   migrateMakeups(out)
   out.homeroom = { ...base.homeroom, ...(d.homeroom || {}) }
   const ot = d.overtime || {}
-  out.overtime = { plans: Array.isArray(ot.plans) ? ot.plans : [], logs: ot.logs && typeof ot.logs === 'object' ? ot.logs : {}, cfg: { ...DEFAULT_OT, ...(ot.cfg || {}) } }
+  out.overtime = { plans: Array.isArray(ot.plans) ? ot.plans : [], logs: ot.logs && typeof ot.logs === 'object' ? ot.logs : {}, workDays: ot.workDays && typeof ot.workDays === 'object' ? ot.workDays : {}, cfg: { ...DEFAULT_OT, ...(ot.cfg || {}) } }
   out.homeroom.docs = { ...DEFAULT_DOCS, ...((d.homeroom || {}).docs || {}) }
   return migrateContents(migrateMemos(out))
 }

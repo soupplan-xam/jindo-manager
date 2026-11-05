@@ -22,7 +22,7 @@ assert.equal(dayOvertime(ot, data, '2026-11-20').plans.length, 0)
 // 주말 근무: 공제 없이 시작~끝, 최대 4시간
 ot.logs['2026-11-07'] = { start: '10:00', end: '12:30' }
 assert.equal(dayOvertime(ot, data, '2026-11-07').minutes, 150)
-const m = monthOvertime(ot, data, 2026, 10)
+const m = monthOvertime(ot, data, 2026, 10, '2026-12-31')
 // 화·목 방과후: 3,5(기록),10(기록),12,17,19,24 (26 뺌) + 11(기록 0) + 7(주말)
 assert.equal(m.total, 60 + 150 + 240 + 60 + 60 + 60 + 60 + 0 + 150)
 assert.equal(m.hours, Math.floor(m.total / 60))
@@ -50,4 +50,21 @@ await assert.rejects(fileText(new File([new Uint8Array(1)], 'a.hwp')), /HWPX나 
 // 표 칸이 나뉜 HWPX
 const p4 = parsePlanText('운영 계획서\n강좌명\n | 수학 심화반\n | 운영 기간\n | 2026. 9. 1. ~ 2026. 12. 18.\n | 운영 요일\n | 화, 목\n | 운영 시간\n | 16:50 ~ 18:30', '2026-08-17')
 assert.deepEqual([p4.name, p4.days, p4.from, p4.to, p4.start, p4.end], ['수학 심화반', [2, 4], '16:50', '18:30', '2026-09-01', '2026-12-18'])
+// 수당·다음 인정 단위 (초근초근 화면 예: 2시간 28분 + 17분 = 2시간 45분 → 인정 2시간, 15분 더)
+const { allowance, monthOvertime: mo2, defaultOvertime: dot } = await import('../src/overtime.js')
+const o2 = dot(); o2.cfg.rate = 12795; o2.cfg.deduct = 0
+o2.logs = { '2026-11-02': { end: '19:08' }, '2026-11-03': { end: '16:57' } }
+const mm = mo2(o2, { events: [] }, 2026, 10, '2026-11-05')
+assert.deepEqual([mm.total, mm.hours, mm.leftover, mm.toNext], [165, 2, 45, 15])
+const al = allowance(o2.cfg, mm, 0)
+assert.deepEqual([al.perf, al.fixed, al.unpaid], [25590, 0, 9596])
+assert.equal(allowance(o2.cfg, mm, 20).fixed, 127950)
+assert.equal(allowance(o2.cfg, mm, 6).fixed, 51180)
+// 오늘 뒤 방과후는 예정으로 따로
+const mf = monthOvertime(ot, data, 2026, 10, '2026-11-05')
+// 11.3 방과후(60) + 기록된 날(5일 150 · 7일 150 · 10일 240 · 11일 0)은 날짜와 상관없이 센다
+assert.equal(mf.total, 60 + 150 + 150 + 240 + 0)
+assert.ok(mf.days.find(r => r.iso === '2026-11-17').future)
+assert.ok(!mf.days.find(r => r.iso === '2026-11-03').future)
+assert.equal(mf.total + mf.planned, monthOvertime(ot, data, 2026, 10, '2026-12-31').total)
 console.log('PASS: overtime rules (deduct, cap, weekend, holiday, skip, logs), plan text parsing, HWPX text')

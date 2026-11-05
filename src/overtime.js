@@ -5,8 +5,9 @@ import { fromISO, toISO } from './logic.js'
 import { holidayOn } from './kcal.js'
 import { parseDateText } from './dateText.js'
 
-export const DEFAULT_OT = { offTime: '16:40', deduct: 60, dailyMax: 240 }
-export const defaultOvertime = () => ({ cfg: { ...DEFAULT_OT }, plans: [], logs: {} })
+// rate: 시간당 단가(원, 호봉별 — 직접 입력), monthMax: 월 인정 상한(시간), fixedHours: 정액분 시간
+export const DEFAULT_OT = { onTime: '08:40', offTime: '16:40', deduct: 60, dailyMax: 240, rate: 0, monthMax: 57, fixedHours: 10 }
+export const defaultOvertime = () => ({ cfg: { ...DEFAULT_OT }, plans: [], logs: {}, workDays: {} })
 
 export const toMin = t => { const m = String(t || '').match(/^(\d{1,2}):(\d{2})$/); return m ? +m[1] * 60 + +m[2] : null }
 export const fmtMin = m => {
@@ -54,17 +55,44 @@ export function dayOvertime(ot, data, iso) {
   return { iso, off, plans: ps, start: null, end, raw, minutes, source: log && log.end ? 'log' : ps.length ? 'plan' : null, note: log && log.note }
 }
 
-// 한 달 — 기록이나 방과후가 있는 날만
-export function monthOvertime(ot, data, y, m) {
+// 한 달 — 기록이나 방과후가 있는 날만.
+// 합계·인정·다음 단위는 오늘까지(today) 기준, 오늘 뒤 방과후는 예정(planned)으로 따로 센다.
+export function monthOvertime(ot, data, y, m, today = toISO(new Date())) {
   const days = []
   const last = new Date(y, m + 1, 0).getDate()
   for (let d = 1; d <= last; d++) {
     const iso = toISO(new Date(y, m, d))
     const r = dayOvertime(ot, data, iso)
+    r.future = iso > today && r.source !== 'log'
     if (r.source || r.plans.length) days.push(r)
   }
-  const total = days.reduce((a, r) => a + r.minutes, 0)
-  return { days, total, hours: Math.floor(total / 60) }
+  const total = days.filter(r => !r.future).reduce((a, r) => a + r.minutes, 0)
+  const planned = days.filter(r => r.future).reduce((a, r) => a + r.minutes, 0)
+  const cfg = { ...DEFAULT_OT, ...(ot.cfg || {}) }
+  const whole = Math.floor(total / 60)
+  const hours = Math.min(whole, cfg.monthMax)
+  const capped = whole >= cfg.monthMax
+  // 1시간 단위로 끊고 남은 분 — 아직 수당에 반영되지 않는다
+  const leftover = capped ? 0 : total - whole * 60
+  const projected = Math.min(Math.floor((total + planned) / 60), cfg.monthMax)
+  return { days, total, hours, capped, leftover, toNext: leftover ? 60 - leftover : 0, planned, projected }
+}
+
+// 그 달 근무일(평일 중 공휴일·휴업일 아닌 날)
+export function workDaysIn(data, y, m) {
+  let n = 0
+  const last = new Date(y, m + 1, 0).getDate()
+  for (let d = 1; d <= last; d++) if (!isOffDay(data, toISO(new Date(y, m, d)))) n++
+  return n
+}
+
+// 예상 수당: 실적분 = 인정 시간 × 단가, 정액분 = 정액 시간 × 단가(15일 이상 출근 시 전액, 미만은 출근일/15 비례)
+export function allowance(cfg0, month, attend) {
+  const cfg = { ...DEFAULT_OT, ...(cfg0 || {}) }
+  const rate = Number(cfg.rate) || 0
+  const perf = Math.floor(month.hours * rate)
+  const fixed = attend == null ? 0 : Math.floor(rate * cfg.fixedHours * Math.min(1, attend / 15))
+  return { rate, perf, fixed, total: perf + fixed, unpaid: Math.floor((month.leftover / 60) * rate) }
 }
 
 // ---- 계획서 읽기 ----
