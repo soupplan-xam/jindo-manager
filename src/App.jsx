@@ -13,6 +13,8 @@ import HomeroomView from './views/HomeroomView.jsx'
 import MonthCalendar from './views/MonthCalendar.jsx'
 import OvertimeView from './views/OvertimeView.jsx'
 import TravelView from './views/TravelView.jsx'
+import WidgetView from './views/WidgetView.jsx'
+import { createRoot } from 'react-dom/client'
 import Snackbar from './views/Snackbar.jsx'
 import useWindowWidth from './useWindowWidth.js'
 import useCloudSync from './useCloudSync.js'
@@ -29,6 +31,50 @@ export default function App() {
     return () => window.removeEventListener('storage', on)
   }, [])
   const [syncOpen, setSyncOpen] = useState(false)
+
+  // 위젯 — 크롬·엣지의 「항상 위 작은 창」(문서 PIP)으로 띄운다. 설치 없이 이 창의 데이터를 그대로 쓴다.
+  // 지원하지 않는 브라우저는 #widget 을 작은 새 창으로 연다(항상 위는 아님).
+  const pipRef = useRef(null) // { win, root }
+  const [pipOpen, setPipOpen] = useState(false)
+  const openWidget = async () => {
+    if (pipRef.current) { try { pipRef.current.win.focus() } catch { /* 무시 */ } return }
+    if (!('documentPictureInPicture' in window)) {
+      window.open(location.pathname + '#widget', 'jindo-widget', 'popup,width=380,height=660')
+      return
+    }
+    try {
+      const win = await window.documentPictureInPicture.requestWindow({ width: 360, height: 640 })
+      // 이 창의 스타일을 옮긴다
+      for (const ss of [...document.styleSheets]) {
+        try {
+          const st = win.document.createElement('style')
+          st.textContent = [...ss.cssRules].map(r => r.cssText).join('\n')
+          win.document.head.appendChild(st)
+        } catch {
+          if (ss.href) { const l = win.document.createElement('link'); l.rel = 'stylesheet'; l.href = ss.href; win.document.head.appendChild(l) }
+        }
+      }
+      win.document.title = '진도계획표 위젯'
+      win.document.body.style.margin = '0'
+      const host = win.document.createElement('div')
+      win.document.body.appendChild(host)
+      pipRef.current = { win, root: createRoot(host) }
+      setPipOpen(true)
+      win.addEventListener('pagehide', () => {
+        const r = pipRef.current
+        pipRef.current = null
+        setPipOpen(false)
+        if (r) setTimeout(() => r.root.unmount(), 0)
+      })
+    } catch {
+      setSnack({ text: '위젯 창을 열지 못했습니다. 크롬이나 엣지 최신 버전에서 다시 시도해 주세요.', kind: 'none' })
+    }
+  }
+  // 이 창의 데이터가 바뀔 때마다 위젯 창도 다시 그린다
+  useEffect(() => {
+    if (!pipRef.current) return
+    pipRef.current.root.render(<WidgetView shared={{ data, setData, onOpenMain: () => window.focus() }} />)
+  }, [data, pipOpen])
   // 인쇄 배율은 CSS가 body 속성을 보고 정한다
   useEffect(() => {
     document.body.dataset.printScale = data.cfg.printScale || 'l'
@@ -213,6 +259,12 @@ export default function App() {
         {view === 'setup' && (
           <button onClick={() => setSetupGuideOpen(true)} title="사용 안내" className="hov" style={iconBtn}>
             <GuideIcon />
+          </button>
+        )}
+        {!isMobile && view !== 'setup' && data.setupDone && (
+          <button onClick={openWidget} title="항상 위에 뜨는 작은 위젯 창 띄우기 (설치 필요 없음)" className="hov" style={{ ...iconBtn, gap: 4, fontSize: 12.5, fontWeight: 600, color: pipOpen ? GREEN : SUB }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2" /><rect x="12" y="10" width="7" height="6" rx="1" /></svg>
+            위젯
           </button>
         )}
         <SyncButton sync={sync} onClick={() => setSyncOpen(true)} compact={isMobile} />

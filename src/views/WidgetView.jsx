@@ -16,9 +16,12 @@ const DEFAULT_PREF = { lessons: true, todos: true, dday: true, meal: true, weath
 const readPref = () => { try { return { ...DEFAULT_PREF, ...JSON.parse(localStorage.getItem(PREF_KEY) || '{}') } } catch { return { ...DEFAULT_PREF } } }
 const todoColor = k => (TODO_COLORS.find(x => x.k === (k || '')) || TODO_COLORS[0]).c
 
-export default function WidgetView() {
-  const [data, setDataState] = useState(loadData)
-  const setData = fn => setDataState(d => { const n = typeof fn === 'function' ? fn(d) : fn; saveData(n); return n })
+// shared: 본 창(진도계획표) 안에서 항상 위 작은 창(문서 PIP)으로 띄울 때 본 창의 데이터를 그대로 쓴다
+export default function WidgetView({ shared = null }) {
+  const [ownData, setDataState] = useState(loadData)
+  const setOwn = fn => setDataState(d => { const n = typeof fn === 'function' ? fn(d) : fn; saveData(n); return n })
+  const data = shared ? shared.data : ownData
+  const setData = shared ? shared.setData : setOwn
   const [pref, setPrefState] = useState(readPref)
   const setPref = p => setPrefState(o => { const n = { ...o, ...p }; try { localStorage.setItem(PREF_KEY, JSON.stringify(n)) } catch { /* 무시 */ } return n })
   const [menu, setMenu] = useState(false)
@@ -32,7 +35,7 @@ export default function WidgetView() {
     return () => window.removeEventListener('storage', on)
   }, [])
   useEffect(() => {
-    document.documentElement.classList.add('widget-mode')
+    if (!shared) document.documentElement.classList.add('widget-mode')
     if (desk) {
       desk.getAlwaysOnTop().then(setOnTop).catch(() => {})
       desk.getAutoStart().then(setAutoStart).catch(() => {})
@@ -40,7 +43,7 @@ export default function WidgetView() {
   }, [])
 
   // 진도계획표 창이 닫혀 있어도 로그인돼 있으면 온라인 내용(휴대폰에서 고친 것)과 맞춘다
-  useCloudSync(data, setData)
+  useCloudSync(data, setData, !shared)
   const info = useTodayInfo(data, { meal: pref.meal, weather: pref.weather })
   const today = info.today
   const computed = useMemo(() => compute(data), [data])
@@ -70,13 +73,13 @@ export default function WidgetView() {
   const iconBtn = { border: 'none', background: 'none', cursor: 'pointer', color: SUB, padding: '4px 6px', borderRadius: 6, fontSize: 13, lineHeight: 1, WebkitAppRegion: 'no-drag' }
 
   return (
-    <div style={{ height: '100vh', boxSizing: 'border-box', padding: desk ? 0 : 16, display: 'flex' }}>
+    <div style={{ height: '100vh', boxSizing: 'border-box', padding: desk || shared ? 0 : 16, display: 'flex' }}>
       <div
         style={{
           flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',
-          background: desk ? '#FFFFFF' : 'rgba(255,255,255,' + pref.opacity + ')', borderRadius: desk ? 0 : 16,
-          boxShadow: desk ? 'none' : '0 8px 30px rgba(25,31,40,0.18)', border: desk ? 'none' : '1px solid rgba(225,229,234,0.9)',
-          backdropFilter: 'blur(12px)', maxWidth: desk ? undefined : 380, margin: desk ? 0 : '0 auto',
+          background: desk || shared ? '#FFFFFF' : 'rgba(255,255,255,' + pref.opacity + ')', borderRadius: desk || shared ? 0 : 16,
+          boxShadow: desk || shared ? 'none' : '0 8px 30px rgba(25,31,40,0.18)', border: desk || shared ? 'none' : '1px solid rgba(225,229,234,0.9)',
+          backdropFilter: 'blur(12px)', maxWidth: desk || shared ? undefined : 380, margin: desk || shared ? 0 : '0 auto',
         }}
       >
         {/* 머리줄 — 윈도우 프로그램에서는 여기를 끌어 창을 옮긴다 */}
@@ -99,7 +102,9 @@ export default function WidgetView() {
               <button type="button" onClick={() => desk.hideWidget()} title="위젯 숨기기 (작업표시줄 알림 영역 아이콘으로 다시 엽니다)" style={iconBtn}><Ico d="M6 6l12 12M18 6L6 18" /></button>
             </>
           ) : (
-            <a href={location.pathname} title="진도계획표 열기" style={{ ...iconBtn, textDecoration: 'none', display: 'flex' }}><Ico d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></a>
+            shared ? (
+              <button type="button" onClick={shared.onOpenMain} title="진도계획표 창으로" style={iconBtn}><Ico d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></button>
+            ) : <a href={location.pathname} title="진도계획표 열기" style={{ ...iconBtn, textDecoration: 'none', display: 'flex' }}><Ico d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></a>
           )}
         </header>
 

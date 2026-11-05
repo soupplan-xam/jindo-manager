@@ -11,7 +11,8 @@ import { coerceData } from './storage.js'
 //  - 온라인 쪽이 지난 연동 뒤로 그대로면 이 기기 내용을 올린다
 //  - 양쪽 다 바뀌었으면 어느 쪽을 쓸지 묻는다(conflict) — 말없이 덮어쓰지 않는다
 // 그 뒤로는 고칠 때마다 1초쯤 뒤 올리고, 다른 기기에서 바뀌면 바로 받아 온다.
-export default function useCloudSync(data, setData) {
+// enabled=false 면 아무것도 하지 않는다(본 창 안에 띄운 위젯처럼 연동을 다른 곳이 맡을 때)
+export default function useCloudSync(data, setData, enabled = true) {
   const [user, setUser] = useState(null)
   const [status, setStatus] = useState(syncAvailable ? 'loading' : 'off')
   const [conflict, setConflict] = useState(null) // { remote }
@@ -28,7 +29,7 @@ export default function useCloudSync(data, setData) {
 
   // 로그인 상태
   useEffect(() => {
-    if (!syncAvailable) return
+    if (!syncAvailable || !enabled) return
     let unsub = null
     let alive = true
     watchAuth(u => {
@@ -38,7 +39,7 @@ export default function useCloudSync(data, setData) {
       .then(f => { if (alive) unsub = f; else f() })
       .catch(() => setStatus('error'))
     return () => { alive = false; if (unsub) unsub() }
-  }, [])
+  }, [enabled])
 
   const markSynced = (uid, json) => {
     lastJSON.current = json

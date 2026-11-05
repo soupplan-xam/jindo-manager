@@ -275,7 +275,9 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
         <Sec id="install" title="앱으로 설치 · 바탕화면 위젯">
           <div style={{ padding: '0 0 16px', fontSize: 13, color: SUB, lineHeight: 1.65 }}>
             <div style={{ marginBottom: 12, padding: '10px 12px', background: '#F5F8FB', borderRadius: 10 }}>
-              <b style={{ color: '#191F28' }}>바탕화면 위젯 (윈도우)</b>
+              <b style={{ color: '#191F28' }}>위젯 (설치 없이)</b>
+              <div>오른쪽 위 <b>[위젯]</b> 버튼을 누르면 오늘 수업·할 일·급식·날씨가 담긴 작은 창이 다른 창 위에 항상 떠 있습니다(크롬·엣지). 이 창(또는 설치한 앱 창)을 열어 둔 동안 떠 있습니다.</div>
+              <b style={{ color: '#191F28', display: 'block', marginTop: 8 }}>바탕화면 위젯 (윈도우 프로그램)</b>
               <div>오늘 수업·지금 교시·할 일·D-day·급식·날씨를 바탕화면 작은 창에 띄웁니다.</div>
               <div style={{ display: 'flex', gap: 12, marginTop: 6, flexWrap: 'wrap' }}>
                 <a href="https://github.com/soupplan-xam/jindo-manager/releases/latest" target="_blank" rel="noreferrer" style={{ fontWeight: 700 }}>설치 파일 받기</a>
