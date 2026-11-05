@@ -73,6 +73,7 @@ export async function neisSearchSchools(query, { limit = 60 } = {}) {
       levelName,
       region: r.ATPT_OFCDC_SC_CODE,
       regionName: r.ATPT_OFCDC_SC_NM || '',
+      addr: r.ORG_RDNMA || '',
       src: 'neis',
     }
   })

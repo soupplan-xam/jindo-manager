@@ -7,6 +7,17 @@ export const DEFAULT_BELLS = [
   ['09:00', '09:50'], ['10:00', '10:50'], ['11:00', '11:50'], ['12:00', '12:50'],
   ['13:50', '14:40'], ['14:50', '15:40'], ['15:50', '16:40'],
 ]
+// 교시 시각 만들기: 1교시 시작 · 수업 분 · 쉬는 분 · 점심(몇 교시 뒤, 몇 분) · 교시 수
+export function makeBells({ start = '08:50', lesson = 50, rest = 10, lunchAfter = 4, lunch = 60, count = 7 }) {
+  const hm = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0')
+  let t = mins(start)
+  const out = []
+  for (let p = 1; p <= count; p++) {
+    out.push([hm(t), hm(t + lesson)])
+    t += lesson + (p === lunchAfter ? lunch : rest)
+  }
+  return out
+}
 const mins = t => { const [h, m] = String(t || '').split(':').map(Number); return h * 60 + (m || 0) }
 
 // 지금 상태: { kind: 'before' | 'class' | 'break' | 'after', period, next, left(분) }
@@ -40,7 +51,7 @@ export function parseDishes(raw) {
   return String(raw || '').split(/<br\s*\/?>/i).map(s => s.trim()).filter(Boolean).map(s => {
     const m = s.match(/\(([\d.\s]+)\)\s*$/)
     const allergy = m ? m[1].split('.').map(x => Number(x.trim())).filter(n => n > 0 && n < ALLERGY.length) : []
-    const name = (m ? s.slice(0, m.index) : s).replace(/[*#]+$/g, '').trim()
+    const name = (m ? s.slice(0, m.index) : s).replace(/[*#.\s]+$/g, '').trim()
     return { name, allergy }
   })
 }
@@ -76,6 +87,27 @@ export function weatherPlace(data) {
   if (data.weatherLoc && data.weatherLoc.lat) return data.weatherLoc
   const r = data.school && REGION_COORD[data.school.region]
   return r ? { name: r[0], lat: r[1], lon: r[2] } : null
+}
+
+// 지명 검색(Open-Meteo, 키 없음) — 「평택」「평택시」 → [{ name, sub, lat, lon }]
+export async function searchPlace(q) {
+  const name = String(q || '').trim().replace(/(특별시|광역시|특별자치시|특별자치도)$/, '')
+  if (name.length < 2) return []
+  const tries = [name, name.replace(/[시군구]$/, '')].filter((x, i, a) => x.length >= 2 && a.indexOf(x) === i)
+  for (const n of tries) {
+    const res = await fetch('https://geocoding-api.open-meteo.com/v1/search?' + new URLSearchParams({ name: n, count: 8, language: 'ko', countryCode: 'KR' }))
+    if (!res.ok) throw new Error('지명을 찾지 못했습니다 (HTTP ' + res.status + ')')
+    const j = await res.json()
+    const list = (j.results || []).map(r => ({ name: r.name, sub: [r.admin1, r.admin2].filter(Boolean).join(' '), lat: +r.latitude.toFixed(3), lon: +r.longitude.toFixed(3) }))
+    if (list.length) return list
+  }
+  return []
+}
+
+// 학교 주소(나이스)에서 시·군 이름: 「경기도 평택시 …」 → 「평택시」
+export function cityFromAddress(addr) {
+  const m = String(addr || '').match(/^\S+\s+(\S+?[시군])(?:\s|$)/)
+  return m ? m[1] : ''
 }
 
 export function weatherText(code) {

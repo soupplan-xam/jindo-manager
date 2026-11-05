@@ -1199,10 +1199,12 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
 
           {/* 급식 · 날씨 */}
           {show.meal && (
-            <Tile label="급식 · 날씨" sub={info.school ? info.school.name : ''} min={min} grow={isMobile ? undefined : growOf('meal')}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <WeatherLine weather={info.weather} weatherErr={info.weatherErr} place={info.place} size={12} />
-                <MealView meal={info.meal} mealErr={info.mealErr} school={info.school} size={12.5} only="중식" />
+            <Tile label="급식 · 날씨" min={min} grow={isMobile ? undefined : growOf('meal')} minWidth={isMobile ? undefined : 220}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <WeatherLine weather={info.weather} weatherErr={info.weatherErr} place={info.place} size={12.5} />
+                <div style={{ borderTop: '1px solid ' + LINE_SOFT, paddingTop: 8 }}>
+                  <MealView meal={info.meal} mealErr={info.mealErr} school={info.school} size={13} only="중식" />
+                </div>
               </div>
             </Tile>
           )}
@@ -1212,18 +1214,18 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
   )
 }
 
-function Tile({ label, sub, children, grow, min }) {
+function Tile({ label, sub, children, grow, min, minWidth }) {
   return (
     <div
       style={{
         border: 'none', borderRadius: 16, background: '#FFFFFF', padding: '12px 16px 14px', boxShadow: '0 1px 3px rgba(25,31,40,0.05)',
-        minWidth: 0, flex: grow ? grow + ' 1 0' : undefined, boxSizing: 'border-box',
+        minWidth: minWidth || 0, flex: grow ? grow + ' 1 0' : undefined, boxSizing: 'border-box',
       }}
     >
       {/* 미니멀: 라벨은 걷어내되 날짜·기간 같은 정보(sub)는 남긴다 */}
       {(!min || sub) && (
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 7 }}>
-          {!min && <span style={{ fontSize: 13, fontWeight: 700, color: INK, letterSpacing: '-0.01em' }}>{label}</span>}
+          {!min && <span style={{ fontSize: 13, fontWeight: 700, color: INK, letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>{label}</span>}
           {sub && <span style={{ fontSize: 12, color: FAINT }}>{sub}</span>}
         </div>
       )}
