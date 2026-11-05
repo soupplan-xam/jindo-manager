@@ -1,0 +1,15 @@
+{
+  "name": "진도계획표",
+  "short_name": "진도계획표",
+  "description": "시간표와 학사일정으로 반별 수업 차시를 자동 계산하는 교사용 진도 관리 도구",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FCFCFA",
+  "theme_color": "#0F5C4D",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

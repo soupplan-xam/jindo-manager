@@ -1,4 +1,4 @@
-﻿import React, { useRef, useState } from 'react'
+﻿import React, { useEffect, useRef, useState } from 'react'
 import { GREEN, FAINT, INK, LINE, SUB, WARN, RED, exportCSV, printSizes, fitScale } from '../logic.js'
 import { getApiKey, setApiKey, getModel, setModel, exportJSON, importJSON, defaultData } from '../storage.js'
 import { checkKey } from '../importer.js'
@@ -9,7 +9,22 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
   const [confirmClear, setConfirmClear] = useState(false)
   const cfg = data.cfg
   const weeks = cfg.printWeeks || 1 // 인쇄 범위 — 고를 수 있는 크기가 여기에 달렸다
-  const [open, setOpen] = useState({ mode: true, sem: true, count: true, targetExam: true, view: false, dash: false, print: false, data: false, file: false })
+  const [open, setOpen] = useState({ mode: true, sem: true, count: true, targetExam: true, view: false, dash: false, print: false, install: false, data: false, file: false })
+  const [canInstall, setCanInstall] = useState(() => !!window.__installPrompt)
+  useEffect(() => {
+    const on = () => setCanInstall(true)
+    window.addEventListener('installable', on)
+    return () => window.removeEventListener('installable', on)
+  }, [])
+  const installed = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches
+  const install = async () => {
+    const p = window.__installPrompt
+    if (!p) return
+    p.prompt()
+    try { await p.userChoice } catch { /* 닫음 */ }
+    window.__installPrompt = null
+    setCanInstall(false)
+  }
   const [key, setKey] = useState(getApiKey)
   const [keyShown, setKeyShown] = useState(false)
   const [model, setModelState] = useState(getModel)
@@ -245,6 +260,28 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
                 ? '보고 있는 주와 그 다음 주를 이어서 한 장에 뽑습니다. 한 주만으로 A4 한 장을 쓰는 「크게」는 두 장이 되어 고를 수 없습니다.'
                 : '보고 있는 주만 뽑습니다.'}
             </div>
+          </div>
+        </Sec>
+
+        <Sec id="install" title="앱으로 설치">
+          <div style={{ padding: '0 0 16px', fontSize: 13, color: SUB, lineHeight: 1.65 }}>
+            {installed ? (
+              <span>지금 설치한 앱으로 열려 있습니다.</span>
+            ) : (
+              <>
+                {canInstall && (
+                  <button onClick={install} style={{ border: 'none', borderRadius: 6, background: GREEN, color: '#FFFFFF', padding: '8px 16px', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', marginBottom: 10 }}>
+                    이 컴퓨터에 앱으로 설치
+                  </button>
+                )}
+                <div>설치하면 바탕화면·작업표시줄 아이콘으로 따로 창이 열립니다. 내용은 브라우저와 같습니다.</div>
+                <div style={{ color: FAINT, marginTop: 4 }}>
+                  · 크롬·엣지: 주소창 오른쪽 설치 아이콘(⊕) 또는 메뉴 → [앱 설치]<br />
+                  · 아이폰 사파리: 공유 → [홈 화면에 추가]<br />
+                  · 안드로이드 크롬: 메뉴 → [홈 화면에 추가]
+                </div>
+              </>
+            )}
           </div>
         </Sec>
 

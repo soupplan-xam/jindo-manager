@@ -14,4 +14,16 @@ if (window.top !== window.self) {
   }
 }
 
+// 앱 설치 — 브라우저가 설치를 제안하면 붙잡아 두었다가 설정의 [앱으로 설치]에서 띄운다
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault()
+  window.__installPrompt = e
+  window.dispatchEvent(new Event('installable'))
+})
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register(import.meta.env.BASE_URL + 'sw.js', { scope: import.meta.env.BASE_URL }).catch(() => {})
+  })
+}
+
 createRoot(document.getElementById('root')).render(<App />)

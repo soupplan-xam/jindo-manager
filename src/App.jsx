@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { loadData, saveData } from './storage.js'
-import { compute, toISO, fromISO, DAYS, GREEN, SUB, CHIP_BTN, CHIP_BTN_OFF } from './logic.js'
+import { compute, toISO, fromISO, DAYS, GREEN, SUB, CHIP_BTN } from './logic.js'
 import GridView from './views/GridView.jsx'
 import ImportView from './views/ImportView.jsx'
 import SettingsModal from './views/SettingsModal.jsx'
@@ -10,6 +10,7 @@ import ScheduleGuideModal from './views/ScheduleGuideModal.jsx'
 import SetupGuideModal from './views/SetupGuideModal.jsx'
 import SetupView from './views/SetupView.jsx'
 import HomeroomView from './views/HomeroomView.jsx'
+import MonthCalendar from './views/MonthCalendar.jsx'
 import Snackbar from './views/Snackbar.jsx'
 import useWindowWidth from './useWindowWidth.js'
 import useCloudSync from './useCloudSync.js'
@@ -80,6 +81,30 @@ export default function App() {
     setSchedGuideOpen(false)
     setData(d => ({ ...d, schedIntroSeen: true }))
   }
+
+  // 화면 전환: 진도표 · 달력 · 담임
+  const NAV = [['grid', '진도표'], ['calendar', '달력'], ['homeroom', '담임']]
+  const nav = view !== 'setup' && data.setupDone ? (
+    <div role="tablist" aria-label="화면" style={{ display: 'flex', background: '#EFEDE8', borderRadius: 7, padding: 2, gap: 2, flex: isMobile ? 1 : 'none' }}>
+      {NAV.map(([v, label]) => {
+        const on = view === v || (v === 'grid' && view === 'import')
+        return (
+          <button
+            key={v}
+            role="tab"
+            aria-selected={on}
+            onClick={() => go(v)}
+            style={{
+              flex: isMobile ? 1 : 'none', border: 'none', borderRadius: 5, padding: '5px 12px', cursor: 'pointer', fontSize: 13, fontWeight: on ? 700 : 500,
+              background: on ? '#FFFFFF' : 'transparent', color: on ? GREEN : SUB, boxShadow: on ? '0 1px 2px rgba(26,26,26,0.12)' : 'none',
+            }}
+          >
+            {label}
+          </button>
+        )
+      })}
+    </div>
+  ) : null
 
   const ctx = { data, patch, setData, computed, today, snack, setSnack, go, goImport, openSchools, weekOffset, setWeekOffset, stagger }
 
@@ -166,16 +191,7 @@ export default function App() {
             }}
           />
         </button>
-        {view !== 'setup' && data.setupDone && (
-          <button
-            onClick={() => go(view === 'homeroom' ? 'grid' : 'homeroom')}
-            title={view === 'homeroom' ? '진도표로 돌아가기' : '담임 — 출결 안내 메시지'}
-            aria-pressed={view === 'homeroom'}
-            style={{ ...(view === 'homeroom' ? CHIP_BTN : CHIP_BTN_OFF), padding: '6px 11px' }}
-          >
-            {view === 'homeroom' ? '진도표' : '담임'}
-          </button>
-        )}
+        {!isMobile && nav}
         {view !== 'setup' && (
           <button
             onClick={() => go('setup')}
@@ -215,11 +231,13 @@ export default function App() {
         )}
       </div>
 
+      {isMobile && nav && <div data-print="hide" style={{ display: 'flex', marginBottom: 10, flex: 'none' }}>{nav}</div>}
       <div style={{ flex: fit ? 1 : undefined, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: fit ? 'auto' : undefined }}>
         {view === 'grid' && <GridView {...ctx} fit={fit} />}
         {view === 'import' && <ImportView {...ctx} kind={importKind} />}
         {view === 'setup' && <SetupView {...ctx} fit={fit} onStart={finishSetup} />}
         {view === 'homeroom' && <HomeroomView data={data} setData={setData} setSnack={setSnack} />}
+        {view === 'calendar' && <MonthCalendar data={data} setData={setData} setSnack={setSnack} />}
       </div>
 
       {syncOpen && <SyncModal sync={sync} onClose={() => setSyncOpen(false)} />}
