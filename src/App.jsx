@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { loadData, saveData } from './storage.js'
-import { compute, toISO, fromISO, DAYS, GREEN, SUB, CHIP_BTN } from './logic.js'
+import { compute, toISO, fromISO, DAYS, GREEN, SUB, CHIP_BTN, CHIP_BTN_OFF } from './logic.js'
 import GridView from './views/GridView.jsx'
 import ImportView from './views/ImportView.jsx'
 import SettingsModal from './views/SettingsModal.jsx'
@@ -9,6 +9,7 @@ import SchoolCalendarModal from './views/SchoolCalendarModal.jsx'
 import ScheduleGuideModal from './views/ScheduleGuideModal.jsx'
 import SetupGuideModal from './views/SetupGuideModal.jsx'
 import SetupView from './views/SetupView.jsx'
+import HomeroomView from './views/HomeroomView.jsx'
 import Snackbar from './views/Snackbar.jsx'
 import useWindowWidth from './useWindowWidth.js'
 import useCloudSync from './useCloudSync.js'
@@ -165,6 +166,16 @@ export default function App() {
             }}
           />
         </button>
+        {view !== 'setup' && data.setupDone && (
+          <button
+            onClick={() => go(view === 'homeroom' ? 'grid' : 'homeroom')}
+            title={view === 'homeroom' ? '진도표로 돌아가기' : '담임 — 출결 안내 메시지'}
+            aria-pressed={view === 'homeroom'}
+            style={{ ...(view === 'homeroom' ? CHIP_BTN : CHIP_BTN_OFF), padding: '6px 11px' }}
+          >
+            {view === 'homeroom' ? '진도표' : '담임'}
+          </button>
+        )}
         {view !== 'setup' && (
           <button
             onClick={() => go('setup')}
@@ -208,6 +219,7 @@ export default function App() {
         {view === 'grid' && <GridView {...ctx} fit={fit} />}
         {view === 'import' && <ImportView {...ctx} kind={importKind} />}
         {view === 'setup' && <SetupView {...ctx} fit={fit} onStart={finishSetup} />}
+        {view === 'homeroom' && <HomeroomView data={data} setData={setData} setSnack={setSnack} />}
       </div>
 
       {syncOpen && <SyncModal sync={sync} onClose={() => setSyncOpen(false)} />}
