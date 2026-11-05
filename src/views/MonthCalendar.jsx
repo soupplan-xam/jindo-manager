@@ -9,7 +9,7 @@ import useWindowWidth from '../useWindowWidth.js'
 // [칠하기]를 켜면 날짜를 누르거나 끌어서 색을 칠한다.
 export const PAINTS = [
   { c: '#D3EBC0', n: '연두' }, { c: '#D3E3F7', n: '하늘' }, { c: '#FBEFC4', n: '노랑' },
-  { c: '#F6DCE3', n: '분홍' }, { c: '#E3E1DC', n: '회색' },
+  { c: '#F6DCE3', n: '분홍' }, { c: '#E3E1DC', n: '회색' }, { c: '#FFFFFF', n: '흰색' },
 ]
 const SAT = '#185FA5'
 const TERM = '#2B8A3E' // 절기 — 하늘색 강조·토요일 파랑과 구분되는 초록
@@ -42,6 +42,15 @@ export default function MonthCalendar({ data, setData, setSnack }) {
   const goToday = () => { const d = new Date(); setYm({ y: d.getFullYear(), m: d.getMonth() }); setSel(today) }
 
   const eventsOn = iso => data.events.filter(e => e.start <= iso && iso <= e.end)
+  // 출근 안 하는 날 — 주말·공휴일·휴업일(일정 유형 휴업일, 또는 이름에 휴업·방학·휴일). 직접 칠한 색이 우선한다
+  const autoOff = data.cfg.autoOff !== false
+  const offReason = (iso, dow) => {
+    if (dow === 0 || dow === 6) return '주말'
+    if (holidayOn(iso)) return '공휴일'
+    const ev = eventsOn(iso).find(e => !e.period && !e.cls && (e.type === '휴업일' || /휴업|방학|휴일/.test(e.name)))
+    return ev ? '휴업일' : null
+  }
+  const OFF_BG = '#D3E3F7'
 
   // ---- 할 일 ----
   const setTodos = (iso, list) => setData(d => {
@@ -150,7 +159,7 @@ export default function MonthCalendar({ data, setData, setSnack }) {
                 style={{
                   minHeight: cellH, minWidth: 0, padding: isMobile ? '4px 4px' : '6px 7px', boxSizing: 'border-box', cursor: paint ? 'crosshair' : 'pointer',
                   borderTop: wi ? '1px solid ' + LINE_SOFT : 'none', borderLeft: i ? '1px solid ' + LINE_SOFT : 'none',
-                  background: colors[iso] || (out ? '#F9FAFB' : '#FFFFFF'),
+                  background: colors[iso] || (autoOff && offReason(iso, i) ? OFF_BG : out ? '#F9FAFB' : '#FFFFFF'),
                   boxShadow: isSel ? 'inset 0 0 0 2px ' + GREEN : 'none',
                   opacity: out ? 0.6 : 1, overflow: 'hidden',
                 }}
@@ -276,12 +285,16 @@ export default function MonthCalendar({ data, setData, setSnack }) {
           >
             지우개
           </button>
+          <label title="주말·공휴일·휴업일을 하늘색으로 칠해 둡니다" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: SUB, marginLeft: 6, cursor: 'pointer' }}>
+            <input type="checkbox" checked={autoOff} onChange={() => setData(d => ({ ...d, cfg: { ...d.cfg, autoOff: !autoOff } }))} style={{ accentColor: GREEN, margin: 0 }} />
+            쉬는 날 자동 색
+          </label>
           {paint && (
             <button type="button" onClick={() => setPaint(null)} style={{ border: 'none', background: GREEN, color: '#FFFFFF', borderRadius: 5, fontSize: 12, fontWeight: 700, padding: '5px 10px', cursor: 'pointer' }}>다 칠함</button>
           )}
         </div>
       </div>
-      {paint && <div style={{ fontSize: 12, color: WARN, marginBottom: 8 }}>시작하는 날을 누른 채 끝나는 날까지 끌면 그 사이가 모두 칠해집니다. 하루만 칠하려면 누르기만 하세요. 다 칠했으면 [다 칠함]을 누르세요.</div>}
+      {paint && <div style={{ fontSize: 12, color: WARN, marginBottom: 8 }}>시작하는 날을 누른 채 끝나는 날까지 끌면 그 사이가 모두 칠해집니다. 하루만 칠하려면 누르기만 하세요. 쉬는 날 자동 색을 빼려면 흰색으로 칠하세요. 다 칠했으면 [다 칠함]을 누르세요.</div>}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) 300px', gap: isMobile ? 16 : 24, alignItems: 'start' }}>
         <div style={{ minWidth: 0 }}>{grid}</div>
         {detail}
