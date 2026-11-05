@@ -21,6 +21,8 @@ export const defaultData = () => ({
   extras: {}, // {'iso|p': '2-1'} 그 날 그 교시에 실제로 한 수업 — 빈 칸이면 보강, 있던 칸이면 교체
   extraKind: {}, // {'iso|p': 'swap'} 교환 수업(진도 셈, 표시만 따로)
   homeroom: defaultHomeroom(), // 담임 출결 안내: 학교·반·담임 이름과 문구 틀(학생 정보는 저장하지 않음)
+  trips: [], // 출장 [{id, date, kind: in|out, start, end, place, purpose, car, unpaid, ...}]
+  travelCfg: {}, // 여비 기준 금액 고친 값(없으면 기본)
   overtime: defaultOvertime(), // 초과근무: 계산 기준·방과후 계획·날짜별 기록
   school: null, // {code, region, name} 급식·날씨용 우리 학교(나이스)
   weatherLoc: null, // {name, lat, lon} 날씨 위치 — 없으면 학교의 시·도
@@ -66,6 +68,8 @@ function normalize(d) {
   for (const k of ['extras', 'extraKind', 'makeups', 'notes', 'todos', 'dayColors', 'cancels', 'colors', 'contents', 'secContents']) if (!out[k] || typeof out[k] !== 'object') out[k] = {}
   migrateMakeups(out)
   out.homeroom = { ...base.homeroom, ...(d.homeroom || {}) }
+  out.trips = Array.isArray(d.trips) ? d.trips : []
+  out.travelCfg = d.travelCfg && typeof d.travelCfg === 'object' ? d.travelCfg : {}
   const ot = d.overtime || {}
   out.overtime = { plans: Array.isArray(ot.plans) ? ot.plans : [], logs: ot.logs && typeof ot.logs === 'object' ? ot.logs : {}, workDays: ot.workDays && typeof ot.workDays === 'object' ? ot.workDays : {}, cfg: { ...DEFAULT_OT, ...(ot.cfg || {}) } }
   out.homeroom.docs = { ...DEFAULT_DOCS, ...((d.homeroom || {}).docs || {}) }

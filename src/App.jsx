@@ -12,6 +12,7 @@ import SetupView from './views/SetupView.jsx'
 import HomeroomView from './views/HomeroomView.jsx'
 import MonthCalendar from './views/MonthCalendar.jsx'
 import OvertimeView from './views/OvertimeView.jsx'
+import TravelView from './views/TravelView.jsx'
 import Snackbar from './views/Snackbar.jsx'
 import useWindowWidth from './useWindowWidth.js'
 import useCloudSync from './useCloudSync.js'
@@ -90,7 +91,7 @@ export default function App() {
   }
 
   // 화면 전환: 진도표 · 달력 · 담임
-  const NAV = [['grid', '진도표'], ['calendar', '달력'], ['homeroom', '담임'], ['overtime', '초근']]
+  const NAV = [['grid', '진도표'], ['calendar', '달력'], ['homeroom', '담임'], ['overtime', '초근'], ['travel', '여비']]
   const nav = view !== 'setup' && data.setupDone ? (
     <div role="tablist" aria-label="화면" style={{ display: 'flex', background: '#E8EBEF', borderRadius: 10, padding: 3, gap: 2, flex: isMobile ? 1 : 'none' }}>
       {NAV.map(([v, label]) => {
@@ -246,6 +247,7 @@ export default function App() {
         {view === 'homeroom' && <HomeroomView data={data} setData={setData} setSnack={setSnack} />}
         {view === 'calendar' && <MonthCalendar data={data} setData={setData} setSnack={setSnack} />}
         {view === 'overtime' && <OvertimeView data={data} setData={setData} setSnack={setSnack} />}
+        {view === 'travel' && <TravelView data={data} setData={setData} setSnack={setSnack} />}
       </div>
 
       {syncOpen && <SyncModal sync={sync} onClose={() => setSyncOpen(false)} />}

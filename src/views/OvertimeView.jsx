@@ -183,6 +183,11 @@ export default function OvertimeView({ data, setData, setSnack }) {
         {selD.getMonth() + 1}월 {selD.getDate()}일 <span style={{ fontWeight: 600, color: day.off ? RED : SUB }}>{DAYS[selD.getDay()]}요일</span>
         {day.off && <span style={{ fontSize: 12, fontWeight: 600, color: FAINT, marginLeft: 6 }}>쉬는 날</span>}
       </div>
+      {(data.trips || []).filter(t => t.date === sel || (t.kind === 'out' && t.endDate && t.date <= sel && sel <= t.endDate)).map(t => (
+        <div key={t.id} style={{ marginTop: 8, padding: '8px 10px', borderRadius: 8, background: '#FFF4E6', fontSize: 12.5, color: '#862E00' }}>
+          출장 {t.start}~{t.end}{t.place ? ' · ' + t.place : ''} — 출장 중에는 초과근무가 원칙적으로 인정되지 않습니다.
+        </div>
+      ))}
       <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
         {day.plans.map(x => (
           <div key={x.plan.id} style={{ fontSize: 13, color: SUB, display: 'flex', gap: 6, alignItems: 'center' }}>
