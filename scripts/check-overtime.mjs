@@ -37,7 +37,7 @@ assert.equal(fmtMin(120), '2시간')
 
 // 계획서 글자 읽기
 const p1 = parsePlanText('강좌명: 수학 심화반\n운영 기간: 2026. 9. 1. ~ 2026. 12. 18.\n운영 요일: 화, 목\n운영 시간: 16:50 ~ 18:30 (8~9교시)', '2026-08-17')
-assert.deepEqual(p1, { name: '수학 심화반', from: '16:50', to: '18:30', start: '2026-09-01', end: '2026-12-18', days: [2, 4], dates: [] })
+assert.deepEqual(p1, { name: '수학 심화반', from: '16:50', to: '18:30', start: '2026-09-01', end: '2026-12-18', days: [2, 4], dates: [], dayTimes: {}, dateTimes: {} })
 const p2 = parsePlanText('차시 | 날짜 | 시간\n1 | 9.2(수) | 17:00~18:40\n2 | 9.9(수) | 17:00~18:40\n3 | 9.16(수) | 17:00~18:40\n4 | 9.23(수) | 17:00~18:40\n점심 12:50~13:40', '2026-08-17')
 assert.deepEqual(p2.dates, ['2026-09-02', '2026-09-09', '2026-09-16', '2026-09-23'])
 assert.deepEqual([p2.from, p2.to, p2.start, p2.end, p2.days], ['17:00', '18:40', '2026-09-02', '2026-09-23', [3]])
@@ -55,6 +55,22 @@ await assert.rejects(fileText(new File([new Uint8Array(1)], 'a.hwp')), /HWPX나 
 // 표 칸이 나뉜 HWPX
 const p4 = parsePlanText('운영 계획서\n강좌명\n | 수학 심화반\n | 운영 기간\n | 2026. 9. 1. ~ 2026. 12. 18.\n | 운영 요일\n | 화, 목\n | 운영 시간\n | 16:50 ~ 18:30', '2026-08-17')
 assert.deepEqual([p4.name, p4.days, p4.from, p4.to, p4.start, p4.end], ['수학 심화반', [2, 4], '16:50', '18:30', '2026-09-01', '2026-12-18'])
+// 출석부 모양: 요일 없는 날짜 목록 + 날짜마다 다른 시간 + 요일별 시간
+const att = '[붙임 1] 2026 학년도 면접대비반 방과후 프로그램 신청서 순번 교사 기간 (고정) 장소 진행 요일 및 시각 프로그램 명 비고 1 홍길동 9/29~11/11 본관 월 , 수 (15:40~17:40) 화 , 목 (16:40~18:40) 면접대비반\n' +
+  '( 프로그램 명 : 면접대비반 ) 운영기간 : 2026 년 9 월 29 일 ~ 11 월 11 일 / 담당교사 : 홍길동\n' +
+  '출석부 지도시간 15:40~17:40( 월 , 수 ) 16:40~18:40( 화 , 목 ) 연번 학번 성명 9/29 9/30 10/1 10/6 비고 16:40~ 18:40 15:40~ 17:40 16:40~ 18:40 16:40~ 18:40 1 2101 가나다\n' +
+  '출석부 연번 학번 성명 11/2 11/3 11/4 비고 15:40~ 17:40 16:40~ 18:40 16:40~ 18:40 1 2101 가나다'
+const pa = parsePlanText(att, '2026-08-17')
+assert.equal(pa.name, '면접대비반')
+assert.deepEqual([pa.start, pa.end, pa.days], ['2026-09-29', '2026-11-11', [1, 2, 3, 4]])
+assert.deepEqual(pa.dates, ['2026-09-29', '2026-09-30', '2026-10-01', '2026-10-06', '2026-11-02', '2026-11-03', '2026-11-04'])
+assert.deepEqual(pa.dateTimes['2026-09-30'], ['15:40', '17:40'])
+assert.deepEqual(pa.dateTimes['2026-11-04'], ['16:40', '18:40']) // 수요일이지만 출석부대로
+assert.deepEqual(pa.dayTimes[1], ['15:40', '17:40'])
+// 날짜별 시간으로 초과근무: 수요일 9.30 방과후 17:40 끝, 19:40 퇴근 → 120 - 60 = 60
+const o3 = defaultOvertime(); o3.plans = [{ id: 3, ...pa, skip: [] }]; o3.logs = { '2026-09-30': { end: '19:40' }, '2026-09-29': { end: '19:40' } }
+assert.equal(dayOvertime(o3, { events: [] }, '2026-09-30').minutes, 60)
+assert.equal(dayOvertime(o3, { events: [] }, '2026-09-29').minutes, 0) // 화 18:40 끝 → 60 - 60
 // 수당·다음 인정 단위 — 하루 1시간 미만(17분)인 날은 더하지 않는다(업무지침)
 const { allowance, monthOvertime: mo2, defaultOvertime: dot } = await import('../src/overtime.js')
 const o2 = dot(); o2.cfg.rate = 12795; o2.cfg.deduct = 0

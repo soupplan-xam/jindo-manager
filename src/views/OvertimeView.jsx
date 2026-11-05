@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react'
 import { GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, RED, WARN, SECTION_TITLE, fromISO, toISO, DAYS } from '../logic.js'
-import { DEFAULT_OT, defaultOvertime, monthOvertime, dayOvertime, parsePlanText, fileText, fmtMin, isOffDay, workDaysIn, allowance, effectiveRate, rateByStep, RATES, RATE_YEAR, VICE_RATE } from '../overtime.js'
+import { DEFAULT_OT, defaultOvertime, monthOvertime, dayOvertime, parsePlanText, fileText, fmtMin, isOffDay, workDaysIn, allowance, effectiveRate, rateByStep, RATES, RATE_YEAR, VICE_RATE, planTime } from '../overtime.js'
 import { DateRangeField } from './DateField.jsx'
 import useWindowWidth from '../useWindowWidth.js'
 
@@ -243,7 +243,7 @@ export default function OvertimeView({ data, setData, setSnack }) {
         <div key={p.id} style={{ padding: '10px 0', borderTop: '1px solid ' + LINE_SOFT, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: INK }}>{p.name || '방과후'}</div>
-            <div style={{ fontSize: 12.5, color: SUB }}>{p.dates && p.dates.length ? '날짜 ' + p.dates.length + '개' : '매주 ' + p.days.map(x => DAYS[x]).join('·')} · {p.from}~{p.to}</div>
+            <div style={{ fontSize: 12.5, color: SUB }}>{p.dates && p.dates.length ? '날짜 ' + p.dates.length + '개' : '매주 ' + p.days.map(x => DAYS[x]).join('·')} · {[...new Set((p.dates && p.dates.length ? p.dates : [p.start]).map(d => planTime(p, d).join('~')))].join(' / ')}</div>
             <div style={{ fontSize: 12, color: FAINT }}>{p.start.slice(5).replace('-', '.')} ~ {p.end.slice(5).replace('-', '.')}{(p.skip || []).length ? ' · 뺀 날 ' + p.skip.length + '일' : ''}</div>
           </div>
           <button type="button" onClick={() => setEdit({ ...p })} style={{ ...link, color: GREEN, fontWeight: 700 }}>고치기</button>
@@ -366,7 +366,7 @@ function PlanEditor({ plan, setPlan, onSave, onCancel, field, btn }) {
     <div style={{ background: '#F5F8FB', borderRadius: 12, padding: 12, marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
       <input aria-label="강좌 이름" value={plan.name} onChange={e => set({ name: e.target.value })} placeholder="강좌 이름" style={field} />
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span style={{ color: SUB, width: 34 }}>시간</span>
+        <span style={{ color: SUB, width: 34 }}>{plan.dates && plan.dates.length ? '기본' : '시간'}</span>
         <input type="time" aria-label="방과후 시작" value={plan.from} onChange={e => set({ from: e.target.value })} style={field} />
         <span style={{ color: FAINT }}>~</span>
         <input type="time" aria-label="방과후 끝" value={plan.to} onChange={e => set({ to: e.target.value })} style={field} />
@@ -377,8 +377,21 @@ function PlanEditor({ plan, setPlan, onSave, onCancel, field, btn }) {
       </div>
       {useDates ? (
         <div style={{ color: SUB }}>
-          계획서의 날짜 {plan.dates.length}개로 셉니다 <span style={{ color: FAINT }}>({plan.dates.slice(0, 4).map(d => d.slice(5).replace('-', '.')).join(', ')}{plan.dates.length > 4 ? ' …' : ''})</span>
-          <button type="button" onClick={() => set({ dates: [] })} style={{ border: 'none', background: 'none', color: GREEN, cursor: 'pointer', fontSize: 12.5, marginLeft: 6 }}>요일로 바꾸기</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            계획서의 날짜 {plan.dates.length}개로 셉니다
+            <button type="button" onClick={() => set({ dates: [], dateTimes: {} })} style={{ border: 'none', background: 'none', color: GREEN, cursor: 'pointer', fontSize: 12.5 }}>요일로 바꾸기</button>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6, maxHeight: 150, overflowY: 'auto' }}>
+            {plan.dates.map(d => {
+              const [f, t] = planTime(plan, d)
+              return (
+                <span key={d} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, background: '#FFFFFF', border: '1px solid ' + LINE, borderRadius: 999, padding: '2px 4px 2px 8px' }}>
+                  {d.slice(5).replace('-', '.').replace(/^0/, '')} {DAYS[fromISO(d).getDay()]} <span style={{ color: FAINT }}>{f}~{t}</span>
+                  <button type="button" aria-label={d + ' 빼기'} onClick={() => set({ dates: plan.dates.filter(x => x !== d) })} style={{ border: 'none', background: 'none', color: FAINT, cursor: 'pointer', fontSize: 13, padding: '0 2px', lineHeight: 1 }}>×</button>
+                </span>
+              )
+            })}
+          </div>
         </div>
       ) : (
         <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>

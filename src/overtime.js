@@ -52,7 +52,7 @@ export function plansOn(ot, data, iso) {
     if ((p.skip || []).includes(iso)) return false
     if (p.dates && p.dates.length) return p.dates.includes(iso)
     return p.start <= iso && iso <= p.end && (p.days || []).includes(dow)
-  }).map(p => ({ plan: p, from: p.from, to: p.to }))
+  }).map(p => { const [from, to] = planTime(p, iso); return { plan: p, from, to } })
 }
 
 // 하루 계산: { iso, off, plans, end(퇴근·끝 시각 분), start(주말), raw(공제 전 분), minutes(인정 분), source }
@@ -148,48 +148,87 @@ const WD = '일월화수목금토'
 // 글자에서 방과후 일정 초안을 찾는다. 확실하지 않은 칸은 비워 두고 화면에서 고친다.
 export function parsePlanText(text, ref) {
   const t = String(text || '').replace(/ /g, ' ')
-  const out = { name: '', from: '', to: '', start: '', end: '', days: [], dates: [] }
+  const out = { name: '', from: '', to: '', start: '', end: '', days: [], dates: [], dayTimes: {}, dateTimes: {} }
+  const TIME = /(\d{1,2})\s*[:시]\s*(\d{2})\s*분?\s*[~\-–∼〜]\s*(\d{1,2})\s*[:시]\s*(\d{2})/
+  const asRange = m => {
+    const a = +m[1] * 60 + +m[2], b = +m[3] * 60 + +m[4]
+    return a >= 14 * 60 && b > a && b <= 23 * 60 ? [fmtHM(a), fmtHM(b)] : null
+  }
 
-  // 표에서는 이름표와 값이 다른 칸(| 로 나뉨)·다른 줄에 온다
-  const nm = t.match(/(?:강좌명|프로그램명|과정명|강\s*좌)[\s:：|]*([^\n|]{2,40})/)
+  // 이름: 「프로그램 명 : 면접대비반」처럼 쌍점이 있는 것을 먼저, 표에서는 이름표와 값이 다른 칸(|)·줄에 온다
+  const nm = t.match(/(?:강좌\s*명|프로그램\s*명|과정\s*명)\s*[:：]\s*([^\n|()]{2,40})/) ||
+    t.match(/(?:강좌\s*명|프로그램\s*명|과정\s*명|강\s*좌)[\s:：|]*([^\n|()]{2,40})/)
   if (nm) out.name = nm[1].trim().replace(/\s{2,}/g, ' ')
 
-  // 시간: 14시 이후 시작하는 구간 중 가장 많이 나온 것
+  // 시간: 14시 이후 시작하는 구간 중 가장 많이 나온 것(기본 시간)
   const times = {}
-  for (const m of t.matchAll(/(\d{1,2})\s*[:시]\s*(\d{2})\s*분?\s*[~\-–∼〜]\s*(\d{1,2})\s*[:시]\s*(\d{2})/g)) {
-    const a = +m[1] * 60 + +m[2], b = +m[3] * 60 + +m[4]
-    if (a >= 14 * 60 && b > a && b <= 23 * 60) {
-      const k = fmtHM(a) + '~' + fmtHM(b)
-      times[k] = (times[k] || 0) + 1
-    }
+  for (const m of t.matchAll(new RegExp(TIME.source, 'g'))) {
+    const r = asRange(m)
+    if (r) times[r.join('~')] = (times[r.join('~')] || 0) + 1
   }
   const best = Object.entries(times).sort((x, y) => y[1] - x[1])[0]
   if (best) [out.from, out.to] = best[0].split('~')
 
-  // 기간: 2026. 9. 1. ~ 2026. 12. 18.  /  9.1.~12.18.
-  const pm = t.match(/((?:\d{4}\s*[.\-년]\s*)?\d{1,2}\s*[.\-월]\s*\d{1,2})\s*[.일]?\s*(?:\([월화수목금토일]\))?\s*[~\-–∼〜]\s*((?:\d{4}\s*[.\-년]\s*)?\d{1,2}\s*[.\-월]\s*\d{1,2})/)
+  // 기간: 2026. 9. 1. ~ 2026. 12. 18. / 2026년 9월 29일 ~ 11월 11일 / 9/29~11/11
+  const DATE = '(?:\\d{4}\\s*[.\\-년]\\s*)?\\d{1,2}\\s*[.\\-월/]\\s*\\d{1,2}'
+  const pm = t.match(new RegExp('(' + DATE + ')\\s*[.일]?\\s*(?:\\([월화수목금토일]\\))?\\s*[~\\-–∼〜]\\s*(' + DATE + ')'))
   if (pm) {
-    const s = parseDateText(pm[1], ref)
-    const e = s && parseDateText(pm[2], s)
+    const s = parseDateText(pm[1].replace('/', '.'), ref)
+    const e = s && parseDateText(pm[2].replace('/', '.'), s)
     if (s && e && e >= s) { out.start = s; out.end = e }
   }
+  const near = out.start || ref
 
-  // 요일: 매주 월·수 / 운영 요일: 화, 목
-  const dm = t.match(/(?:매주|운영\s*요일|요일)[\s:：|]*([월화수목금](?:\s*[,·、/및와과]\s*[월화수목금])*)/)
+  // 요일별 시간: 「월, 수 (15:40~17:40)」 또는 「15:40~17:40(월, 수)」
+  const DAYS = '[월화수목금](?:\\s*[,·、/및와과]\\s*[월화수목금])*'
+  const setDays = (dstr, r) => { if (r) for (const c of dstr.match(/[월화수목금]/g)) out.dayTimes[WD.indexOf(c)] = r }
+  for (const m of t.matchAll(new RegExp('(' + DAYS + ')\\s*\\(\\s*' + TIME.source + '\\s*\\)', 'g'))) setDays(m[1], asRange(m.slice(1)))
+  for (const m of t.matchAll(new RegExp(TIME.source + '\\s*\\(\\s*(' + DAYS + ')\\s*\\)', 'g'))) setDays(m[5], asRange(m))
+
+  // 요일: 매주 월·수 / 운영 요일: 화, 목 / 요일별 시간에 나온 요일
+  const dm = t.match(new RegExp('(?:매주|운영\\s*요일|요일)[\\s:：|]*(' + DAYS + ')'))
   if (dm) out.days = [...new Set(dm[1].match(/[월화수목금]/g).map(c => WD.indexOf(c)))].sort()
+  if (!out.days.length && Object.keys(out.dayTimes).length) out.days = Object.keys(out.dayTimes).map(Number).sort()
 
-  // 날짜 목록: 9.2(화) 9/4(목) 9월 9일(화) — 셋 이상이면 날짜 목록으로 쓴다
+  // 날짜 목록 ① 9.2(화) 9/4(목) 9월 9일(화) — 요일이 맞는 것만
   const dates = []
+  const add = iso => { if (iso && !dates.includes(iso)) dates.push(iso) }
   for (const m of t.matchAll(/(\d{1,2})\s*[.\/월]\s*(\d{1,2})\s*[.일]?\s*\(\s*([월화수목금토일])\s*\)/g)) {
-    const iso = parseDateText(m[1] + '.' + m[2], out.start || ref)
-    if (iso && WD[fromISO(iso).getDay()] === m[3] && !dates.includes(iso)) dates.push(iso)
+    const iso = parseDateText(m[1] + '.' + m[2], near)
+    if (iso && WD[fromISO(iso).getDay()] === m[3]) add(iso)
+  }
+  // 날짜 목록 ② 출석부처럼 「9/29 9/30 10/1 …」 — 셋 이상 이어진 것. 바로 뒤에 같은 수의 시간이 오면 날짜마다 짝짓는다
+  const inRange = iso => iso && (!out.start || (iso >= out.start && iso <= out.end))
+  for (const run of t.matchAll(/(?:(?<![\d~∼\-–.\/])\d{1,2}\s*\/\s*\d{1,2}(?![\d\/]|\s*[~∼\-–])\s*){3,}/g)) {
+    const list = [...run[0].matchAll(/(\d{1,2})\s*\/\s*(\d{1,2})/g)].map(m => parseDateText(m[1] + '.' + m[2], near)).filter(inRange)
+    if (list.length < 3) continue
+    list.forEach(add)
+    const rest = t.slice(run.index + run[0].length)
+    const after = []
+    for (const m of rest.matchAll(new RegExp(TIME.source, 'g'))) {
+      const r = asRange(m)
+      if (r) after.push(r)
+      if (after.length === list.length) break
+    }
+    if (after.length === list.length) list.forEach((iso, i) => { out.dateTimes[iso] = after[i] })
   }
   if (dates.length >= 3) {
     out.dates = dates.sort()
     if (!out.start) { out.start = out.dates[0]; out.end = out.dates[out.dates.length - 1] }
     if (!out.days.length) out.days = [...new Set(out.dates.map(d => fromISO(d).getDay()))].sort()
+    // 짝지을 수 없던 날짜는 요일별 시간으로
+    for (const iso of out.dates) if (!out.dateTimes[iso] && out.dayTimes[fromISO(iso).getDay()]) out.dateTimes[iso] = out.dayTimes[fromISO(iso).getDay()]
   }
   return out
+}
+
+// 그 날의 방과후 시간: 날짜별 → 요일별 → 기본
+export function planTime(p, iso) {
+  const dt = p.dateTimes && p.dateTimes[iso]
+  if (dt) return dt
+  const wt = p.dayTimes && p.dayTimes[fromISO(iso).getDay()]
+  if (wt) return wt
+  return [p.from, p.to]
 }
 
 // 파일 → 글자. HWPX(압축된 XML) · PDF · 텍스트. 예전 HWP는 읽지 못한다.
