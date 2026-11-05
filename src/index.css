@@ -64,3 +64,7 @@ input::placeholder, textarea::placeholder { color: #B0B8C1; }
     padding: 0 !important;
   }
 }
+
+/* 차시별 내용 머리줄 — 패널이 좁으면 [접기] 글자를 숨겨 제목이 잘리지 않게 */
+.cp-head { container-type: inline-size; }
+@container (max-width: 230px) { .cp-fold-label { display: none; } }

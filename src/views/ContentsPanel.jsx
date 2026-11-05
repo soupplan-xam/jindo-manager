@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { GREEN, INK, FAINT, LINE, LINE_SOFT, SUB, SECTION_TITLE, CHIP_BTN, subjectOf, contentOf, withContent, sectionKeyOn } from '../logic.js'
 import Palette from './Palette.jsx'
-import ScheduleCalendar, { CalendarIcon } from './ScheduleCalendar.jsx'
 
 // 차시별 내용: 과목 탭 아래 차시 번호별 입력.
 // 여기 적은 내용이 진도표의 같은 구간·차시 칸에 그대로 표시된다.
@@ -15,7 +14,7 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
   const [colorFor, setColorFor] = useState(null) // 색을 고르는 중인 과목
 
   const min = !!data.cfg.minimal
-  const calView = data.cfg.contentsView === 'cal'
+  const calView = false // 달력은 상단 [달력] 탭에서 본다 — 여기서는 목록만
   const subj = data.subjects.includes(active) ? active : data.subjects[0]
   const subjClasses = data.classes.filter(c => subjectOf(data, c) === subj)
 
@@ -243,20 +242,9 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
 
   return (
     <div style={{ height: height || undefined, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flex: 'none', height: 32, boxSizing: 'border-box' }}>
-        {!min && <span style={SECTION_TITLE}>차시별 내용</span>}
+      <div className="cp-head" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flex: 'none', height: 32, boxSizing: 'border-box' }}>
+        {!min && <span style={{ ...SECTION_TITLE, whiteSpace: 'nowrap', flex: 'none' }}>차시별 내용</span>}
         <div style={{ flex: 1 }} />
-        <button
-          onClick={() => setData(d => ({ ...d, cfg: { ...d.cfg, contentsView: d.cfg.contentsView === 'cal' ? 'list' : 'cal' } }))}
-          title={calView ? '목록으로 보기' : '달력으로 보기'}
-          className="hov"
-          style={{
-            border: 'none', borderRadius: 8, background: calView ? '#E9F6FE' : 'none',
-            color: calView ? GREEN : SUB, padding: 5, cursor: 'pointer', display: 'flex', flex: 'none',
-          }}
-        >
-          <CalendarIcon />
-        </button>
         {editMode ? (
           <button
             onClick={applyEdit}
@@ -288,7 +276,7 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
             title="차시별 내용 접기"
             style={{ ...CHIP_BTN, padding: min ? '6px 8px' : '6px 12px' }}
           >
-            {!min && '접기'}
+            {!min && <span className="cp-fold-label">접기</span>}
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 5 16 12 9 19" />
             </svg>
@@ -361,12 +349,7 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
           )}
         </div>
       )}
-      {calView ? (
-        // 달력뷰: 날짜 밑 동그라미가 그 날의 최소 차시
-        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <ScheduleCalendar data={data} setData={setData} setSnack={setSnack} computed={computed} subject={subj} />
-        </div>
-      ) : (
+      {(
         <div
           ref={scrollRef}
           className="soft-scroll"
