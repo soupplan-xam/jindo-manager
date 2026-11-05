@@ -126,7 +126,7 @@ export default function OvertimeView({ data, setData, setSnack }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
         <div style={SECTION_TITLE}>월간 기록 달력</div>
         <div style={{ flex: 1 }} />
-        <span style={{ fontSize: 11.5, color: FAINT }}>● 방과후 · <span style={{ color: '#8CC3EA', fontWeight: 700 }}>옅은 글씨</span>는 예정</span>
+        <span style={{ fontSize: 11.5, color: FAINT }}>● 방과후 있는 날 (끝난 뒤부터 셈)</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', textAlign: 'center', fontSize: 12, fontWeight: 700, paddingBottom: 6 }}>
         {DAYS.split('').map((w, i) => <div key={w} style={{ color: i === 0 ? RED : i === 6 ? '#185FA5' : SUB }}>{w}</div>)}
@@ -195,12 +195,12 @@ export default function OvertimeView({ data, setData, setSnack }) {
         {day.off && <input type="time" aria-label="시작 시각" value={selLog.start || ''} onChange={e => setLog(sel, { start: e.target.value })} style={field} />}
         {day.off && <span style={{ color: FAINT }}>~</span>}
         <input type="time" aria-label={day.off ? '끝 시각' : '퇴근 시각'} value={selLog.end || ''} onChange={e => setLog(sel, { end: e.target.value })} style={field} />
-        {!day.off && day.plans.length > 0 && !selLog.end && <span style={{ fontSize: 12, color: FAINT }}>비우면 방과후 끝({day.plans[0].to})</span>}
+        {!day.off && day.plans.length > 0 && !selLog.end && <span style={{ fontSize: 12, color: FAINT }}>방과후({hm(day.planEnd)}) 끝난 뒤 남아 일했다면 넣으세요</span>}
       </div>
       <div style={{ marginTop: 10, padding: '10px 12px', background: '#F5F8FB', borderRadius: 10, fontSize: 13, color: SUB, lineHeight: 1.6 }}>
-        {day.end == null ? '기록이 없습니다.' : day.off
+        {day.end == null ? (day.planEnd != null ? '방과후 수업 시간은 초과근무에 넣지 않습니다. 방과후 끝(' + hm(day.planEnd) + ') 뒤부터 셉니다.' : '기록이 없습니다.') : day.off
           ? <>{hm(day.start || 0)}~{hm(day.end)} = {fmtMin(day.raw)}{day.raw > cfg.dailyMax ? ' (하루 최대 ' + fmtMin(cfg.dailyMax) + ')' : ''}</>
-          : <>퇴근 {hm(day.end)} − 기준 {cfg.offTime} = {fmtMin(day.raw)}{cfg.deduct ? ', 공제 ' + fmtMin(cfg.deduct) : ''}{day.raw - cfg.deduct > cfg.dailyMax ? ', 하루 최대 ' + fmtMin(cfg.dailyMax) : ''}</>}
+          : <>퇴근 {hm(day.end)} − {day.planEnd != null ? '방과후 끝 ' + hm(day.start) : '기준 ' + cfg.offTime} = {fmtMin(day.raw) || '0분'}{cfg.deduct ? ', 공제 ' + fmtMin(cfg.deduct) : ''}{day.raw - cfg.deduct > cfg.dailyMax ? ', 하루 최대 ' + fmtMin(cfg.dailyMax) : ''}</>}
         <div style={{ fontSize: 15, fontWeight: 800, color: day.minutes ? GREEN : FAINT }}>인정 {day.minutes ? fmtMin(day.minutes) : '0분'}</div>
       </div>
       <input aria-label="메모" value={selLog.note || ''} onChange={e => setLog(sel, { note: e.target.value })} placeholder="메모 (예: 생기부 작업)" style={{ ...field, width: '100%', marginTop: 10 }} />
@@ -252,7 +252,7 @@ export default function OvertimeView({ data, setData, setSnack }) {
         <label>정액분(시간)<input type="number" min="0" max="20" value={cfg.fixedHours} onChange={e => setCfg({ fixedHours: Math.max(0, +e.target.value || 0) })} style={{ ...field, width: '100%', marginTop: 4 }} /></label>
       </div>
       <div style={{ fontSize: 11.5, color: FAINT, marginTop: 10, lineHeight: 1.6 }}>
-        시간당 단가는 호봉별로 다릅니다. 급여명세서나 행정실에서 확인해 넣어 주세요(예: 2시간 25,590원이면 12,795원). 평일은 퇴근 기준시각 뒤부터 세고 공제를 뺍니다. 주말·공휴일·휴업일은 공제 없이 셉니다. 실적분은 한 달 합계에서 1시간 미만을 버리고, 정액분은 15일 이상 출근 시 전액·미만이면 출근일 비율로 계산합니다(참고용 — 학교 기준이 다르면 위 값을 고쳐 주세요).
+        시간당 단가는 호봉별로 다릅니다. 급여명세서나 행정실에서 확인해 넣어 주세요(예: 2시간 25,590원이면 12,795원). 평일은 퇴근 기준시각 뒤부터 세고 공제를 뺍니다. 방과후 있는 날은 방과후 수업 시간을 빼고 방과후가 끝나는 시각부터 셉니다. 주말·공휴일·휴업일은 공제 없이 셉니다. 실적분은 한 달 합계에서 1시간 미만을 버리고, 정액분은 15일 이상 출근 시 전액·미만이면 출근일 비율로 계산합니다(참고용 — 학교 기준이 다르면 위 값을 고쳐 주세요).
       </div>
     </section>
   )

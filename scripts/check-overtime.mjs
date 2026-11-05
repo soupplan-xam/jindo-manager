@@ -5,26 +5,28 @@ import { dayOvertime, monthOvertime, parsePlanText, defaultOvertime, fmtMin } fr
 const data = { events: [{ id: 1, type: '휴업일', name: '재량휴업일', start: '2026-11-20', end: '2026-11-20' }] }
 const ot = defaultOvertime()
 ot.plans = [{ id: 1, name: '수학 심화', from: '16:50', to: '18:40', start: '2026-11-01', end: '2026-11-30', days: [2, 4], skip: ['2026-11-26'] }]
-// 화 11.3: 18:40 - 16:40 = 120분 - 공제 60 = 60분
-assert.equal(dayOvertime(ot, data, '2026-11-03').minutes, 60)
-// 직접 기록이 우선: 20:10 퇴근 → 210 - 60 = 150
+// 방과후 수업 시간은 초과근무가 아니다: 수업 끝나고 바로 퇴근하면 0
+assert.equal(dayOvertime(ot, data, '2026-11-03').minutes, 0)
+// 방과후 끝(18:40) 뒤 20:10 퇴근 → 90분 - 공제 60 = 30분
 ot.logs['2026-11-05'] = { end: '20:10' }
-assert.equal(dayOvertime(ot, data, '2026-11-05').minutes, 150)
+assert.equal(dayOvertime(ot, data, '2026-11-05').minutes, 30)
+// 방과후 없는 날은 퇴근 기준시각(16:40)부터: 20:10 → 210 - 60 = 150
+ot.logs['2026-11-04'] = { end: '20:10' }
+assert.equal(dayOvertime(ot, data, '2026-11-04').minutes, 150)
 // 하루 최대 4시간
-ot.logs['2026-11-10'] = { end: '23:00' }
+ot.logs['2026-11-10'] = { end: '23:50' }
 assert.equal(dayOvertime(ot, data, '2026-11-10').minutes, 240)
 // 공제보다 짧으면 0
 ot.logs['2026-11-11'] = { end: '17:20' }
 assert.equal(dayOvertime(ot, data, '2026-11-11').minutes, 0)
-// 휴업일·뺀 날에는 방과후가 없다
+// 휴업일·뺀 날에는 방과후가 없다 → 빼 둔 날은 퇴근 기준시각부터 센다
 assert.equal(dayOvertime(ot, data, '2026-11-26').plans.length, 0)
 assert.equal(dayOvertime(ot, data, '2026-11-20').plans.length, 0)
 // 주말 근무: 공제 없이 시작~끝, 최대 4시간
 ot.logs['2026-11-07'] = { start: '10:00', end: '12:30' }
 assert.equal(dayOvertime(ot, data, '2026-11-07').minutes, 150)
 const m = monthOvertime(ot, data, 2026, 10, '2026-12-31')
-// 화·목 방과후: 3,5(기록),10(기록),12,17,19,24 (26 뺌) + 11(기록 0) + 7(주말)
-assert.equal(m.total, 60 + 150 + 240 + 60 + 60 + 60 + 60 + 0 + 150)
+assert.equal(m.total, 30 + 150 + 240 + 0 + 150)
 assert.equal(m.hours, Math.floor(m.total / 60))
 assert.equal(fmtMin(150), '2시간 30분')
 assert.equal(fmtMin(50), '50분')
@@ -60,11 +62,8 @@ const al = allowance(o2.cfg, mm, 0)
 assert.deepEqual([al.perf, al.fixed, al.unpaid], [25590, 0, 9596])
 assert.equal(allowance(o2.cfg, mm, 20).fixed, 127950)
 assert.equal(allowance(o2.cfg, mm, 6).fixed, 51180)
-// 오늘 뒤 방과후는 예정으로 따로
+// 방과후 날에 퇴근 기록이 없으면 초과근무 0 — 예정으로 더하는 시간도 없다
 const mf = monthOvertime(ot, data, 2026, 10, '2026-11-05')
-// 11.3 방과후(60) + 기록된 날(5일 150 · 7일 150 · 10일 240 · 11일 0)은 날짜와 상관없이 센다
-assert.equal(mf.total, 60 + 150 + 150 + 240 + 0)
-assert.ok(mf.days.find(r => r.iso === '2026-11-17').future)
-assert.ok(!mf.days.find(r => r.iso === '2026-11-03').future)
-assert.equal(mf.total + mf.planned, monthOvertime(ot, data, 2026, 10, '2026-12-31').total)
-console.log('PASS: overtime rules (deduct, cap, weekend, holiday, skip, logs), plan text parsing, HWPX text')
+assert.equal(mf.planned, 0)
+assert.equal(mf.total, 30 + 150 + 150 + 240 + 0)
+console.log('PASS: overtime rules (after-school class time excluded, deduct, cap, weekend, holiday, skip, logs), plan text parsing, HWPX text')

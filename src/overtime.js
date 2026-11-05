@@ -1,5 +1,6 @@
 // 초과근무(초근) — 방과후 계획 + 직접 기록으로 날마다 초과근무 시간을 계산한다.
-// 규칙(설정에서 바꿈): 평일은 퇴근 시각 뒤부터 세고 공제(기본 60분)를 뺀 뒤 하루 최대(기본 240분)까지.
+// 규칙(설정에서 바꿈): 평일은 퇴근 기준시각 뒤부터 세고 공제(기본 60분)를 뺀 뒤 하루 최대(기본 240분)까지.
+// 방과후 수업 시간은 초과근무가 아니다 — 방과후 있는 날은 방과후가 끝나는 시각부터 실제 퇴근까지만 센다.
 // 주말·공휴일·휴업일은 시작~끝을 그대로 세고(공제 없음) 하루 최대까지. 월 합계는 분까지 더한 뒤 시간 미만을 버린다.
 import { fromISO, toISO } from './logic.js'
 import { holidayOn } from './kcal.js'
@@ -48,11 +49,13 @@ export function dayOvertime(ot, data, iso) {
     return { iso, off, plans: ps, start: s, end: e, raw, minutes: Math.min(raw, cfg.dailyMax), source: log ? 'log' : null, note: log && log.note }
   }
   const planEnd = ps.length ? Math.max(...ps.map(x => toMin(x.to) || 0)) : null
-  const end = log && toMin(log.end) != null ? toMin(log.end) : planEnd
   const offT = toMin(cfg.offTime)
-  const raw = end != null && offT != null ? Math.max(0, end - offT) : 0
+  // 세기 시작하는 시각: 방과후가 있으면 방과후 끝(그 전·수업 시간은 빼고), 없으면 퇴근 기준시각
+  const from = planEnd != null ? Math.max(planEnd, offT ?? 0) : offT
+  const end = log && toMin(log.end) != null ? toMin(log.end) : null
+  const raw = end != null && from != null ? Math.max(0, end - from) : 0
   const minutes = Math.min(Math.max(0, raw - cfg.deduct), cfg.dailyMax)
-  return { iso, off, plans: ps, start: null, end, raw, minutes, source: log && log.end ? 'log' : ps.length ? 'plan' : null, note: log && log.note }
+  return { iso, off, plans: ps, start: from, planEnd, end, raw, minutes, source: log && log.end ? 'log' : ps.length ? 'plan' : null, note: log && log.note }
 }
 
 // 한 달 — 기록이나 방과후가 있는 날만.
