@@ -47,8 +47,11 @@ export default function MonthCalendar({ data, setData, setSnack }) {
   const offReason = (iso, dow) => {
     if (dow === 0 || dow === 6) return '주말'
     if (holidayOn(iso)) return '공휴일'
-    const ev = eventsOn(iso).find(e => !e.period && !e.cls && (e.type === '휴업일' || /휴업|방학|휴일/.test(e.name)))
-    return ev ? '휴업일' : null
+    // 학기 기간 밖 = 방학 (학기 시작일 전, 종료일 뒤)
+    if (data.semStart && data.semEnd && (iso < data.semStart || iso > data.semEnd)) return '방학'
+    // 방학식·개학식 날은 출근하는 날이라 뺀다
+    const ev = eventsOn(iso).find(e => !e.period && !e.cls && !/방학식|개학|종업식|시업식/.test(e.name) && (e.type === '휴업일' || /휴업|방학|휴일/.test(e.name)))
+    return ev ? (/방학/.test(ev.name) ? '방학' : '휴업일') : null
   }
   const OFF_BG = '#D3E3F7'
 
@@ -211,6 +214,9 @@ export default function MonthCalendar({ data, setData, setSnack }) {
       <div style={{ ...SECTION_TITLE, fontSize: 16 }}>
         {selD.getMonth() + 1}월 {selD.getDate()}일 <span style={{ color: selD.getDay() === 0 || selHoliday ? RED : selD.getDay() === 6 ? SAT : SUB, fontWeight: 600 }}>{DAYS[selD.getDay()]}요일</span>
       </div>
+      {autoOff && !selHoliday && offReason(sel, selD.getDay()) && offReason(sel, selD.getDay()) !== '주말' && (
+        <div style={{ marginTop: 4, fontSize: 13, fontWeight: 700, color: SUB }}>{offReason(sel, selD.getDay())}</div>
+      )}
       {(selHoliday || selTerm) && (
         <div style={{ marginTop: 4, fontSize: 13, fontWeight: 700 }}>
           {selHoliday && <span style={{ color: RED }}>{selHoliday}</span>}
@@ -285,7 +291,7 @@ export default function MonthCalendar({ data, setData, setSnack }) {
           >
             지우개
           </button>
-          <label title="주말·공휴일·휴업일을 하늘색으로 칠해 둡니다" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: SUB, marginLeft: 6, cursor: 'pointer' }}>
+          <label title="주말·공휴일·휴업일·방학(학기 기간 밖)을 하늘색으로 칠해 둡니다" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: SUB, marginLeft: 6, cursor: 'pointer' }}>
             <input type="checkbox" checked={autoOff} onChange={() => setData(d => ({ ...d, cfg: { ...d.cfg, autoOff: !autoOff } }))} style={{ accentColor: GREEN, margin: 0 }} />
             쉬는 날 자동 색
           </label>
