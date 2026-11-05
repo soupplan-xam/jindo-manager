@@ -1,6 +1,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
+import WidgetView from './views/WidgetView.jsx'
 import './index.css'
 
 // 클릭재킹 방지 — GitHub Pages 는 X-Frame-Options 헤더를 보낼 수 없고
@@ -26,4 +27,10 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
   })
 }
 
-createRoot(document.getElementById('root')).render(<App />)
+// #widget 이면 바탕화면 위젯 화면만 그린다
+const isWidget = location.hash === '#widget'
+// 주소의 #widget 을 붙이거나 떼면 화면을 다시 그린다
+window.addEventListener('hashchange', e => {
+  if ((new URL(e.oldURL).hash === '#widget') !== (location.hash === '#widget')) location.reload()
+})
+createRoot(document.getElementById('root')).render(isWidget ? <WidgetView /> : <App />)

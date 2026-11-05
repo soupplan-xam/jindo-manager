@@ -20,6 +20,8 @@ export const defaultData = () => ({
   extras: {}, // {'iso|p': '2-1'} 그 날 그 교시에 실제로 한 수업 — 빈 칸이면 보강, 있던 칸이면 교체
   extraKind: {}, // {'iso|p': 'swap'} 교환 수업(진도 셈, 표시만 따로)
   homeroom: defaultHomeroom(), // 담임 출결 안내: 학교·반·담임 이름과 문구 틀(학생 정보는 저장하지 않음)
+  school: null, // {code, region, name} 급식·날씨용 우리 학교(나이스)
+  weatherLoc: null, // {name, lat, lon} 날씨 위치 — 없으면 학교의 시·도
   todos: {}, // {'iso': [{id, text, done}]} 달력의 날짜별 할 일
   dayColors: {}, // {'iso': '#D3EBC0'} 달력 기간 색칠
   notes: {}, // {'iso|p': '3·15번 결시'} 그 날 그 칸에만 붙는 메모 — 차시별 내용과 달리 다른 반에 퍼지지 않는다
@@ -30,7 +32,8 @@ export const defaultData = () => ({
     examId: null, // 차시 초기화 기준
     targetExamId: null, // 자동: 초기화 이후 다음 고사, semester: 학기 말
     anim: true,
-    dash: { today: true, progress: true, exam: true }, // 대시보드에 띄울 항목
+    dash: { today: true, progress: true, exam: true, meal: true }, // 대시보드에 띄울 항목
+    bells: null, // 교시 시각 [['09:00','09:50'], ...] — 없으면 기본 시각
     printScale: 'l', // 인쇄 크기: s(A4의 1/4) · m(1/2) · l(1)
     printWeeks: 1, // 인쇄 범위: 1(이번 주) · 2(2주치 — 다음 주까지, 크게는 못 고른다)
     fontScale: 1, // 화면 글씨 크기 배율
@@ -40,7 +43,7 @@ export const defaultData = () => ({
     dashOpen: true,
     contentsOpen: true,
     splitPct: 62,
-    dashW: { today: 26, progress: 60, exam: 14 }, // 대시보드 카드 너비 비율(%)
+    dashW: { today: 22, progress: 46, exam: 12, meal: 20 }, // 대시보드 카드 너비 비율(%)
     schedView: null, // 일정: list | cal (null이면 미니멀은 달력, 일반은 목록)
     contentsView: 'list', // 차시별 내용: list | cal
   },

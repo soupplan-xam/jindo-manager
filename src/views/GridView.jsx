@@ -1,6 +1,8 @@
 ﻿import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF, addDays, fromISO, toISO, colorOf, subjectOf, progressFor, progressGroups, contentOf, withContent, printSizes, fitScale } from '../logic.js'
 import ContentsPanel from './ContentsPanel.jsx'
+import useTodayInfo from '../useTodayInfo.js'
+import { WeatherLine, MealView, periodLabel, NOW_BG } from './TodayCards.jsx'
 import Palette from './Palette.jsx'
 import useWindowWidth from '../useWindowWidth.js'
 import useSplit from '../useSplit.js'
@@ -1055,7 +1057,9 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
     .sort((a, b) => b.behind - a.behind)
   const chip = c => ({ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: colorOf(data, c), border: '1px solid rgba(26,26,26,0.16)', flex: 'none' })
   const show = data.cfg.dash
-  const tileCount = (show.today ? 1 : 0) + (show.progress ? 1 : 0) + (show.exam ? 1 : 0)
+  const tileCount = (show.today ? 1 : 0) + (show.progress ? 1 : 0) + (show.exam ? 1 : 0) + (show.meal ? 1 : 0)
+  const info = useTodayInfo(data, { meal: !!show.meal, weather: !!show.meal })
+  const nowP = info.today === today ? info.period : null
   // 반이 많아도 겹치지 않도록 칸 최소 너비를 정해두고 자동으로 줄을 채운다.
   const autoCols = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(165px, 1fr))', gap: '6px 12px' }
   // 손잡이 폭을 뺀 나머지를 비율대로 나눠 갖는다
@@ -1082,14 +1086,17 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
         >
           {/* 오늘의 수업 */}
           {show.today && (
-            <Tile label="오늘" sub={dateLabel} min={min} grow={isMobile ? undefined : growOf('today')}>
+            <Tile label="오늘" sub={dateLabel + (todayRows.length && nowP ? ' · ' + periodLabel(nowP) : '')} min={min} grow={isMobile ? undefined : growOf('today')}>
               {todayRows.length === 0 ? (
                 <div style={{ fontSize: 14, fontWeight: 600, color: FAINT }}>수업 없음</div>
               ) : (
                 <div style={autoCols}>
-                  {todayRows.map(r => (
-                    <div key={r.p} style={{ display: 'flex', alignItems: 'baseline', gap: 4, minWidth: 0, flexWrap: 'nowrap' }}>
-                      <span style={{ fontSize: 11, color: FAINT, flex: 'none' }}>{r.p}교시</span>
+                  {todayRows.map(r => {
+                    const isNow = nowP && nowP.kind === 'class' && nowP.period === r.p
+                    const isNext = nowP && nowP.kind !== 'class' && nowP.next === r.p
+                    return (
+                    <div key={r.p} style={{ display: 'flex', alignItems: 'baseline', gap: 4, minWidth: 0, flexWrap: 'nowrap', borderRadius: 6, margin: '-2px -6px', padding: '2px 6px', background: isNow ? NOW_BG : 'transparent', boxShadow: isNext ? 'inset 0 0 0 1px #C6E6FA' : 'none' }}>
+                      <span style={{ fontSize: 11, color: isNow ? GREEN : FAINT, fontWeight: isNow ? 700 : 400, flex: 'none' }}>{isNow ? '지금' : r.p + '교시'}</span>
                       <span style={{ ...chip(r.cls), ...(r.makeup ? { background: MAKEUP_BG } : null), alignSelf: 'center' }} />
                       <span style={{ fontSize: 12, fontWeight: 700, minWidth: 0, ...ellipBase }}>{r.makeup ? r.place || '보강' : r.cls}</span>
                       {r.canceled ? (
@@ -1098,7 +1105,8 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
                         <span style={{ fontSize: 18, fontWeight: 700, lineHeight: 1 }}>{r.num}</span>
                       )}
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </Tile>
@@ -1184,6 +1192,18 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
               ) : (
                 <div style={{ fontSize: 12, color: FAINT }}>일정에 고사 추가</div>
               )}
+            </Tile>
+          )}
+
+          {!isMobile && show.meal && (show.exam || show.progress || show.today) && handle(show.exam ? 'exam' : show.progress ? 'progress' : 'today', 'meal')}
+
+          {/* 급식 · 날씨 */}
+          {show.meal && (
+            <Tile label="급식 · 날씨" sub={info.school ? info.school.name : ''} min={min} grow={isMobile ? undefined : growOf('meal')}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <WeatherLine weather={info.weather} weatherErr={info.weatherErr} place={info.place} size={12} />
+                <MealView meal={info.meal} mealErr={info.mealErr} school={info.school} size={12.5} only="중식" />
+              </div>
             </Tile>
           )}
         </div>

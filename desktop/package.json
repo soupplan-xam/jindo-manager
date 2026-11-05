@@ -1,0 +1,32 @@
+{
+  "name": "jindo-desktop",
+  "productName": "진도계획표 위젯",
+  "version": "1.0.0",
+  "description": "진도계획표 바탕화면 위젯 (윈도우)",
+  "main": "main.js",
+  "private": true,
+  "author": "soupplan-xam",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --publish never"
+  },
+  "devDependencies": {
+    "electron": "44.9.0",
+    "electron-builder": "26.17.0"
+  },
+  "build": {
+    "appId": "io.github.soupplan-xam.jindo",
+    "productName": "진도계획표 위젯",
+    "artifactName": "jindo-widget-setup-${version}.exe",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "preload.js", "build/icon.png"],
+    "win": { "target": "nsis", "icon": "build/icon.png" },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "진도계획표 위젯"
+    }
+  }
+}

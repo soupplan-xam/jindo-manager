@@ -3,13 +3,14 @@ import { GREEN, FAINT, INK, LINE, SUB, WARN, RED, exportCSV, printSizes, fitScal
 import { getApiKey, setApiKey, getModel, setModel, exportJSON, importJSON, defaultData } from '../storage.js'
 import { checkKey } from '../importer.js'
 import DateField from './DateField.jsx'
+import { SchoolWeatherSettings, BellSettings } from './TodaySettings.jsx'
 import Modal from './Modal.jsx'
 
 export default function SettingsModal({ data, setData, computed, today, setSnack, onClose, onResetSetup, onImport, onSchools }) {
   const [confirmClear, setConfirmClear] = useState(false)
   const cfg = data.cfg
   const weeks = cfg.printWeeks || 1 // 인쇄 범위 — 고를 수 있는 크기가 여기에 달렸다
-  const [open, setOpen] = useState({ mode: true, sem: true, count: true, targetExam: true, view: false, dash: false, print: false, install: false, data: false, file: false })
+  const [open, setOpen] = useState({ mode: true, sem: true, count: true, targetExam: true, view: false, dash: false, print: false, school: false, bells: false, install: false, data: false, file: false })
   const [canInstall, setCanInstall] = useState(() => !!window.__installPrompt)
   useEffect(() => {
     const on = () => setCanInstall(true)
@@ -207,7 +208,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
 
         <Sec id="dash" title="대시보드">
           <div style={{ padding: '0 0 16px', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14 }}>
-            {[['today', '오늘의 수업'], ['progress', '반별 진도'], ['exam', '고사 D-day']].map(([k, labelText]) => (
+            {[['today', '오늘의 수업'], ['progress', '반별 진도'], ['exam', '고사 D-day'], ['meal', '급식 · 날씨']].map(([k, labelText]) => (
               <SwitchRow key={k} label={labelText} on={cfg.dash[k]} onClick={() => setCfg({ dash: { ...cfg.dash, [k]: !cfg.dash[k] } })} />
             ))}
           </div>
@@ -263,8 +264,25 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
           </div>
         </Sec>
 
-        <Sec id="install" title="앱으로 설치">
+        <Sec id="school" title="우리 학교 · 급식 · 날씨">
+          <SchoolWeatherSettings data={data} setData={setData} />
+        </Sec>
+
+        <Sec id="bells" title="교시 시각">
+          <BellSettings data={data} setData={setData} />
+        </Sec>
+
+        <Sec id="install" title="앱으로 설치 · 바탕화면 위젯">
           <div style={{ padding: '0 0 16px', fontSize: 13, color: SUB, lineHeight: 1.65 }}>
+            <div style={{ marginBottom: 12, padding: '10px 12px', background: '#F5F8FB', borderRadius: 10 }}>
+              <b style={{ color: '#191F28' }}>바탕화면 위젯 (윈도우)</b>
+              <div>오늘 수업·지금 교시·할 일·D-day·급식·날씨를 바탕화면 작은 창에 띄웁니다.</div>
+              <div style={{ display: 'flex', gap: 12, marginTop: 6, flexWrap: 'wrap' }}>
+                <a href="https://github.com/soupplan-xam/jindo-manager/releases/latest" target="_blank" rel="noreferrer" style={{ fontWeight: 700 }}>설치 파일 받기</a>
+                <a href={location.pathname + '#widget'} target="_blank" rel="noreferrer">브라우저에서 위젯 미리보기</a>
+              </div>
+              <div style={{ color: FAINT, fontSize: 12, marginTop: 4 }}>위젯 프로그램은 이 브라우저와 저장 공간이 따로라서, 처음 한 번 구름 아이콘으로 로그인하거나 JSON 파일을 불러와야 내용이 보입니다.</div>
+            </div>
             {installed ? (
               <span>지금 설치한 앱으로 열려 있습니다.</span>
             ) : (

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "node scripts/check-exam-target.mjs && node scripts/check-date-input.mjs && node scripts/check-makeup-swap.mjs && node scripts/check-sync.mjs && node scripts/check-groups.mjs && node scripts/check-sections.mjs && node scripts/check-homeroom.mjs && node scripts/check-kcal.mjs"
+    "check": "node scripts/check-exam-target.mjs && node scripts/check-date-input.mjs && node scripts/check-makeup-swap.mjs && node scripts/check-sync.mjs && node scripts/check-groups.mjs && node scripts/check-sections.mjs && node scripts/check-homeroom.mjs && node scripts/check-kcal.mjs && node scripts/check-today.mjs"
   },
   "dependencies": {
     "firebase": "12.19.0",

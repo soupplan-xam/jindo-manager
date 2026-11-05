@@ -63,6 +63,8 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose, 
   }, [data.events])
 
   const open = async s => {
+    // 우리 학교를 아직 안 정했으면 급식·날씨용으로 함께 기억한다
+    if (s && s.code && s.region && !data.school) setData(d => (d.school ? d : { ...d, school: { code: s.code, region: s.region, name: s.name } }))
     setSchool(s)
     setEvents(null)
     setError('')

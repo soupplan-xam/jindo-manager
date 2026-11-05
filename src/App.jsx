@@ -20,6 +20,12 @@ export default function App() {
   const [data, setData] = useState(loadData)
   useEffect(() => saveData(data), [data])
   const sync = useCloudSync(data, setData)
+  // 위젯 창 등 다른 창에서 고친 내용을 따라온다(같은 브라우저 저장소)
+  useEffect(() => {
+    const on = e => { if (e.key === 'jindo.data.v1' && e.newValue) setData(loadData()) }
+    window.addEventListener('storage', on)
+    return () => window.removeEventListener('storage', on)
+  }, [])
   const [syncOpen, setSyncOpen] = useState(false)
   // 인쇄 배율은 CSS가 body 속성을 보고 정한다
   useEffect(() => {
