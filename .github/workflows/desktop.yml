@@ -1,6 +1,6 @@
 name: Build Windows widget
 
-# desktop-v* 태그를 올리거나 Actions에서 직접 실행하면 윈도우 설치 파일(.exe)을 만든다.
+# desktop-v* 태그를 올리거나 Actions에서 직접 실행하면 윈도우 설치 파일(.exe)을 만들어 릴리스에 올린다.
 on:
   push:
     tags: ['desktop-v*']
@@ -26,10 +26,15 @@ jobs:
         with:
           name: jindo-widget-setup
           path: desktop/dist/*.exe
-      - if: startsWith(github.ref, 'refs/tags/desktop-v')
-        uses: softprops/action-gh-release@v2
+      - id: ver
+        shell: bash
+        run: echo "tag=desktop-v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      # 태그로 실행되면 그 태그로, 직접 실행하면 package.json 버전으로 릴리스를 만든다
+      - uses: softprops/action-gh-release@v2
         with:
-          name: 진도계획표 위젯 ${{ github.ref_name }}
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/desktop-v') && github.ref_name || steps.ver.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: 진도계획표 위젯 ${{ startsWith(github.ref, 'refs/tags/desktop-v') && github.ref_name || steps.ver.outputs.tag }}
           files: desktop/dist/*.exe
           body: |
             진도계획표 바탕화면 위젯(윈도우) 설치 파일입니다.
