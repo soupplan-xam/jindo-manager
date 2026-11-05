@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { loadData, saveData } from '../storage.js'
 import { compute, toISO, fromISO, DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, RED, colorOf, subjectOf, contentOf } from '../logic.js'
 import useTodayInfo from '../useTodayInfo.js'
+import useCloudSync from '../useCloudSync.js'
 import { WeatherLine, MealView, periodLabel, NOW_BG } from './TodayCards.jsx'
 import { TODO_COLORS } from './MonthCalendar.jsx'
 
@@ -38,6 +39,8 @@ export default function WidgetView() {
     }
   }, [])
 
+  // 진도계획표 창이 닫혀 있어도 로그인돼 있으면 온라인 내용(휴대폰에서 고친 것)과 맞춘다
+  useCloudSync(data, setData)
   const info = useTodayInfo(data, { meal: pref.meal, weather: pref.weather })
   const today = info.today
   const computed = useMemo(() => compute(data), [data])
