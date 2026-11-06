@@ -79,4 +79,8 @@ html.widget-mode, html.widget-mode body { background: transparent; overflow: hid
 
 /* 위젯 본문 — 넓으면 왼쪽 시간표 · 오른쪽 달력, 좁으면 위아래 */
 .wg-wrap { container-type: inline-size; }
+/* 바탕화면 모드: 밝은 화면을 반전해 어두운 유리 위 흰 글씨로(반 색은 hue-rotate 로 원래 색 계열 유지).
+   흰 그림자는 반전되어 글씨 둘레의 검은 그림자가 된다 — 어떤 바탕화면 위에서도 읽히게 */
+.wg-glass { filter: invert(1) hue-rotate(180deg); text-shadow: 0 0 3px rgba(255,255,255,0.95), 0 0 1px rgba(255,255,255,0.9); }
+.wg-glass input, .wg-glass textarea { background: rgba(255,255,255,0.85) !important; text-shadow: none; }
 

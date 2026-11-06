@@ -13,7 +13,12 @@ import { MiniWeek, MiniMonth } from './WidgetParts.jsx'
 
 const desk = typeof window !== 'undefined' ? window.jindoDesktop : null
 const PREF_KEY = 'jindo.widget'
-const DEFAULT_PREF = { dday: true, opacity: 0.94, tab: 'month' }
+const DEFAULT_PREF = { dday: true, opacity: 0.94, tab: 'month', glassA: 0.22 }
+// 바탕화면 모드(윈도우 프로그램이 ?glass=1 로 연다): 창 바탕이 투명하고 바탕화면에 붙는다.
+// 밝은 화면을 반전해 어두운 유리 위 흰 글씨로 보이게 한다(.wg-glass). 브라우저에서 ?glass=1#widget 으로 미리 볼 수 있다
+const GLASS = typeof location !== 'undefined' && new URLSearchParams(location.search).get('glass') === '1'
+// 마우스를 받을 곳 — 나머지 빈 곳은 바탕화면으로 통과한다
+const HIT = 'button, input, textarea, select, a, label, [data-hit]'
 const readPref = () => { try { return { ...DEFAULT_PREF, ...JSON.parse(localStorage.getItem(PREF_KEY) || '{}') } } catch { return { ...DEFAULT_PREF } } }
 const todoColor = k => (TODO_COLORS.find(x => x.k === (k || '')) || TODO_COLORS[0]).c
 
@@ -28,6 +33,21 @@ export default function WidgetView({ shared = null }) {
   const [menu, setMenu] = useState(false)
   const [onTop, setOnTop] = useState(false)
   const [autoStart, setAutoStart] = useState(false)
+  const glass = GLASS && !shared
+
+  // 바탕화면 모드: 마우스가 날짜·할 일·버튼 위에 있을 때만 창이 받는다
+  useEffect(() => {
+    if (!glass || !desk || !desk.setHit) return
+    let last = null
+    const on = e => {
+      const hit = !!(e.target && e.target.closest && e.target.closest(HIT))
+      if (hit !== last) { last = hit; desk.setHit(hit) }
+    }
+    const out = () => { if (last !== false) { last = false; desk.setHit(false) } }
+    document.addEventListener('mousemove', on)
+    document.addEventListener('mouseleave', out)
+    return () => { document.removeEventListener('mousemove', on); document.removeEventListener('mouseleave', out) }
+  }, [glass])
 
   // 다른 창(진도계획표)에서 고치면 따라온다
   useEffect(() => {
@@ -78,16 +98,17 @@ export default function WidgetView({ shared = null }) {
   return (
     <div style={{ height: '100vh', boxSizing: 'border-box', padding: desk || shared ? 0 : 16, display: 'flex' }}>
       <div
-        className="wg-wrap"
+        className={'wg-wrap' + (glass ? ' wg-glass' : '')}
         style={{
           flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',
-          background: desk || shared ? '#FFFFFF' : 'rgba(255,255,255,' + pref.opacity + ')', borderRadius: desk || shared ? 0 : 16,
+          background: glass ? 'rgba(255,255,255,' + pref.glassA + ')' : desk || shared ? '#FFFFFF' : 'rgba(255,255,255,' + pref.opacity + ')', borderRadius: glass ? 14 : desk || shared ? 0 : 16,
           boxShadow: desk || shared ? 'none' : '0 8px 30px rgba(25,31,40,0.18)', border: desk || shared ? 'none' : '1px solid rgba(225,229,234,0.9)',
-          backdropFilter: 'blur(12px)', margin: desk || shared ? 0 : '0 auto',
+          backdropFilter: glass ? 'none' : 'blur(12px)', margin: desk || shared ? 0 : '0 auto',
+          ...(glass ? { boxShadow: 'none', border: 'none' } : null),
         }}
       >
         {/* 머리줄 — 윈도우 프로그램에서는 여기를 끌어 창을 옮긴다 */}
-        <header style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 10px 8px 14px', WebkitAppRegion: 'drag', userSelect: 'none' }}>
+        <header style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 10px 8px 14px', WebkitAppRegion: glass ? 'no-drag' : 'drag', userSelect: 'none' }}>
           <span style={{ width: 4, height: 16, borderRadius: 2, background: GREEN, flex: 'none' }} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontSize: 15, fontWeight: 800, color: INK, letterSpacing: '-0.02em' }}>
@@ -102,7 +123,7 @@ export default function WidgetView({ shared = null }) {
                 style={{ border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', background: tab === k ? '#FFFFFF' : 'transparent', color: tab === k ? INK : FAINT, boxShadow: tab === k ? '0 1px 3px rgba(25,31,40,0.12)' : 'none' }}>{label}</button>
             ))}
           </div>
-          {desk && (
+          {desk && !glass && (
             <button type="button" onClick={async () => setOnTop(await desk.setAlwaysOnTop(!onTop))} title={onTop ? '항상 위 끄기' : '항상 위에 두기'} aria-pressed={onTop} style={{ ...iconBtn, color: onTop ? GREEN : FAINT }}><Ico d="M9 4h6l-1 6 3 3v2H7v-2l3-3-1-6zM12 15v6" /></button>
           )}
           <button type="button" onClick={() => setMenu(m => !m)} title="위젯 설정" aria-expanded={menu} style={iconBtn}><Ico d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" dots /></button>
@@ -125,10 +146,23 @@ export default function WidgetView({ shared = null }) {
                 <input type="checkbox" checked={!!pref[k]} onChange={() => setPref({ [k]: !pref[k] })} style={{ accentColor: GREEN, margin: 0 }} /> {label}
               </label>
             ))}
-            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              투명도
-              <input type="range" min="0.55" max="1" step="0.05" value={pref.opacity} onChange={e => { const v = Number(e.target.value); setPref({ opacity: v }); if (desk && desk.setOpacity) desk.setOpacity(v) }} style={{ flex: 1, accentColor: GREEN }} />
-            </label>
+            {glass ? (
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                바탕 진하기
+                <input type="range" min="0" max="0.8" step="0.05" value={pref.glassA} onChange={e => setPref({ glassA: Number(e.target.value) })} style={{ flex: 1, accentColor: GREEN }} />
+              </label>
+            ) : (
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                투명도
+                <input type="range" min="0.55" max="1" step="0.05" value={pref.opacity} onChange={e => { const v = Number(e.target.value); setPref({ opacity: v }); if (desk && desk.setOpacity) desk.setOpacity(v) }} style={{ flex: 1, accentColor: GREEN }} />
+              </label>
+            )}
+            {desk && desk.setMode && (
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
+                <input type="checkbox" checked={glass} onChange={() => desk.setMode(glass ? 'normal' : 'desktop')} style={{ accentColor: GREEN, margin: 0 }} /> 바탕화면 모드 (투명하게 바탕화면에 붙이기)
+              </label>
+            )}
+            {glass && <div style={{ fontSize: 11.5, color: FAINT, lineHeight: 1.45 }}>위치·크기는 바탕화면 모드를 끄고 맞춘 뒤 다시 켜세요. 빈 곳은 마우스가 바탕화면으로 통과합니다.</div>}
             {desk && (
               <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
                 <input type="checkbox" checked={autoStart} onChange={async () => setAutoStart(await desk.setAutoStart(!autoStart))} style={{ accentColor: GREEN, margin: 0 }} /> 컴퓨터 켤 때 위젯 자동 실행
@@ -148,8 +182,8 @@ export default function WidgetView({ shared = null }) {
         {/* 본문: 달력 탭 / 시간표 탭 — 각각 창 전체를 쓴다 */}
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '0 12px 12px' }}>
           {tab === 'week'
-            ? <MiniWeek data={data} setData={setData} computed={computed} today={today} period={P} periods={Math.max(7, (data.cfg.bells || []).length)} />
-            : <MiniMonth data={data} setData={setData} today={today} />}
+            ? <MiniWeek glass={glass} data={data} setData={setData} computed={computed} today={today} period={P} periods={Math.max(7, (data.cfg.bells || []).length)} />
+            : <MiniMonth glass={glass} data={data} setData={setData} today={today} />}
         </div>
       </div>
     </div>

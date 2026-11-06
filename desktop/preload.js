@@ -9,4 +9,7 @@ contextBridge.exposeInMainWorld('jindoDesktop', {
   openMain: () => ipcRenderer.invoke('desk:openMain'),
   hideWidget: () => ipcRenderer.invoke('desk:hideWidget'),
   setOpacity: v => ipcRenderer.invoke('desk:setOpacity', v),
+  getMode: () => ipcRenderer.invoke('desk:getMode'),
+  setMode: m => ipcRenderer.invoke('desk:setMode', m),
+  setHit: on => ipcRenderer.send('desk:hit', !!on),
 })

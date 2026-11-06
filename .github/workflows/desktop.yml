@@ -1,10 +1,16 @@
 name: Build Windows widget
 
-# desktop-v* 태그를 올리거나 Actions에서 직접 실행하면 윈도우 설치 파일(.exe)을 만들어 릴리스에 올린다.
+# desktop-v* 태그를 올리면 윈도우 설치 파일·포터블(.exe)을 만들어 릴리스에 올린다.
+# Actions에서 직접 실행하면 기본은 빌드만 하고(작업 결과물로 내려받기), release 를 켜면 릴리스까지 올린다.
 on:
   push:
     tags: ['desktop-v*']
   workflow_dispatch:
+    inputs:
+      release:
+        description: '공개 릴리스로도 올리기'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -27,15 +33,19 @@ jobs:
           name: jindo-widget-setup
           path: desktop/dist/*.exe
       - id: ver
+        if: startsWith(github.ref, 'refs/tags/desktop-v') || inputs.release
         shell: bash
         run: echo "tag=desktop-v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
       # 태그로 실행되면 그 태그로, 직접 실행하면 package.json 버전으로 릴리스를 만든다
       - uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/desktop-v') || inputs.release
         with:
           tag_name: ${{ startsWith(github.ref, 'refs/tags/desktop-v') && github.ref_name || steps.ver.outputs.tag }}
           target_commitish: ${{ github.sha }}
           name: 진도계획표 위젯 ${{ startsWith(github.ref, 'refs/tags/desktop-v') && github.ref_name || steps.ver.outputs.tag }}
           files: desktop/dist/*.exe
           body: |
-            진도계획표 바탕화면 위젯(윈도우) 설치 파일입니다.
+            진도계획표 바탕화면 위젯(윈도우)입니다.
+            - jindo-widget-setup-*.exe: 설치형
+            - jindo-widget-portable-*.exe: 설치 없이 바로 실행(학교 PC 등 설치가 어려울 때)
             설치 중 'Windows의 PC 보호' 창이 뜨면 [추가 정보] → [실행]을 누르세요(코드 서명을 하지 않은 프로그램이라 뜨는 안내입니다).
