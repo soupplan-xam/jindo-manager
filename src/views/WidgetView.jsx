@@ -15,7 +15,17 @@ const desk = typeof window !== 'undefined' ? window.jindoDesktop : null
 const PREF_KEY = 'jindo.widget'
 const DEFAULT_PREF = { dday: true, opacity: 0.94, tab: 'month', glassA: 0.55, glassColor: '#1E2530' }
 // 바탕화면 모드 바탕색 고르기 — 흰 글씨가 잘 보이는 어두운 색들
-const GLASS_COLORS = [['#000000', '검정'], ['#1E2530', '먹색'], ['#14284B', '남색'], ['#0F3D4A', '청록'], ['#1F3A2E', '초록'], ['#3B2A4A', '보라'], ['#4A3426', '갈색'], ['#5A2330', '와인']]
+// 어두운 색이면 흰 글씨, 밝은 색이면 검은 글씨로 저절로 바뀐다
+const GLASS_COLORS = [['#000000', '검정'], ['#1E2530', '먹색'], ['#14284B', '남색'], ['#0F3D4A', '청록'], ['#1F3A2E', '초록'], ['#3B2A4A', '보라'], ['#4A3426', '갈색'], ['#5A2330', '와인'],
+  ['#FFFFFF', '흰색'], ['#E9EEF3', '연회색'], ['#E3F0FB', '연하늘'], ['#FFF4D6', '크림']]
+// 바탕색이 어두운가(상대 휘도) — 어두우면 화면을 반전해 흰 글씨로
+const isDark = hex => {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex || '')
+  if (!m) return true
+  const n = parseInt(m[1], 16)
+  const lin = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4) }
+  return 0.2126 * lin(n >> 16) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255) < 0.4
+}
 const rgba = (hex, a) => {
   const m = /^#([0-9a-f]{6})$/i.exec(hex || '')
   const n = m ? parseInt(m[1], 16) : 0x1E2530
@@ -41,6 +51,7 @@ export default function WidgetView({ shared = null }) {
   const [onTop, setOnTop] = useState(false)
   const [autoStart, setAutoStart] = useState(false)
   const glass = GLASS && !shared
+  const inv = glass && isDark(pref.glassColor)
 
   // 바탕화면 모드: 마우스가 날짜·할 일·버튼 위에 있을 때만 창이 받는다
   useEffect(() => {
@@ -107,7 +118,7 @@ export default function WidgetView({ shared = null }) {
       // 바탕화면 모드: 고른 바탕색은 반전 필터 밖(여기)에 깐다 — 고른 색 그대로 보인다
       ...(glass ? { background: rgba(pref.glassColor, pref.glassA), borderRadius: 14, overflow: 'hidden' } : null) }}>
       <div
-        className={'wg-wrap' + (glass ? ' wg-glass' : '')}
+        className={'wg-wrap' + (inv ? ' wg-glass' : glass ? ' wg-glass-l' : '')}
         style={{
           flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',
           background: glass ? 'transparent' : desk || shared ? '#FFFFFF' : 'rgba(255,255,255,' + pref.opacity + ')', borderRadius: glass ? 14 : desk || shared ? 0 : 16,
@@ -161,7 +172,7 @@ export default function WidgetView({ shared = null }) {
                   <span style={{ marginRight: 2 }}>바탕색</span>
                   {GLASS_COLORS.map(([c, name]) => (
                     <button key={c} type="button" className="wg-raw" title={name} aria-label={'바탕색 ' + name} aria-pressed={pref.glassColor === c} onClick={() => setPref({ glassColor: c })}
-                      style={{ width: 20, height: 20, borderRadius: 999, background: c, border: '2px solid ' + (pref.glassColor === c ? '#FFFFFF' : 'rgba(255,255,255,0.35)'), boxShadow: pref.glassColor === c ? '0 0 0 2px ' + GREEN : 'none', cursor: 'pointer', padding: 0 }} />
+                      style={{ width: 20, height: 20, borderRadius: 999, background: c, border: '2px solid ' + (pref.glassColor === c ? '#FFFFFF' : 'rgba(128,128,128,0.45)'), boxShadow: pref.glassColor === c ? '0 0 0 2px ' + GREEN : 'none', cursor: 'pointer', padding: 0 }} />
                   ))}
                   <label title="다른 색 고르기" className="wg-raw" style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
                     <input type="color" aria-label="바탕색 직접 고르기" value={pref.glassColor} onChange={e => setPref({ glassColor: e.target.value })} style={{ width: 26, height: 22, padding: 0, border: 'none', background: 'none', cursor: 'pointer' }} />
@@ -193,7 +204,7 @@ export default function WidgetView({ shared = null }) {
         )}
 
         {pref.dday && ddays.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px', alignItems: 'baseline', fontSize: 12, color: glass ? INK : SUB, padding: '0 14px 6px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px', alignItems: 'baseline', fontSize: 12, color: inv ? INK : SUB, padding: '0 14px 6px' }}>
             {ddays.map(x => (
               <span key={x.id}><b style={{ fontSize: 13, color: x.days <= 7 ? '#D9480F' : INK }}>{ddayText(x.days)}</b> {x.name}</span>
             ))}
@@ -203,8 +214,8 @@ export default function WidgetView({ shared = null }) {
         {/* 본문: 달력 탭 / 시간표 탭 — 각각 창 전체를 쓴다 */}
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '0 12px 12px' }}>
           {tab === 'week'
-            ? <MiniWeek glass={glass} data={data} setData={setData} computed={computed} today={today} period={P} periods={Math.max(7, (data.cfg.bells || []).length)} />
-            : <MiniMonth glass={glass} data={data} setData={setData} today={today} />}
+            ? <MiniWeek glass={glass} inv={inv} data={data} setData={setData} computed={computed} today={today} period={P} periods={Math.max(7, (data.cfg.bells || []).length)} />
+            : <MiniMonth glass={glass} inv={inv} data={data} setData={setData} today={today} />}
         </div>
       </div>
     </div>

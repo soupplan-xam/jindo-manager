@@ -1,24 +1,32 @@
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, RED, DAYS, fromISO, toISO, addDays, colorOf } from '../logic.js'
 import { holidayOn, solarTermOn } from '../kcal.js'
 import { TYPE_COLOR } from './ScheduleCalendar.jsx'
-import { TODO_COLORS } from './MonthCalendar.jsx'
+import { TODO_COLORS, OFF_BG, offReasonOf } from './MonthCalendar.jsx'
 
 const SAT = '#185FA5'
 const MAKEUP_BG = '#E8EBEF'
 const NOTE_FG = '#7A4B12'
-// 바탕화면 모드(glass): 흰 면은 비우고, 색 면은 반투명으로. 화면 전체가 반전되므로 선은 어둡게 둔다(반전 뒤 밝은 선)
-const tint = (c, glass, a = '73') => (glass && /^#[0-9a-f]{6}$/i.test(c) ? c + a : c)
-// 바탕화면 모드에서 칠한 날 색 — 반전(invert + hue-rotate 180°)을 미리 거꾸로 걸어, 반전 뒤 고른 색 그대로 보이게
+// 바탕화면 모드(glass): 흰 면은 비우고 색 면은 반투명으로.
+// inv(어두운 바탕): 화면 전체를 반전(invert + hue-rotate 180° + 밝기 BRIGHT)해 흰 글씨로 보인다(.wg-glass).
+//   그래서 색을 그대로 보이게 하려면 반전을 미리 거꾸로 건 색(pre)을 쓴다.
+// inv 가 아니면(밝은 바탕) 반전 없이 원래 색 그대로.
+const BRIGHT = 1.35 // index.css 의 .wg-glass brightness 와 같게
 const HUE180 = [[-0.574, 1.43, 0.144], [0.426, 0.43, 0.144], [0.426, 1.43, -0.856]]
-function glassPaint(hex, a = 0.3) {
-  const m = /^#([0-9a-f]{6})$/i.exec(hex || '')
-  if (!m) return hex
-  const n = parseInt(m[1], 16)
-  const inv = [255 - (n >> 16), 255 - ((n >> 8) & 255), 255 - (n & 255)]
-  const c = HUE180.map(r => Math.max(0, Math.min(255, Math.round(r[0] * inv[0] + r[1] * inv[1] + r[2] * inv[2]))))
-  return 'rgba(' + c.join(',') + ',' + a + ')'
+const rgbOf = hex => { const m = /^#([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return null; const n = parseInt(m[1], 16); return [n >> 16, (n >> 8) & 255, n & 255] }
+function pre(hex, a = 1) {
+  const c = rgbOf(hex)
+  if (!c) return hex
+  const t = c.map(v => v / BRIGHT)
+  const h = HUE180.map(r => r[0] * t[0] + r[1] * t[1] + r[2] * t[2])
+  return 'rgba(' + h.map(v => Math.max(0, Math.min(255, Math.round(255 - v)))).join(',') + ',' + a + ')'
 }
+const rgbaOf = (hex, a) => { const c = rgbOf(hex); return c ? 'rgba(' + c.join(',') + ',' + a + ')' : hex }
+// 면 색: 반전이면 미리 거꾸로, 아니면 그대로(반투명)
+const paintOf = (hex, a, inv) => (inv ? pre(hex, a) : rgbaOf(hex, a))
+// 글씨 색: 어두운 바탕에서는 같은 계열의 밝은 색으로
+const LIGHT_INK = { [RED]: '#FF9A9A', '#185FA5': '#8CCBFF', '#2B8A3E': '#86E3A2', '#A32D2D': '#FFA3A3', '#BA7517': '#FFC37A', '#3F5C4C': '#9BE8B0' }
+const inkOf = (hex, inv) => (inv && LIGHT_INK[hex] ? pre(LIGHT_INK[hex]) : hex)
 // 연한 반 색을 같은 색 계열의 진한 색으로 — 어두운 유리 위에서 반끼리 구분되고 흰 글씨가 읽힌다
 function vivid(hex) {
   const m = /^#([0-9a-f]{6})$/i.exec(hex || '')
@@ -39,13 +47,13 @@ function vivid(hex) {
   const to = v => Math.round((v + M) * 255).toString(16).padStart(2, '0')
   return '#' + to(r1) + to(g1) + to(b1)
 }
-const lineOf = glass => '1px solid ' + (glass ? 'rgba(0,0,0,0.28)' : LINE_SOFT)
+const lineOf = (glass, inv) => '1px solid ' + (inv ? 'rgba(0,0,0,0.28)' : glass ? 'rgba(0,0,0,0.13)' : LINE_SOFT)
 const todoColor = k => (TODO_COLORS.find(x => x.k === (k || '')) || TODO_COLORS[0]).c
 
 // 위젯 — 이번 주 시간표(월~금 × 교시). 칸마다 반 · 차시. 오늘 열과 지금 교시를 강조한다.
 // 주말에는 다음 주를 보여 준다. 시간표 탭에서 창 전체를 채운다(글자는 자르지 않고 줄바꿈).
 // 수업 칸을 더블클릭하면 그 칸 메모(진도표의 칸 메모와 같은 notes)를 바로 적는다.
-export function MiniWeek({ glass = false, data, setData, computed, today, period, periods = 7 }) {
+export function MiniWeek({ glass = false, inv = false, data, setData, computed, today, period, periods = 7 }) {
   const [edit, setEdit] = useState(null) // { key, text }
   const notes = data.notes || {}
   const commit = () => {
@@ -67,7 +75,7 @@ export function MiniWeek({ glass = false, data, setData, computed, today, period
   if (dow === 0 || dow === 6) mon = addDays(mon, 7)
   const days = [0, 1, 2, 3, 4].map(i => toISO(addDays(mon, i)))
   const nowP = period && period.kind === 'class' ? period.period : null
-  const line = lineOf(glass)
+  const line = lineOf(glass, inv)
   return (
     <div className="soft-scroll" style={{ flex: 1, minHeight: 0, overflow: 'auto', border: glass ? line : '1px solid ' + LINE, borderRadius: 10, background: glass ? 'transparent' : '#FFFFFF' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '30px repeat(5, minmax(0, 1fr))', gridTemplateRows: 'auto repeat(' + periods + ', minmax(40px, 1fr))', minHeight: '100%' }}>
@@ -76,7 +84,7 @@ export function MiniWeek({ glass = false, data, setData, computed, today, period
           const d = fromISO(iso)
           const isToday = iso === today
           return (
-            <div key={iso} style={{ textAlign: 'center', padding: '6px 0', fontSize: 13, fontWeight: 700, color: isToday ? GREEN : holidayOn(iso) ? RED : SUB, background: glass ? (isToday ? 'rgba(18,132,202,0.18)' : 'transparent') : isToday ? '#E9F6FE' : '#F2F4F6', borderLeft: line, position: 'sticky', top: 0, zIndex: 1 }}>
+            <div key={iso} style={{ textAlign: 'center', padding: '6px 0', fontSize: 13, fontWeight: 700, color: isToday ? GREEN : holidayOn(iso) ? inkOf(RED, inv) : SUB, background: glass ? (isToday ? 'rgba(18,132,202,0.18)' : 'transparent') : isToday ? '#E9F6FE' : '#F2F4F6', borderLeft: line, position: 'sticky', top: 0, zIndex: 1 }}>
               {DAYS[d.getDay()]} {d.getMonth() + 1}.{d.getDate()}
             </div>
           )
@@ -90,7 +98,7 @@ export function MiniWeek({ glass = false, data, setData, computed, today, period
               const base = s ? (s.activity || s.makeup ? MAKEUP_BG : s.canceled ? null : colorOf(data, s.cls)) : null
               // 바탕화면 모드: 반 색은 고른 색 그대로 반투명, 수행·결손 칸은 옅은 막만
               const bg = glass
-                ? (s && (s.activity || s.makeup) ? 'rgba(0,0,0,0.12)' : base ? glassPaint(vivid(base), 0.5) : s ? 'rgba(0,0,0,0.05)' : 'transparent')
+                ? (s && (s.activity || s.makeup) ? (inv ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.35)') : base ? (inv ? pre(vivid(base), 0.5) : rgbaOf(base, 0.75)) : s ? 'rgba(0,0,0,0.05)' : 'transparent')
                 : !s ? (iso === today ? '#FAFCFE' : '#FFFFFF') : base || '#FFFFFF'
               const tag = s && !s.num && !s.activity ? (s.makeup ? '보강' : s.perf ? '수행' : s.reason || '결손') : ''
               return (
@@ -103,7 +111,7 @@ export function MiniWeek({ glass = false, data, setData, computed, today, period
                     <>
                       <span className={glass ? 'wg-strong' : ''} style={{ fontSize: 13, fontWeight: 700, color: s.canceled && !s.makeup && !s.activity ? FAINT : SUB, lineHeight: 1.25 }}>{s.makeup || s.activity ? s.place || '보강' : s.cls}</span>
                       {s.num ? <span style={{ fontSize: 15, fontWeight: 800, color: INK, lineHeight: 1.25 }}>{s.num}<span className="wg-faint" style={{ fontSize: 10.5, fontWeight: 600, color: FAINT }}>차시</span></span>
-                        : tag && <span className={s.perf ? '' : 'wg-faint'} style={{ fontSize: 11.5, fontWeight: 700, color: s.perf ? RED : FAINT, lineHeight: 1.25 }}>{tag}</span>}
+                        : tag && <span className={s.perf ? '' : 'wg-faint'} style={{ fontSize: 11.5, fontWeight: 700, color: s.perf ? inkOf(RED, inv) : FAINT, lineHeight: 1.25 }}>{tag}</span>}
                       {edit && edit.key === iso + '|' + p ? (
                         <textarea
                           autoFocus
@@ -136,8 +144,12 @@ export function MiniWeek({ glass = false, data, setData, computed, today, period
 }
 
 // 위젯 — 이번 달 달력. 날짜마다 학사일정·할 일(눌러서 체크). 날짜를 더블클릭해 그 칸에서 바로 할 일을 넣는다.
-export function MiniMonth({ glass = false, data, setData, today }) {
-  const line = lineOf(glass)
+export function MiniMonth({ glass = false, inv = false, data, setData, today }) {
+  const line = lineOf(glass, inv)
+  const boxRef = useRef(null)
+  const [ctx, setCtx] = useState(null) // 우클릭 메뉴 { iso, id, x, y }
+  const [drag, setDrag] = useState(null) // 끌고 있는 할 일 { iso, id }
+  const [over, setOver] = useState(null) // 끌어다 놓을 날
   const t0 = fromISO(today)
   const [ym, setYm] = useState({ y: t0.getFullYear(), m: t0.getMonth() })
   const [sel, setSel] = useState(today)
@@ -157,14 +169,15 @@ export function MiniMonth({ glass = false, data, setData, today }) {
   }
   const move = n => setYm(({ y, m }) => { const d = new Date(y, m + n, 1); return { y: d.getFullYear(), m: d.getMonth() } })
   const eventsOn = iso => (data.events || []).filter(e => e.start <= iso && iso <= e.end && !e.period && !e.cls)
-  const offDay = (iso, dow) => dow === 0 || dow === 6 || holidayOn(iso) || eventsOn(iso).some(e => e.type === '휴업일') || (data.semStart && data.semEnd && (iso < data.semStart || iso > data.semEnd))
+  // 쉬는 날 자동 색 — 달력 탭과 같은 규칙·설정(쉬는 날 자동 색 끄기 포함)
+  const autoOff = data.cfg.autoOff !== false
   const setTodos = (iso, list) => setData(d => {
     const tt = { ...(d.todos || {}) }
     if (list.length) tt[iso] = list
     else delete tt[iso]
     return { ...d, todos: tt }
   })
-  // 우클릭으로 지우기 — 잠깐 [되돌리기]를 띄운다
+  // 지우기(우클릭 메뉴의 [삭제]) — 잠깐 [되돌리기]를 띄운다
   const remove = (iso, id) => {
     const list = todos[iso] || []
     const index = list.findIndex(x => x.id === id)
@@ -183,6 +196,34 @@ export function MiniMonth({ glass = false, data, setData, today }) {
     })
     setRemoved(null)
   }
+  // 끌어서 다른 날로 옮기기
+  const moveTodo = (from, id, to) => {
+    if (!from || from === to) return
+    setData(d => {
+      const tt = { ...(d.todos || {}) }
+      const item = (tt[from] || []).find(x => x.id === id)
+      if (!item) return d
+      const rest = (tt[from] || []).filter(x => x.id !== id)
+      if (rest.length) tt[from] = rest
+      else delete tt[from]
+      tt[to] = [...(tt[to] || []), item]
+      return { ...d, todos: tt }
+    })
+  }
+  const openCtx = (ev, iso, id) => {
+    ev.preventDefault()
+    ev.stopPropagation()
+    const r = boxRef.current.getBoundingClientRect()
+    setCtx({ iso, id, x: Math.min(ev.clientX - r.left, r.width - 130), y: Math.min(ev.clientY - r.top, r.height - 80) })
+  }
+  useEffect(() => {
+    if (!ctx) return
+    const close = e => { if (!(e.target.closest && e.target.closest('[data-ctx]'))) setCtx(null) }
+    const esc = e => { if (e.key === 'Escape') setCtx(null) }
+    document.addEventListener('mousedown', close)
+    document.addEventListener('keydown', esc)
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', esc) }
+  }, [ctx])
   const toggle = (iso, id) => setTodos(iso, (todos[iso] || []).map(x => (x.id === id ? { ...x, done: !x.done } : x)))
   const commitCell = () => {
     if (!cellEdit) return
@@ -192,7 +233,7 @@ export function MiniMonth({ glass = false, data, setData, today }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%', position: 'relative' }}>
+    <div ref={boxRef} style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%', position: 'relative' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
         <button type="button" onClick={() => move(-1)} aria-label="이전 달" className="hov" style={navBtn}>‹</button>
         <div style={{ fontSize: 16, fontWeight: 800, color: INK, minWidth: 92, textAlign: 'center' }}>{ym.y}.{String(ym.m + 1).padStart(2, '0')}</div>
@@ -204,7 +245,7 @@ export function MiniMonth({ glass = false, data, setData, today }) {
       <div className="soft-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', border: glass ? line : '1px solid ' + LINE, borderRadius: 10, background: glass ? 'transparent' : '#FFFFFF' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gridTemplateRows: 'auto repeat(' + weeks.length + ', minmax(84px, 1fr))', minHeight: '100%' }}>
           {DAYS.split('').map((w, i) => (
-            <div key={w} style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, padding: '5px 0', background: glass ? 'transparent' : '#F7F8FA', borderLeft: i ? line : 'none', borderBottom: line, color: i === 0 ? RED : i === 6 ? SAT : SUB, position: 'sticky', top: 0, zIndex: 1 }}>{w}</div>
+            <div key={w} style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, padding: '5px 0', background: glass ? 'transparent' : '#F7F8FA', borderLeft: i ? line : 'none', borderBottom: line, color: i === 0 ? inkOf(RED, inv) : i === 6 ? inkOf(SAT, inv) : SUB, position: 'sticky', top: 0, zIndex: 1 }}>{w}</div>
           ))}
           {weeks.map((row, wi) => row.map((d, i) => {
             const iso = toISO(d)
@@ -214,21 +255,32 @@ export function MiniMonth({ glass = false, data, setData, today }) {
             const evs = eventsOn(iso)
             const tds = todos[iso] || []
             const isSel = iso === sel
-            const bg = colors[iso] ? (glass ? glassPaint(colors[iso]) : colors[iso]) : offDay(iso, i) ? (glass ? 'rgba(0,0,0,0.07)' : '#EEF5FC') : glass ? 'transparent' : '#FFFFFF'
+            // 칠한 색(흰색은 '칠 지움') > 쉬는 날 자동 색 > 바탕 — 달력 탭과 같다
+            const painted = colors[iso] && colors[iso].toUpperCase() !== '#FFFFFF' ? colors[iso] : null
+            const fill = painted || (!colors[iso] && autoOff && offReasonOf(data, iso, i) ? OFF_BG : null)
+            const bg = fill
+              ? (glass ? (inv ? pre(vivid(fill), painted ? 0.5 : 0.32) : rgbaOf(fill, painted ? 0.7 : 0.5)) : fill)
+              : glass ? 'transparent' : '#FFFFFF'
             return (
               <div key={iso} data-hit="" onClick={() => setSel(iso)} onDoubleClick={() => { setSel(iso); setCellEdit({ iso, text: '' }) }} title="더블클릭하면 할 일을 바로 넣습니다"
+                onDragOver={drag ? e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (over !== iso) setOver(iso) } : undefined}
+                onDrop={drag ? e => { e.preventDefault(); moveTodo(drag.iso, drag.id, iso); setDrag(null); setOver(null); setSel(iso) } : undefined}
                 style={{ minWidth: 0, padding: '4px 5px 5px', cursor: 'pointer', background: bg, opacity: out ? (glass ? 0.6 : 0.45) : 1,
-                  borderTop: wi ? line : 'none', borderLeft: i ? line : 'none', boxShadow: isSel ? 'inset 0 0 0 2px ' + GREEN : 'none', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  borderTop: wi ? line : 'none', borderLeft: i ? line : 'none', boxShadow: over === iso && drag ? 'inset 0 0 0 2px ' + GREEN + ', inset 0 0 0 999px rgba(18,132,202,0.12)' : isSel ? 'inset 0 0 0 2px ' + GREEN : 'none', display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, minHeight: 18 }}>
-                  <span data-hit="" title="더블클릭하면 할 일을 바로 넣습니다" style={{ fontSize: 12.5, fontWeight: 800, flex: 'none', lineHeight: '18px', cursor: 'pointer', color: iso === today ? '#FFFFFF' : i === 0 || hol ? RED : i === 6 ? SAT : INK, background: iso === today ? GREEN : 'transparent', borderRadius: 999, padding: iso === today ? '0 6px' : 0 }}>{d.getDate()}</span>
-                  {(hol || term) && <span style={{ fontSize: 10, fontWeight: 700, color: hol ? RED : '#2B8A3E', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hol || term}</span>}
+                  <span data-hit="" title="더블클릭하면 할 일을 바로 넣습니다" style={{ fontSize: 12.5, fontWeight: 800, flex: 'none', lineHeight: '18px', cursor: 'pointer', color: iso === today ? '#FFFFFF' : i === 0 || hol ? inkOf(RED, inv) : i === 6 ? inkOf(SAT, inv) : INK, background: iso === today ? GREEN : 'transparent', borderRadius: 999, padding: iso === today ? '0 6px' : 0 }}>{d.getDate()}</span>
+                  {(hol || term) && <span style={{ fontSize: 10.5, fontWeight: 700, color: hol ? inkOf(RED, inv) : inkOf('#2B8A3E', inv), minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hol || term}</span>}
                 </div>
                 {evs.map(e => (
-                  <div key={e.id} style={{ fontSize: 10.5, lineHeight: 1.3, fontWeight: glass ? 700 : 400, color: TYPE_COLOR[e.type] || SUB, wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>{e.name}</div>
+                  <div key={e.id} style={{ fontSize: 10.5, lineHeight: 1.3, fontWeight: glass ? 700 : 400, color: inkOf(TYPE_COLOR[e.type] || SUB, inv), wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>{e.name}</div>
                 ))}
                 {tds.map(x => (
-                  <div key={x.id} data-hit="" className={x.done ? 'wg-faint' : ''} onClick={ev => { ev.stopPropagation(); toggle(iso, x.id) }} onDoubleClick={ev => ev.stopPropagation()} onContextMenu={ev => { ev.preventDefault(); ev.stopPropagation(); remove(iso, x.id) }} title={(x.done ? '완료 취소' : '눌러서 완료') + ' · 우클릭하면 지웁니다'}
-                    style={{ display: 'flex', gap: 3, alignItems: 'flex-start', fontSize: 11.5, lineHeight: 1.35, color: x.done ? FAINT : todoColor(x.color), fontWeight: x.color && !x.done ? 700 : 500, cursor: 'pointer' }}>
+                  <div key={x.id} data-hit="" className={x.done ? 'wg-faint' : ''} draggable
+                    onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', x.text); setDrag({ iso, id: x.id }); setCtx(null) }}
+                    onDragEnd={() => { setDrag(null); setOver(null) }}
+                    onClick={ev => { ev.stopPropagation(); toggle(iso, x.id) }} onDoubleClick={ev => ev.stopPropagation()} onContextMenu={ev => openCtx(ev, iso, x.id)}
+                    title={(x.done ? '눌러서 완료 취소' : '눌러서 완료') + ' · 끌어서 다른 날로 옮기기 · 우클릭하면 메뉴'}
+                    style={{ display: 'flex', gap: 3, alignItems: 'flex-start', fontSize: 11.5, lineHeight: 1.35, color: x.done ? FAINT : inkOf(todoColor(x.color), inv), fontWeight: x.color && !x.done ? 700 : 500, cursor: 'grab', opacity: drag && drag.id === x.id ? 0.4 : 1, outline: ctx && ctx.id === x.id ? '1px dashed ' + GREEN : 'none', borderRadius: 3 }}>
                     <span style={{ flex: 'none', width: 9, textAlign: 'center' }}>{x.done ? '✓' : '•'}</span>
                     <span style={{ flex: 1, minWidth: 0, textDecoration: x.done ? 'line-through' : 'none', wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>{x.text}</span>
                   </div>
@@ -255,6 +307,17 @@ export function MiniMonth({ glass = false, data, setData, today }) {
           }))}
         </div>
       </div>
+      {ctx && (() => {
+        const item = (todos[ctx.iso] || []).find(x => x.id === ctx.id)
+        if (!item) return null
+        const mi = { display: 'block', width: '100%', textAlign: 'left', border: 'none', background: 'none', padding: '7px 12px', fontSize: 12.5, cursor: 'pointer', color: INK }
+        return (
+          <div data-ctx="" data-hit="" role="menu" style={{ position: 'absolute', left: ctx.x, top: ctx.y, zIndex: 6, minWidth: 120, background: '#FFFFFF', border: '1px solid ' + LINE, borderRadius: 8, boxShadow: '0 6px 18px rgba(0,0,0,0.18)', padding: '4px 0' }}>
+            <button type="button" role="menuitem" className="hov2" style={mi} onClick={() => { toggle(ctx.iso, ctx.id); setCtx(null) }}>{item.done ? '완료 취소' : '완료'}</button>
+            <button type="button" role="menuitem" className="hov2" style={{ ...mi, color: RED, fontWeight: 700 }} onClick={() => { remove(ctx.iso, ctx.id); setCtx(null) }}>삭제</button>
+          </div>
+        )
+      })()}
       {removed && (
         <div role="status" data-hit="" style={{ position: 'absolute', left: '50%', bottom: 10, transform: 'translateX(-50%)', zIndex: 5, display: 'flex', alignItems: 'center', gap: 12, background: INK, color: '#FFFFFF', borderRadius: 999, padding: '7px 8px 7px 14px', fontSize: 12.5, boxShadow: '0 4px 14px rgba(0,0,0,0.25)', whiteSpace: 'nowrap', maxWidth: '90%' }}>
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>「{removed.item.text}」 지웠어요</span>

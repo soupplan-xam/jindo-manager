@@ -90,6 +90,8 @@ html.widget-mode, html.widget-mode body { background: transparent; overflow: hid
 .wg-glass [role=tab][aria-selected=true] { background: rgba(0,0,0,0.22) !important; box-shadow: none !important; }
 .wg-glass [role=tab][aria-selected=false], .wg-glass .wg-dim { color: #4E5968 !important; }
 .wg-glass .wg-menu { background: rgba(255,255,255,0.55) !important; border-top-color: rgba(0,0,0,0.2) !important; }
+.wg-glass-l [role=tablist] { background: rgba(255,255,255,0.45) !important; }
+.wg-glass-l .wg-btn { background: rgba(255,255,255,0.45) !important; }
 .wg-glass .wg-btn { background: transparent !important; border-color: rgba(0,0,0,0.3) !important; }
 .wg-glass input:not([type=color]):not([type=checkbox]):not([type=range]), .wg-glass textarea { background: rgba(255,255,255,0.75) !important; }
 

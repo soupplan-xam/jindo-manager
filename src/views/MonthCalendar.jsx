@@ -20,6 +20,19 @@ export const TODO_COLORS = [
 const todoColor = k => (TODO_COLORS.find(x => x.k === (k || '')) || TODO_COLORS[0]).c
 const TERM = '#2B8A3E' // 절기 — 하늘색 강조·토요일 파랑과 구분되는 초록
 
+// 출근 안 하는 날 — 주말·공휴일·휴업일(일정 유형 휴업일, 또는 이름에 휴업·방학·휴일)·학기 밖(방학). 위젯 달력도 같이 쓴다
+export const OFF_BG = '#D3E3F7'
+export function offReasonOf(data, iso, dow) {
+  if (dow === 0 || dow === 6) return '주말'
+  if (holidayOn(iso)) return '공휴일'
+  // 학기 기간 밖 = 방학 (학기 시작일 전, 종료일 뒤)
+  if (data.semStart && data.semEnd && (iso < data.semStart || iso > data.semEnd)) return '방학'
+  // 방학식·개학식 날은 출근하는 날이라 뺀다
+  const ev = (data.events || []).filter(e => e.start <= iso && iso <= e.end)
+    .find(e => !e.period && !e.cls && !/방학식|개학|종업식|시업식/.test(e.name) && (e.type === '휴업일' || /휴업|방학|휴일/.test(e.name)))
+  return ev ? (/방학/.test(ev.name) ? '방학' : '휴업일') : null
+}
+
 export default function MonthCalendar({ data, setData, setSnack }) {
   const { isMobile } = useWindowWidth()
   const today = toISO(new Date())
@@ -51,16 +64,7 @@ export default function MonthCalendar({ data, setData, setSnack }) {
   const eventsOn = iso => data.events.filter(e => e.start <= iso && iso <= e.end)
   // 출근 안 하는 날 — 주말·공휴일·휴업일(일정 유형 휴업일, 또는 이름에 휴업·방학·휴일). 직접 칠한 색이 우선한다
   const autoOff = data.cfg.autoOff !== false
-  const offReason = (iso, dow) => {
-    if (dow === 0 || dow === 6) return '주말'
-    if (holidayOn(iso)) return '공휴일'
-    // 학기 기간 밖 = 방학 (학기 시작일 전, 종료일 뒤)
-    if (data.semStart && data.semEnd && (iso < data.semStart || iso > data.semEnd)) return '방학'
-    // 방학식·개학식 날은 출근하는 날이라 뺀다
-    const ev = eventsOn(iso).find(e => !e.period && !e.cls && !/방학식|개학|종업식|시업식/.test(e.name) && (e.type === '휴업일' || /휴업|방학|휴일/.test(e.name)))
-    return ev ? (/방학/.test(ev.name) ? '방학' : '휴업일') : null
-  }
-  const OFF_BG = '#D3E3F7'
+  const offReason = (iso, dow) => offReasonOf(data, iso, dow)
 
   // ---- 할 일 ----
   const setTodos = (iso, list) => setData(d => {
