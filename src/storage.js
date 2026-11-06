@@ -30,6 +30,7 @@ export const defaultData = () => ({
   todos: {}, // {'iso': [{id, text, done}]} 달력의 날짜별 할 일
   dayColors: {}, // {'iso': '#D3EBC0'} 달력 기간 색칠
   notes: {}, // {'iso|p': '3·15번 결시'} 그 날 그 칸에만 붙는 메모 — 차시별 내용과 달리 다른 반에 퍼지지 않는다
+  fixed: {}, // {'요일-교시': '창체'} 매주 고정 시간 — 반이 아니고 진도를 세지 않는다(창체·동아리 등). 칸 메모만 붙인다
   makeups: {}, // {'iso|p': {place}} 보강 — 반이 아니라 장소로 적고, 진도를 세지 않는다
   memos: {}, // 구버전 칸별 메모 — 로드 시 contents로 이관됨
   cfg: {
@@ -66,7 +67,7 @@ function normalize(d) {
     ui: { ...base.ui, ...(d.ui || {}), dashW: { ...base.ui.dashW, ...((d.ui || {}).dashW || {}) } },
   }
   if (!Array.isArray(out.subjects) || !out.subjects.length) out.subjects = ['수학']
-  for (const k of ['extras', 'extraKind', 'makeups', 'notes', 'todos', 'dayColors', 'cancels', 'colors', 'contents', 'secContents']) if (!out[k] || typeof out[k] !== 'object') out[k] = {}
+  for (const k of ['extras', 'extraKind', 'makeups', 'fixed', 'notes', 'todos', 'dayColors', 'cancels', 'colors', 'contents', 'secContents']) if (!out[k] || typeof out[k] !== 'object') out[k] = {}
   migrateMakeups(out)
   out.homeroom = { ...base.homeroom, ...(d.homeroom || {}) }
   out.trips = Array.isArray(d.trips) ? d.trips : []

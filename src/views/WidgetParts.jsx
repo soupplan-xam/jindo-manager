@@ -54,18 +54,18 @@ export function MiniWeek({ data, setData, computed, today, period, periods = 7 }
             {days.map(iso => {
               const s = computed.sessions[iso + '|' + p]
               const isNow = iso === today && nowP === p
-              const bg = !s ? (iso === today ? '#FAFCFE' : '#FFFFFF') : s.makeup ? MAKEUP_BG : s.canceled ? '#FFFFFF' : colorOf(data, s.cls)
-              const tag = s && !s.num ? (s.makeup ? '보강' : s.perf ? '수행' : s.reason || '결손') : ''
+              const bg = !s ? (iso === today ? '#FAFCFE' : '#FFFFFF') : s.activity ? '#EFEBFA' : s.makeup ? MAKEUP_BG : s.canceled ? '#FFFFFF' : colorOf(data, s.cls)
+              const tag = s && !s.num && !s.activity ? (s.makeup ? '보강' : s.perf ? '수행' : s.reason || '결손') : ''
               return (
-                <div key={iso} title={s ? (s.makeup ? (s.place || '') + ' 보강' : s.cls + (s.num ? ' ' + s.num + '차시' : ' ' + (s.reason || ''))) + ' — 더블클릭해 메모' : ''}
+                <div key={iso} title={s ? (s.activity ? s.place : s.makeup ? (s.place || '') + ' 보강' : s.cls + (s.num ? ' ' + s.num + '차시' : ' ' + (s.reason || ''))) + ' — 더블클릭해 메모' : ''}
                   onDoubleClick={s ? () => setEdit({ key: iso + '|' + p, text: notes[iso + '|' + p] || '' }) : undefined}
                   style={{ minWidth: 0, borderTop: line, borderLeft: line, padding: '4px 6px', background: bg, boxShadow: isNow ? 'inset 0 0 0 2px ' + GREEN : 'none', cursor: s ? 'pointer' : 'default',
                     display: 'flex', flexWrap: 'wrap', alignItems: 'center', alignContent: 'center', gap: '0 6px', wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>
                   {s && (
                     <>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: s.canceled && !s.makeup ? FAINT : SUB, lineHeight: 1.25 }}>{s.makeup ? s.place || '보강' : s.cls}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: s.canceled && !s.makeup && !s.activity ? FAINT : SUB, lineHeight: 1.25 }}>{s.makeup || s.activity ? s.place || '보강' : s.cls}</span>
                       {s.num ? <span style={{ fontSize: 15, fontWeight: 800, color: INK, lineHeight: 1.25 }}>{s.num}<span style={{ fontSize: 10.5, fontWeight: 600, color: FAINT }}>차시</span></span>
-                        : <span style={{ fontSize: 11.5, fontWeight: 700, color: s.perf ? RED : FAINT, lineHeight: 1.25 }}>{tag}</span>}
+                        : tag && <span style={{ fontSize: 11.5, fontWeight: 700, color: s.perf ? RED : FAINT, lineHeight: 1.25 }}>{tag}</span>}
                       {edit && edit.key === iso + '|' + p ? (
                         <textarea
                           autoFocus

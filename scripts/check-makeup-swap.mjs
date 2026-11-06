@@ -47,3 +47,22 @@ const h = { ...d, extras: {}, extraKind: {}, makeups: { '2026-10-09|1': { place:
   events: [{ id: 1, type: '휴업일', name: '한글날', start: '2026-10-09', end: '2026-10-09' }] }
 assert.equal(compute(h).sessions['2026-10-09|1'], undefined)
 console.log('PASS: makeup by place (not a class, not counted), swap counted, legacy migration, holiday')
+
+// 매주 고정 시간(창체) — 반이 아니고 진도를 세지 않는다. 휴업일·교환으로 비운 날·보강이 있으면 그쪽이 우선
+const f = { ...d, extras: {}, extraKind: {}, makeups: {}, events: [], fixed: { '5-3': '창체', '5-4': '창체' } }
+let fc = compute(f)
+assert.deepEqual(fc.sessions['2026-10-09|3'], { cls: '', canceled: true, activity: true, place: '창체', reason: '창체' })
+assert.equal(fc.sessions['2026-10-16|4'].place, '창체')
+assert.deepEqual(Object.keys(fc.perClass), ['A'])
+assert.equal(fc.perClass.A.length, 4)
+fc = compute({ ...f, events: [{ id: 1, type: '휴업일', name: '한글날', start: '2026-10-09', end: '2026-10-09' }] })
+assert.equal(fc.sessions['2026-10-09|3'], undefined)
+fc = compute({ ...f, extras: { '2026-10-09|3': '' }, extraKind: { '2026-10-09|3': 'swap' } })
+assert.equal(fc.sessions['2026-10-09|3'], undefined)
+fc = compute({ ...f, makeups: { '2026-10-09|3': { place: '과학실' } } })
+assert.equal(fc.sessions['2026-10-09|3'].makeup, true)
+// 그 칸에 반 수업을 넣으면 수업이 우선
+fc = compute({ ...f, extras: { '2026-10-09|3': 'A' }, extraKind: { '2026-10-09|3': 'swap' } })
+assert.equal(fc.sessions['2026-10-09|3'].cls, 'A')
+assert.deepEqual(coerceData({ ...f, fixed: null }).fixed, {})
+console.log('PASS: weekly fixed slot (창체) not a class, not counted')

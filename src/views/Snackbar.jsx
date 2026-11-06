@@ -22,6 +22,8 @@ export default function Snackbar({ snack, setSnack, data, setData }) {
       setData(d => ({ ...d, dayColors: sn.prev }))
     } else if (sn.kind === 'notes') {
       setData(d => ({ ...d, notes: sn.prev }))
+    } else if (sn.kind === 'fixed') {
+      setData(d => ({ ...d, fixed: sn.prev }))
     } else if (sn.kind === 'makeups') {
       setData(d => ({ ...d, makeups: sn.prev }))
     } else if (sn.kind === 'events') {

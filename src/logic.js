@@ -201,6 +201,7 @@ function cancelEventFor(data, iso, p, cls) {
 
 // 학기 전체를 훑으며 각 (날짜|교시) 칸의 상태를 계산한다.
 // sessions[iso|p] = {cls, num, extra?, swap?} | {cls, canceled, reason, user?} | {cls:'', canceled, makeup, place, reason:'보강'}
+//   | {cls:'', canceled, activity, place:'창체', reason} (매주 고정 시간)
 // 보강은 진도를 세지 않으므로 결손과 같이 차시를 쓰지 않는 칸(canceled)으로 두고 makeup 으로 구분한다.
 // perClass[cls] = [{iso, p, num}...] (결손 제외, 순서대로)
 export function compute(data) {
@@ -225,8 +226,14 @@ export function compute(data) {
         const mk = (data.makeups || {})[key]
         if (!cls) {
           // 빈 시간의 보강 — 반이 아니라 장소로 적는다. 진도는 세지 않는다
-          if (mk && !eventsOn(data, iso).some(e => !e.period || e.period === p)) {
+          const off = eventsOn(data, iso).some(e => !e.period || e.period === p)
+          if (mk && !off) {
             sessions[key] = { cls: '', canceled: true, makeup: true, place: mk.place || '', reason: '보강' }
+          }
+          // 매주 고정 시간(창체 등) — 그 날 교환으로 비운 칸이 아니면 보인다. 진도는 세지 않는다
+          else if (swap === null && !off && (data.fixed || {})[dow + '-' + p]) {
+            const name = data.fixed[dow + '-' + p]
+            sessions[key] = { cls: '', canceled: true, activity: true, place: name, reason: name }
           }
           continue
         }
@@ -293,7 +300,7 @@ export function exportCSV(sessions) {
     .forEach(k => {
       const kv = k.split('|')
       const s = sessions[k]
-      lines.push([kv[0], kv[1], s.cls, s.makeup ? '보강' : s.perf ? '수행평가' : s.canceled ? '결손' : s.num].join(','))
+      lines.push([kv[0], kv[1], s.cls, s.activity ? s.place : s.makeup ? '보강' : s.perf ? '수행평가' : s.canceled ? '결손' : s.num].join(','))
     })
   const a = document.createElement('a')
   a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\n')], { type: 'text/csv' }))

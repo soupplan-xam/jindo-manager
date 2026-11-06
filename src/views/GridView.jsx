@@ -158,6 +158,24 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
     setPop(null)
     setSnack({ text: '보강을 지웠습니다.', kind: 'makeups', prev })
   }
+  // 매주 고정 시간(창체 등) — 요일·교시에 이름만 붙인다. 반이 아니고 진도를 세지 않는다
+  const fixedKey = key => { const [iso, p] = key.split('|'); return fromISO(iso).getDay() + '-' + p }
+  const setFixed = (key, name) => {
+    if (!name) return
+    const prev = data.fixed || {}
+    const fk = fixedKey(key)
+    setData(d => ({ ...d, fixed: { ...(d.fixed || {}), [fk]: name } }))
+    setPop(null)
+    setSnack({ text: '매주 ' + DAYS[Number(fk[0])] + ' ' + fk.split('-')[1] + '교시를 「' + name + '」으로 채웠습니다. 진도는 세지 않습니다.', kind: 'fixed', prev })
+  }
+  const clearFixed = key => {
+    const prev = data.fixed || {}
+    const fk = fixedKey(key)
+    setData(d => { const f = { ...(d.fixed || {}) }; delete f[fk]; return { ...d, fixed: f } })
+    setPop(null)
+    setSnack({ text: '매주 ' + DAYS[Number(fk[0])] + ' ' + fk.split('-')[1] + '교시 고정 시간을 지웠습니다.', kind: 'fixed', prev })
+  }
+  const fixedNames = [...new Set(['창체', ...Object.values(data.fixed || {})])].slice(0, 6)
   const recentPlaces = [...new Set(Object.values(data.makeups || {}).map(m => m.place).filter(Boolean))].slice(-6)
 
   // swap 이면 '교환으로 빠짐' 표시를 남긴다
@@ -241,7 +259,13 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
       </div>
       {pop.mode === 'menu' && popCell && (
         <>
-          {popCell.makeup ? (
+          {popCell.activity ? (
+            <>
+              <div style={{ ...menuItem(true), cursor: 'default', color: SUB }}>매주 고정 시간 · 진도에 세지 않음</div>
+              <div className="hov2" onClick={() => setPop({ ...pop, mode: 'pick', kind: 'fixed', place: popCell.place })} style={menuItem(false)}>이름 고치기</div>
+              <div className="hov2" onClick={() => clearFixed(pop.key)} style={{ ...menuItem(false), color: WARN, paddingBottom: 11 }}>매주 고정 시간 지우기</div>
+            </>
+          ) : popCell.makeup ? (
             <>
               <div style={{ ...menuItem(true), cursor: 'default', color: SUB }}>보강 · 진도에 세지 않음</div>
               <div className="hov2" onClick={() => setPop({ ...pop, mode: 'pick', kind: 'makeup', place: popCell.place })} style={menuItem(false)}>장소 고치기</div>
@@ -271,7 +295,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
           {!popCell.canceled && !popCell.swap && (
             <div className="hov2" onClick={() => setExtra(pop.key, popCell.cls, 'swap')} style={menuItem(false)}>교환 수업으로 표시</div>
           )}
-          {!popCell.makeup && (
+          {!popCell.makeup && !popCell.activity && (
             <>
           <div className="hov2" onClick={() => dropCell(pop.key, 'swap')} style={menuItem(false)}>교환으로 비우기</div>
           <div className="hov2" onClick={() => dropCell(pop.key)} style={menuItem(false)}>이 칸 삭제</div>
@@ -345,7 +369,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
       {pop.mode === 'pick' && (
         <div style={{ padding: '10px 14px 12px' }}>
           <div role="radiogroup" aria-label="수업 종류" style={{ display: 'flex', gap: 5, marginBottom: 10 }}>
-            {[['swap', '교환', '진도 셈'], ['makeup', '보강', '진도 안 셈']].map(([k, t, note]) => {
+            {[['swap', '교환', '진도 셈'], ['makeup', '보강', '진도 안 셈'], ['fixed', '고정', '매주 · 창체 등']].map(([k, t, note]) => {
               const on = (pop.kind || 'swap') === k
               return (
                 <button
@@ -365,7 +389,28 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
               )
             })}
           </div>
-          {(pop.kind || 'swap') === 'makeup' ? (
+          {pop.kind === 'fixed' ? (
+            <form onSubmit={e => { e.preventDefault(); setFixed(pop.key, (pop.place || '').trim()) }}>
+              <label htmlFor="fixed-name" style={{ display: 'block', fontSize: 12, color: FAINT, marginBottom: 7 }}>매주 이 요일·교시에 채울 이름 (반이 아니고 진도를 세지 않아요. 그 날 일은 칸 메모로)</label>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  id="fixed-name"
+                  value={pop.place || ''}
+                  onChange={e => setPop({ ...pop, place: e.target.value })}
+                  placeholder="예: 창체"
+                  autoFocus
+                  style={{ flex: 1, minWidth: 0, border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', fontSize: 13, padding: '6px 8px' }}
+                />
+                <button type="submit" style={{ ...linkBtn, fontWeight: 700, flex: 'none' }}>저장</button>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 8 }}>
+                {fixedNames.map(nm => (
+                  <button key={nm} type="button" onClick={() => setFixed(pop.key, nm)}
+                    style={{ border: '1px solid ' + LINE, borderRadius: 999, padding: '3px 9px', cursor: 'pointer', background: ACT_BG, color: SUB, fontSize: 12 }}>{nm}</button>
+                ))}
+              </div>
+            </form>
+          ) : (pop.kind || 'swap') === 'makeup' ? (
             <form onSubmit={e => { e.preventDefault(); setMakeup(pop.key, (pop.place || '').trim()) }}>
               <label htmlFor="makeup-place" style={{ display: 'block', fontSize: 12, color: FAINT, marginBottom: 7 }}>어디서 하나요? (반으로 등록되지 않습니다)</label>
               <div style={{ display: 'flex', gap: 6 }}>
@@ -517,7 +562,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
       // 빈 칸도 누를 수 있다 — 보강이 생기거나 수업을 바꿔 하는 날이 있으므로.
       // 다만 휴업일·행사로 그 시간 자체가 없는 날은 그대로 둔다.
       const dayOff = !s && data.events.some(e => e.start <= day.iso && day.iso <= e.end && (!e.period || e.period === p))
-      const clickable = s ? !s.canceled || s.user || s.makeup : !dayOff
+      const clickable = s ? !s.canceled || s.user || s.makeup || s.activity : !dayOff
       const perf = !!(s && s.perf)
       return (
         <div
@@ -525,7 +570,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
           onClick={clickable ? e => {
             e.stopPropagation()
             // 칸을 누르면 차시별 내용도 그 반의 과목으로 따라간다
-            if (s && !s.makeup) setActiveSubject(subjectOf(data, s.cls))
+            if (s && !s.makeup && !s.activity) setActiveSubject(subjectOf(data, s.cls))
             // 표가 overflow:hidden 이라 팝오버는 화면 좌표로 띄운다
             const r = e.currentTarget.getBoundingClientRect()
             setPop({ key, mode: s ? 'menu' : 'pick', draft: s ? cont : '', x: r.left, y: r.bottom })
@@ -538,7 +583,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             borderTop: '1px solid ' + LINE_SOFT, borderLeft: '1px solid ' + LINE_SOFT,
             cursor: clickable ? 'pointer' : 'default',
             boxShadow: day.isToday ? 'inset 1px 0 0 rgba(18, 132, 202,0.4), inset -1px 0 0 rgba(18, 132, 202,0.4)' : 'none',
-            background: s && s.makeup ? MAKEUP_BG : s && !s.canceled ? colorOf(data, s.cls) : '#FFFFFF',
+            background: s && s.activity ? ACT_BG : s && s.makeup ? MAKEUP_BG : s && !s.canceled ? colorOf(data, s.cls) : '#FFFFFF',
           }}
         >
           {/* 교환으로 비운 칸 — 수업이 다른 시간으로 옮겨 갔다는 흔적 */}
@@ -555,7 +600,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
               }}
             >
               {/* 결손·수행평가 모두 차시를 쓰지 않으므로 같은 빗금 배경을 쓴다 */}
-              {s.canceled && !s.makeup && (
+              {s.canceled && !s.makeup && !s.activity && (
                 <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(45deg,transparent 0,transparent 5px,rgba(26,26,26,0.06) 5px,rgba(26,26,26,0.06) 6px)' }} />
               )}
               {/* 그 날만의 보강·교체라는 표시 */}
@@ -565,7 +610,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
                   style={{ width: 5, height: 5, borderRadius: '50%', background: GREEN, flex: 'none', alignSelf: 'center', position: 'relative' }}
                 />
               )}
-              <span style={{ ...ellip(isMobile ? 10 : 12, 600), color: s.canceled && !s.makeup ? FAINT : SUB, minWidth: 0, position: 'relative' }}>{s.makeup ? s.place : s.cls}</span>
+              <span style={{ ...ellip(isMobile ? 10 : 12, 600), color: s.canceled && !s.makeup && !s.activity ? FAINT : SUB, minWidth: 0, position: 'relative' }}>{s.makeup || s.activity ? s.place : s.cls}</span>
               <div style={{ flex: 1 }} />
               {s.swap && <span title="교환 수업 — 진도에 셉니다" style={{ fontSize: isMobile ? 9.5 : 11, fontWeight: 700, color: GREEN, position: 'relative', flex: 'none' }}>교환</span>}
               {s.makeup && <span title="보강 — 진도에 세지 않습니다" style={{ fontSize: isMobile ? 10 : 12, fontWeight: 700, color: SUB, position: 'relative', flex: 'none' }}>보강</span>}
@@ -574,7 +619,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
                 ? <span title="수행평가" style={{ width: 8, height: 8, borderRadius: '50%', background: RED, position: 'relative', flex: 'none', alignSelf: 'center' }} />
                 : <span style={{ fontSize: isMobile ? 10 : 12, fontWeight: 700, color: RED, position: 'relative', flex: 'none' }}>{isMobile ? '수행' : '수행평가'}</span>
               )}
-              {s.canceled && !perf && !s.makeup && !min && (
+              {s.canceled && !perf && !s.makeup && !s.activity && !min && (
                 <span style={{ fontSize: isMobile ? 9 : 12, color: SUB, position: 'relative', minWidth: 0, ...ellipBase }}>{s.reason}</span>
               )}
             </div>
@@ -817,6 +862,14 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
               {w.days.map(day => {
                 const s = sessions[day.iso + '|' + p]
                 if (!s) return <td key={day.iso} style={ptd} />
+                if (s.activity) {
+                  return (
+                    <td key={day.iso} style={{ ...ptd, background: ACT_BG }}>
+                      <div style={{ padding: '4px 6px', fontSize: P.cls, fontWeight: 700, color: '#555' }}>{s.place}</div>
+                      {P.showCont && notes[day.iso + '|' + p] && <div style={{ padding: '0 6px 4px', fontSize: Math.max(8.5, P.cont - 0.5), lineHeight: 1.35, color: NOTE_FG, wordBreak: 'break-all' }}>✎ {notes[day.iso + '|' + p]}</div>}
+                    </td>
+                  )
+                }
                 if (s.makeup) {
                   return (
                     <td key={day.iso} style={{ ...ptd, background: MAKEUP_BG }}>
@@ -1028,7 +1081,7 @@ function DashStrip({ data, setData, computed, today, setUI, setWeekOffset, mon0,
   const todayRows = []
   for (let p = 1; p <= 7; p++) {
     const s = sessions[today + '|' + p]
-    if (s) todayRows.push({ p, cls: s.cls, place: s.place, makeup: s.makeup, num: s.num, canceled: s.canceled, perf: s.perf, reason: s.reason })
+    if (s) todayRows.push({ p, cls: s.cls, place: s.place, makeup: s.makeup, activity: s.activity, num: s.num, canceled: s.canceled, perf: s.perf, reason: s.reason })
   }
 
   const curOf = c => progressFor(data, computed, c, today).current
@@ -1100,9 +1153,9 @@ function DashStrip({ data, setData, computed, today, setUI, setWeekOffset, mon0,
                     return (
                     <div key={r.p} style={{ display: 'flex', alignItems: 'baseline', gap: 4, minWidth: 0, flexWrap: 'nowrap', borderRadius: 6, margin: '-2px -6px', padding: '2px 6px', background: isNow ? NOW_BG : 'transparent', boxShadow: isNext ? 'inset 0 0 0 1px #C6E6FA' : 'none' }}>
                       <span style={{ fontSize: 11, color: isNow ? GREEN : FAINT, fontWeight: isNow ? 700 : 400, flex: 'none' }}>{isNow ? '지금' : r.p + '교시'}</span>
-                      <span style={{ ...chip(r.cls), ...(r.makeup ? { background: MAKEUP_BG } : null), alignSelf: 'center' }} />
-                      <span style={{ fontSize: 12, fontWeight: 700, minWidth: 0, ...ellipBase }}>{r.makeup ? r.place || '보강' : r.cls}</span>
-                      {r.canceled ? (
+                      <span style={{ ...chip(r.cls), ...(r.activity ? { background: ACT_BG } : r.makeup ? { background: MAKEUP_BG } : null), alignSelf: 'center' }} />
+                      <span style={{ fontSize: 12, fontWeight: 700, minWidth: 0, ...ellipBase }}>{r.makeup || r.activity ? r.place || '보강' : r.cls}</span>
+                      {r.activity ? null : r.canceled ? (
                         <span style={{ fontSize: 11, fontWeight: 700, color: r.perf ? RED : FAINT, ...ellipBase }}>{r.perf ? '수행' : r.reason}</span>
                       ) : (
                         <span style={{ fontSize: 18, fontWeight: 700, lineHeight: 1 }}>{r.num}</span>
@@ -1324,6 +1377,7 @@ function popTitle(key, sessions) {
   const dd = fromISO(iso)
   const when = dd.getMonth() + 1 + '.' + dd.getDate() + ' ' + DAYS[dd.getDay()] + ' ' + ps + '교시'
   if (!s) return when + ' · 빈 시간'
+  if (s.activity) return when + ' · ' + s.place + ' (매주 고정)'
   if (s.makeup) return when + ' · 보강' + (s.place ? ' · ' + s.place : '')
   return s.cls + ' · ' + when + (s.num ? ' · ' + s.num + '차시' : '')
 }
@@ -1332,6 +1386,7 @@ const ellipBase = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'n
 const ellip = (size, weight) => ({ fontSize: size, fontWeight: weight, lineHeight: 1.3, ...ellipBase })
 // 보강 칸 — 진도를 세지 않는 수업이라 반 색 대신 회색
 const MAKEUP_BG = '#E8EBEF'
+const ACT_BG = '#EFEBFA' // 매주 고정 시간(창체 등)
 // 칸 메모 글씨 — 진한 갈색이라 파랑·노랑·회색 칸 위에서 모두 읽힌다
 const NOTE_FG = '#7A4B12'
 const LOSS_REASONS = ['출장', '연수', '학교 행사', '학급 사정', '시험 감독']
