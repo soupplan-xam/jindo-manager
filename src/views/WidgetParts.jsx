@@ -55,6 +55,13 @@ function neon(glass, inv, strong = true) {
   const a = strong ? 1 : 0.5
   return 'inset 0 0 0 1.5px rgba(' + c + ',' + 0.95 * a + '), inset 0 0 12px rgba(' + c + ',' + 0.45 * a + '), 0 0 10px rgba(' + c + ',' + 0.7 * a + '), 0 0 22px rgba(' + c + ',' + 0.35 * a + ')'
 }
+// 끌어다 놓을 칸 — 밝은 하늘빛 점선 테두리와 옅은 면(반전 화면은 미리 거꾸로 건 색)
+function dropMark(glass, inv) {
+  if (!glass) return 'inset 0 0 0 2px #74C0FC, inset 0 0 0 999px rgba(116,192,252,0.16)'
+  const c = inv ? pre('#A5D8FF') : 'rgba(116,192,252,1)'
+  const f = inv ? pre('#A5D8FF', 0.22) : 'rgba(165,216,255,0.3)'
+  return 'inset 0 0 0 2px ' + c + ', inset 0 0 14px ' + c + ', inset 0 0 0 999px ' + f
+}
 const lineOf = (glass, inv) => '1px solid ' + (inv ? 'rgba(0,0,0,0.28)' : glass ? 'rgba(0,0,0,0.13)' : LINE_SOFT)
 const todoColor = k => (TODO_COLORS.find(x => x.k === (k || '')) || TODO_COLORS[0]).c
 
@@ -101,6 +108,20 @@ export function MiniWeek({ glass = false, inv = false, data, setData, computed, 
     setRemoved(null)
   }
   useCtxClose(ctx, setCtx)
+  // 메모를 끌어 다른 칸으로 — 그 칸에 메모가 있으면 아래 줄로 붙인다
+  const [drag, setDrag] = useState(null) // 끌고 있는 메모 칸 key
+  const [over, setOver] = useState(null)
+  const moveNote = (from, to) => {
+    if (!from || from === to) return
+    setData(d => {
+      const n = { ...(d.notes || {}) }
+      const text = n[from]
+      if (!text) return d
+      n[to] = n[to] ? n[to] + '\n' + text : text
+      delete n[from]
+      return { ...d, notes: n }
+    })
+  }
   const t = fromISO(today)
   const dow = t.getDay()
   let mon = addDays(t, dow === 0 ? -6 : 1 - dow)
@@ -139,7 +160,9 @@ export function MiniWeek({ glass = false, inv = false, data, setData, computed, 
                 <div key={iso} title={(s ? (s.activity ? s.place : s.makeup ? (s.place || '') + ' 보강' : s.cls + (s.num ? ' ' + s.num + '차시' : ' ' + (s.reason || ''))) + ' — ' : '') + '더블클릭해 메모'}
                   data-hit=""
                   onDoubleClick={() => setEdit({ key: iso + '|' + p, text: notes[iso + '|' + p] || '' })}
-                  style={{ minWidth: 0, borderTop: line, borderLeft: line, padding: '4px 6px', background: bg, boxShadow: isNow ? neon(glass, inv) : isNext && glass ? neon(glass, inv, false) : 'none', position: isNow || isNext ? 'relative' : undefined, zIndex: isNow || isNext ? 1 : undefined, cursor: 'pointer',
+                  onDragOver={drag ? e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (over !== iso + '|' + p) setOver(iso + '|' + p) } : undefined}
+                  onDrop={drag ? e => { e.preventDefault(); moveNote(drag, iso + '|' + p); setDrag(null); setOver(null) } : undefined}
+                  style={{ minWidth: 0, borderTop: line, borderLeft: line, padding: '4px 6px', background: bg, boxShadow: drag && over === iso + '|' + p ? dropMark(glass, inv) : isNow ? neon(glass, inv) : isNext && glass ? neon(glass, inv, false) : 'none', position: isNow || isNext ? 'relative' : undefined, zIndex: isNow || isNext ? 1 : undefined, cursor: 'pointer',
                     display: 'flex', flexWrap: 'wrap', alignItems: 'center', alignContent: 'center', gap: '0 6px', wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>
                   {s && (
                     <>
@@ -167,7 +190,9 @@ export function MiniWeek({ glass = false, inv = false, data, setData, computed, 
                           style={{ flexBasis: '100%', marginTop: 3 }}
                         />
                       ) : notes[iso + '|' + p] && (
-                        <span onContextMenu={ev => openCtx(ev, iso + '|' + p)} title="우클릭하면 메뉴" style={{ flexBasis: '100%', fontSize: s ? 11 : 12, lineHeight: 1.35, color: s ? NOTE_FG : INK, fontWeight: s ? 400 : 600, whiteSpace: 'pre-wrap', borderRadius: 3, outline: ctx && ctx.key === iso + '|' + p ? '1px dashed ' + GREEN : 'none' }}>✎ {notes[iso + '|' + p]}</span>
+                        <span draggable onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', notes[iso + '|' + p]); setDrag(iso + '|' + p); setCtx(null) }}
+                          onDragEnd={() => { setDrag(null); setOver(null) }}
+                          onContextMenu={ev => openCtx(ev, iso + '|' + p)} title="끌어서 다른 칸으로 옮기기 · 우클릭하면 메뉴" style={{ cursor: 'grab', opacity: drag === iso + '|' + p ? 0.4 : 1, flexBasis: '100%', fontSize: s ? 11 : 12, lineHeight: 1.35, color: s ? NOTE_FG : INK, fontWeight: s ? 400 : 600, whiteSpace: 'pre-wrap', borderRadius: 3, outline: ctx && ctx.key === iso + '|' + p ? '1px dashed ' + GREEN : 'none' }}>✎ {notes[iso + '|' + p]}</span>
                       )}
                 </div>
               )
@@ -321,7 +346,6 @@ export function MiniMonth({ glass = false, inv = false, data, setData, today }) 
             const term = solarTermOn(iso)
             const evs = eventsOn(iso)
             const tds = todos[iso] || []
-            const isSel = iso === sel
             // 칠한 색(흰색은 '칠 지움') > 쉬는 날 자동 색 > 바탕 — 달력 탭과 같다.
             // 어두운 바탕에서 쉬는 날은 차분하게, 직접 칠한 날은 밝은 같은 계열 색으로 눈에 띄게
             const painted = colors[iso] && colors[iso].toUpperCase() !== '#FFFFFF' ? colors[iso] : null
@@ -334,7 +358,7 @@ export function MiniMonth({ glass = false, inv = false, data, setData, today }) 
                 onDragOver={drag ? e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (over !== iso) setOver(iso) } : undefined}
                 onDrop={drag ? e => { e.preventDefault(); moveTodo(drag.iso, drag.id, iso); setDrag(null); setOver(null); setSel(iso) } : undefined}
                 style={{ minWidth: 0, padding: '4px 5px 5px', cursor: 'pointer', background: bg, opacity: out ? (glass ? 0.6 : 0.45) : 1,
-                  borderTop: wi ? line : 'none', borderLeft: i ? line : 'none', boxShadow: over === iso && drag ? 'inset 0 0 0 2px ' + GREEN + ', inset 0 0 0 999px rgba(18,132,202,0.12)' : isSel ? neon(glass, inv) : 'none', position: isSel ? 'relative' : undefined, zIndex: isSel ? 1 : undefined, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  borderTop: wi ? line : 'none', borderLeft: i ? line : 'none', boxShadow: over === iso && drag ? dropMark(glass, inv) : iso === today ? neon(glass, inv) : 'none', position: iso === today ? 'relative' : undefined, zIndex: iso === today ? 1 : undefined, display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, minHeight: 18 }}>
                   <span data-hit="" title="더블클릭하면 할 일을 바로 넣습니다" style={{ fontSize: 12.5, fontWeight: 800, flex: 'none', lineHeight: '18px', cursor: 'pointer', color: iso === today ? '#FFFFFF' : i === 0 || hol ? inkOf(RED, inv) : i === 6 ? inkOf(SAT, inv) : INK, background: iso === today ? (glass ? INK : GREEN) : 'transparent', borderRadius: 999, padding: iso === today ? '0 6px' : 0 }}>{d.getDate()}</span>
                   {(hol || term) && <span style={{ fontSize: 10.5, fontWeight: 700, color: hol ? inkOf(RED, inv) : inkOf('#2B8A3E', inv), minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hol || term}</span>}
