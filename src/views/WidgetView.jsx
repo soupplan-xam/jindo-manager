@@ -3,7 +3,7 @@ import { loadData, saveData } from '../storage.js'
 import { compute, toISO, fromISO, DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, RED, colorOf, subjectOf, contentOf, ddayText, upcomingDdays } from '../logic.js'
 import useTodayInfo from '../useTodayInfo.js'
 import useCloudSync from '../useCloudSync.js'
-import { WeatherLine, MealView, periodLabel, NOW_BG } from './TodayCards.jsx'
+import { periodLabel } from './TodayCards.jsx'
 import { TODO_COLORS } from './MonthCalendar.jsx'
 import { MiniWeek, MiniMonth } from './WidgetParts.jsx'
 
@@ -13,7 +13,7 @@ import { MiniWeek, MiniMonth } from './WidgetParts.jsx'
 
 const desk = typeof window !== 'undefined' ? window.jindoDesktop : null
 const PREF_KEY = 'jindo.widget'
-const DEFAULT_PREF = { lessons: true, todos: true, dday: true, meal: true, weather: true, opacity: 0.94 }
+const DEFAULT_PREF = { dday: true, opacity: 0.94, tab: 'month' }
 const readPref = () => { try { return { ...DEFAULT_PREF, ...JSON.parse(localStorage.getItem(PREF_KEY) || '{}') } } catch { return { ...DEFAULT_PREF } } }
 const todoColor = k => (TODO_COLORS.find(x => x.k === (k || '')) || TODO_COLORS[0]).c
 
@@ -45,7 +45,7 @@ export default function WidgetView({ shared = null }) {
 
   // 진도계획표 창이 닫혀 있어도 로그인돼 있으면 온라인 내용(휴대폰에서 고친 것)과 맞춘다
   useCloudSync(data, setData, !shared)
-  const info = useTodayInfo(data, { meal: pref.meal, weather: pref.weather })
+  const info = useTodayInfo(data, { meal: false, weather: false })
   const today = info.today
   const computed = useMemo(() => compute(data), [data])
   const d = fromISO(today)
@@ -60,6 +60,8 @@ export default function WidgetView({ shared = null }) {
   const exam = computed.exam
   const dday = exam ? Math.round((fromISO(exam.start) - d) / 86400000) : null
   const P = info.period
+  const tab = pref.tab === 'week' ? 'week' : 'month'
+  const ddays = [...(exam ? [{ id: 'exam', name: exam.name, days: dday }] : []), ...upcomingDdays(data, today)].slice(0, 5)
 
   const section = (title, body, extra) => (
     <section style={{ padding: '10px 14px', borderTop: '1px solid ' + LINE_SOFT }}>
@@ -94,6 +96,12 @@ export default function WidgetView({ shared = null }) {
             </div>
             {lessons.length > 0 && <div style={{ fontSize: 12, color: P && P.kind === 'class' ? GREEN : FAINT, fontWeight: 700 }}>{periodLabel(P)}</div>}
           </div>
+          <div role="tablist" aria-label="위젯 보기" style={{ display: 'flex', background: '#F2F4F6', borderRadius: 8, padding: 2, flex: 'none', WebkitAppRegion: 'no-drag' }}>
+            {[['month', '달력'], ['week', '시간표']].map(([k, label]) => (
+              <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setPref({ tab: k })}
+                style={{ border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', background: tab === k ? '#FFFFFF' : 'transparent', color: tab === k ? INK : FAINT, boxShadow: tab === k ? '0 1px 3px rgba(25,31,40,0.12)' : 'none' }}>{label}</button>
+            ))}
+          </div>
           {desk && (
             <button type="button" onClick={async () => setOnTop(await desk.setAlwaysOnTop(!onTop))} title={onTop ? '항상 위 끄기' : '항상 위에 두기'} aria-pressed={onTop} style={{ ...iconBtn, color: onTop ? GREEN : FAINT }}><Ico d="M9 4h6l-1 6 3 3v2H7v-2l3-3-1-6zM12 15v6" /></button>
           )}
@@ -112,7 +120,7 @@ export default function WidgetView({ shared = null }) {
 
         {menu && (
           <div style={{ padding: '8px 14px 12px', borderTop: '1px solid ' + LINE_SOFT, background: '#F9FAFB', fontSize: 13, color: INK, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {[['dday', 'D-day'], ['weather', '날씨'], ['meal', '급식']].map(([k, label]) => (
+            {[['dday', 'D-day']].map(([k, label]) => (
               <label key={k} style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
                 <input type="checkbox" checked={!!pref[k]} onChange={() => setPref({ [k]: !pref[k] })} style={{ accentColor: GREEN, margin: 0 }} /> {label}
               </label>
@@ -129,32 +137,19 @@ export default function WidgetView({ shared = null }) {
           </div>
         )}
 
-        {/* 본문: 왼쪽 이번 주 시간표(+ 오늘 정보), 오른쪽 이번 달 달력(할 일). 좁으면 위아래로 */}
-        <div className="wg-body soft-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0 12px 12px' }}>
-          <div className="wg-left" style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
-            <MiniWeek data={data} computed={computed} today={today} period={P} periods={Math.max(7, (data.cfg.bells || []).length)} />
-            {pref.dday && (exam || upcomingDdays(data, today).length > 0) && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px', alignItems: 'baseline', fontSize: 12.5, color: SUB }}>
-                {exam && <span><b style={{ fontSize: 15, color: INK }}>{ddayText(dday)}</b> {exam.name}</span>}
-                {upcomingDdays(data, today).slice(0, 4).map(x => (
-                  <span key={x.id}><b style={{ fontSize: 13.5, color: x.days <= 7 ? '#D9480F' : INK }}>{ddayText(x.days)}</b> {x.name}</span>
-                ))}
-              </div>
-            )}
-            {pref.weather && <WeatherLine weather={info.weather} weatherErr={info.weatherErr} place={info.place} size={12} />}
-            {pref.meal && (
-              <div>
-                <button type="button" onClick={() => setPref({ mealOpen: !pref.mealOpen })} aria-expanded={!!pref.mealOpen}
-                  style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: SUB }}>
-                  {pref.mealOpen ? '▾' : '▸'} 오늘 급식
-                </button>
-                {pref.mealOpen && <div style={{ marginTop: 4 }}><MealView meal={info.meal} mealErr={info.mealErr} school={info.school} size={12.5} only="중식" /></div>}
-              </div>
-            )}
+        {pref.dday && ddays.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px', alignItems: 'baseline', fontSize: 12, color: SUB, padding: '0 14px 6px' }}>
+            {ddays.map(x => (
+              <span key={x.id}><b style={{ fontSize: 13, color: x.days <= 7 ? '#D9480F' : INK }}>{ddayText(x.days)}</b> {x.name}</span>
+            ))}
           </div>
-          <div className="wg-right" style={{ minWidth: 0, minHeight: 360, display: 'flex', flexDirection: 'column' }}>
-            <MiniMonth data={data} setData={setData} today={today} />
-          </div>
+        )}
+
+        {/* 본문: 달력 탭 / 시간표 탭 — 각각 창 전체를 쓴다 */}
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '0 12px 12px' }}>
+          {tab === 'week'
+            ? <MiniWeek data={data} computed={computed} today={today} period={P} periods={Math.max(7, (data.cfg.bells || []).length)} />
+            : <MiniMonth data={data} setData={setData} today={today} />}
         </div>
       </div>
     </div>

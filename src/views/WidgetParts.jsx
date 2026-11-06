@@ -9,7 +9,7 @@ const MAKEUP_BG = '#E8EBEF'
 const todoColor = k => (TODO_COLORS.find(x => x.k === (k || '')) || TODO_COLORS[0]).c
 
 // 위젯 — 이번 주 시간표(월~금 × 교시). 칸마다 반 · 차시. 오늘 열과 지금 교시를 강조한다.
-// 주말에는 다음 주를 보여 준다.
+// 주말에는 다음 주를 보여 준다. 시간표 탭에서 창 전체를 채운다(글자는 자르지 않고 줄바꿈).
 export function MiniWeek({ data, computed, today, period, periods = 7 }) {
   const t = fromISO(today)
   const dow = t.getDay()
@@ -17,43 +17,45 @@ export function MiniWeek({ data, computed, today, period, periods = 7 }) {
   if (dow === 0 || dow === 6) mon = addDays(mon, 7)
   const days = [0, 1, 2, 3, 4].map(i => toISO(addDays(mon, i)))
   const nowP = period && period.kind === 'class' ? period.period : null
-  const cell = { minWidth: 0, borderTop: '1px solid ' + LINE_SOFT, borderLeft: '1px solid ' + LINE_SOFT, padding: '3px 5px', boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 3, minHeight: 30 }
+  const line = '1px solid ' + LINE_SOFT
   return (
-    <div style={{ border: '1px solid ' + LINE, borderRadius: 10, overflow: 'hidden', background: '#FFFFFF' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '22px repeat(5, minmax(0, 1fr))', background: '#F2F4F6', fontSize: 11.5, fontWeight: 700, color: SUB }}>
-        <div />
-        {days.map((iso, i) => {
+    <div className="soft-scroll" style={{ flex: 1, minHeight: 0, overflow: 'auto', border: '1px solid ' + LINE, borderRadius: 10, background: '#FFFFFF' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '30px repeat(5, minmax(0, 1fr))', gridTemplateRows: 'auto repeat(' + periods + ', minmax(40px, 1fr))', minHeight: '100%' }}>
+        <div style={{ background: '#F2F4F6', position: 'sticky', top: 0, zIndex: 1 }} />
+        {days.map(iso => {
           const d = fromISO(iso)
           const isToday = iso === today
           return (
-            <div key={iso} style={{ textAlign: 'center', padding: '4px 0', color: isToday ? GREEN : holidayOn(iso) ? RED : SUB, background: isToday ? '#E9F6FE' : 'transparent', borderLeft: '1px solid ' + LINE_SOFT }}>
-              {DAYS[d.getDay()]} {d.getDate()}
+            <div key={iso} style={{ textAlign: 'center', padding: '6px 0', fontSize: 13, fontWeight: 700, color: isToday ? GREEN : holidayOn(iso) ? RED : SUB, background: isToday ? '#E9F6FE' : '#F2F4F6', borderLeft: line, position: 'sticky', top: 0, zIndex: 1 }}>
+              {DAYS[d.getDay()]} {d.getMonth() + 1}.{d.getDate()}
             </div>
           )
         })}
+        {Array.from({ length: periods }, (_, k) => k + 1).map(p => (
+          <React.Fragment key={p}>
+            <div style={{ borderTop: line, fontSize: 12.5, color: nowP === p ? GREEN : FAINT, fontWeight: nowP === p ? 800 : 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{p}</div>
+            {days.map(iso => {
+              const s = computed.sessions[iso + '|' + p]
+              const isNow = iso === today && nowP === p
+              const bg = !s ? (iso === today ? '#FAFCFE' : '#FFFFFF') : s.makeup ? MAKEUP_BG : s.canceled ? '#FFFFFF' : colorOf(data, s.cls)
+              const tag = s && !s.num ? (s.makeup ? '보강' : s.perf ? '수행' : s.reason || '결손') : ''
+              return (
+                <div key={iso} title={s ? (s.makeup ? (s.place || '') + ' 보강' : s.cls + (s.num ? ' ' + s.num + '차시' : ' ' + (s.reason || ''))) : ''}
+                  style={{ minWidth: 0, borderTop: line, borderLeft: line, padding: '4px 6px', background: bg, boxShadow: isNow ? 'inset 0 0 0 2px ' + GREEN : 'none',
+                    display: 'flex', flexWrap: 'wrap', alignItems: 'center', alignContent: 'center', gap: '0 6px', wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>
+                  {s && (
+                    <>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: s.canceled && !s.makeup ? FAINT : SUB, lineHeight: 1.25 }}>{s.makeup ? s.place || '보강' : s.cls}</span>
+                      {s.num ? <span style={{ fontSize: 15, fontWeight: 800, color: INK, lineHeight: 1.25 }}>{s.num}<span style={{ fontSize: 10.5, fontWeight: 600, color: FAINT }}>차시</span></span>
+                        : <span style={{ fontSize: 11.5, fontWeight: 700, color: s.perf ? RED : FAINT, lineHeight: 1.25 }}>{tag}</span>}
+                    </>
+                  )}
+                </div>
+              )
+            })}
+          </React.Fragment>
+        ))}
       </div>
-      {Array.from({ length: periods }, (_, k) => k + 1).map(p => (
-        <div key={p} style={{ display: 'grid', gridTemplateColumns: '22px repeat(5, minmax(0, 1fr))' }}>
-          <div style={{ borderTop: '1px solid ' + LINE_SOFT, fontSize: 10.5, color: nowP === p ? GREEN : FAINT, fontWeight: nowP === p ? 800 : 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{p}</div>
-          {days.map(iso => {
-            const s = computed.sessions[iso + '|' + p]
-            const isNow = iso === today && nowP === p
-            const bg = !s ? (iso === today ? '#FAFCFE' : '#FFFFFF') : s.makeup ? MAKEUP_BG : s.canceled ? '#FFFFFF' : colorOf(data, s.cls)
-            return (
-              <div key={iso} title={s ? (s.makeup ? (s.place || '') + ' 보강' : s.cls + (s.num ? ' ' + s.num + '차시' : ' ' + (s.reason || ''))) : ''}
-                style={{ ...cell, background: bg, boxShadow: isNow ? 'inset 0 0 0 2px ' + GREEN : 'none' }}>
-                {s && (
-                  <>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: s.canceled && !s.makeup ? FAINT : SUB, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{s.makeup ? s.place || '보강' : s.cls}</span>
-                    {s.num ? <span style={{ fontSize: 13.5, fontWeight: 800, color: INK, flex: 'none' }}>{s.num}</span>
-                      : <span style={{ fontSize: 10, fontWeight: 700, color: s.perf ? RED : FAINT, flex: 'none' }}>{s.makeup ? '보강' : s.perf ? '수행' : '결손'}</span>}
-                  </>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      ))}
     </div>
   )
 }
@@ -105,64 +107,65 @@ export function MiniMonth({ data, setData, today }) {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
         <button type="button" onClick={() => move(-1)} aria-label="이전 달" className="hov" style={navBtn}>‹</button>
-        <div style={{ fontSize: 15, fontWeight: 800, color: INK, minWidth: 92, textAlign: 'center' }}>{ym.y}.{String(ym.m + 1).padStart(2, '0')}</div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: INK, minWidth: 92, textAlign: 'center' }}>{ym.y}.{String(ym.m + 1).padStart(2, '0')}</div>
         <button type="button" onClick={() => move(1)} aria-label="다음 달" className="hov" style={navBtn}>›</button>
         <button type="button" onClick={() => { setYm({ y: t0.getFullYear(), m: t0.getMonth() }); setSel(today) }} style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', color: SUB, fontSize: 11.5, padding: '2px 8px', cursor: 'pointer', marginLeft: 4 }}>오늘</button>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', fontSize: 11, fontWeight: 700, textAlign: 'center', paddingBottom: 3 }}>
-        {DAYS.split('').map((w, i) => <div key={w} style={{ color: i === 0 ? RED : i === 6 ? SAT : SUB }}>{w}</div>)}
-      </div>
-      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateRows: 'repeat(' + weeks.length + ', minmax(64px, 1fr))', border: '1px solid ' + LINE, borderRadius: 10, overflow: 'hidden', background: '#FFFFFF' }}>
-        {weeks.map((row, wi) => (
-          <div key={wi} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', minHeight: 0 }}>
-            {row.map((d, i) => {
-              const iso = toISO(d)
-              const out = d.getMonth() !== ym.m
-              const hol = holidayOn(iso)
-              const term = solarTermOn(iso)
-              const evs = eventsOn(iso)
-              const tds = todos[iso] || []
-              const isSel = iso === sel
-              const bg = colors[iso] || (offDay(iso, i) ? '#EEF5FC' : '#FFFFFF')
-              return (
-                <div key={iso} onClick={() => setSel(iso)} onDoubleClick={() => { setSel(iso); setCellEdit({ iso, text: '' }) }} title="더블클릭하면 할 일을 바로 넣습니다"
-                  style={{ minWidth: 0, minHeight: 0, overflow: 'hidden', padding: '3px 4px', cursor: 'pointer', background: bg, opacity: out ? 0.45 : 1,
-                    borderTop: wi ? '1px solid ' + LINE_SOFT : 'none', borderLeft: i ? '1px solid ' + LINE_SOFT : 'none', boxShadow: isSel ? 'inset 0 0 0 2px ' + GREEN : 'none', display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, minWidth: 0 }}>
-                    <span style={{ fontSize: 11.5, fontWeight: 800, flex: 'none', color: iso === today ? '#FFFFFF' : i === 0 || hol ? RED : i === 6 ? SAT : INK, background: iso === today ? GREEN : 'transparent', borderRadius: 999, padding: iso === today ? '0 5px' : 0 }}>{d.getDate()}</span>
-                    {(hol || term) && <span style={{ fontSize: 9.5, fontWeight: 700, color: hol ? RED : '#2B8A3E', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hol || term}</span>}
-                  </div>
-                  {evs.slice(0, 2).map(e => (
-                    <div key={e.id} style={{ fontSize: 10, color: TYPE_COLOR[e.type] || SUB, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</div>
-                  ))}
-                  {tds.map(x => (
-                    <div key={x.id} onClick={ev => { ev.stopPropagation(); toggle(iso, x.id) }} title={x.done ? '완료 취소' : '눌러서 완료'}
-                      style={{ fontSize: 10.5, lineHeight: 1.3, color: x.done ? FAINT : todoColor(x.color), fontWeight: x.color && !x.done ? 700 : 500, textDecoration: x.done ? 'line-through' : 'none', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', wordBreak: 'keep-all', cursor: 'pointer' }}>
-                      {x.done ? '✓' : '·'} {x.text}
-                    </div>
-                  ))}
-                  {cellEdit && cellEdit.iso === iso && (
-                    <input
-                      autoFocus
-                      aria-label={(d.getMonth() + 1) + '월 ' + d.getDate() + '일 할 일'}
-                      value={cellEdit.text}
-                      onChange={e => setCellEdit({ iso, text: e.target.value })}
-                      onClick={e => e.stopPropagation()}
-                      onDoubleClick={e => e.stopPropagation()}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); commitCell() }
-                        if (e.key === 'Escape') setCellEdit(null)
-                      }}
-                      onBlur={commitCell}
-                      placeholder="할 일"
-                      style={{ width: '100%', boxSizing: 'border-box', border: '1px solid ' + GREEN, borderRadius: 4, fontSize: 10.5, padding: '1px 4px', marginTop: 1, background: '#FFFFFF' }}
-                    />
-                  )}
+      {/* 요일 머리와 날짜 칸을 한 격자에 두어 열이 정확히 맞는다. 주(줄) 높이는 같게 나누고,
+          할 일이 많은 주만 늘어난다(넘치면 달력 안에서 스크롤) */}
+      <div className="soft-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', border: '1px solid ' + LINE, borderRadius: 10, background: '#FFFFFF' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gridTemplateRows: 'auto repeat(' + weeks.length + ', minmax(84px, 1fr))', minHeight: '100%' }}>
+          {DAYS.split('').map((w, i) => (
+            <div key={w} style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, padding: '5px 0', background: '#F7F8FA', borderLeft: i ? '1px solid ' + LINE_SOFT : 'none', borderBottom: '1px solid ' + LINE_SOFT, color: i === 0 ? RED : i === 6 ? SAT : SUB, position: 'sticky', top: 0, zIndex: 1 }}>{w}</div>
+          ))}
+          {weeks.map((row, wi) => row.map((d, i) => {
+            const iso = toISO(d)
+            const out = d.getMonth() !== ym.m
+            const hol = holidayOn(iso)
+            const term = solarTermOn(iso)
+            const evs = eventsOn(iso)
+            const tds = todos[iso] || []
+            const isSel = iso === sel
+            const bg = colors[iso] || (offDay(iso, i) ? '#EEF5FC' : '#FFFFFF')
+            return (
+              <div key={iso} onClick={() => setSel(iso)} onDoubleClick={() => { setSel(iso); setCellEdit({ iso, text: '' }) }} title="더블클릭하면 할 일을 바로 넣습니다"
+                style={{ minWidth: 0, padding: '4px 5px 5px', cursor: 'pointer', background: bg, opacity: out ? 0.45 : 1,
+                  borderTop: wi ? '1px solid ' + LINE_SOFT : 'none', borderLeft: i ? '1px solid ' + LINE_SOFT : 'none', boxShadow: isSel ? 'inset 0 0 0 2px ' + GREEN : 'none', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, minHeight: 18 }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 800, flex: 'none', lineHeight: '18px', color: iso === today ? '#FFFFFF' : i === 0 || hol ? RED : i === 6 ? SAT : INK, background: iso === today ? GREEN : 'transparent', borderRadius: 999, padding: iso === today ? '0 6px' : 0 }}>{d.getDate()}</span>
+                  {(hol || term) && <span style={{ fontSize: 10, fontWeight: 700, color: hol ? RED : '#2B8A3E', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hol || term}</span>}
                 </div>
-              )
-            })}
-          </div>
-        ))}
+                {evs.map(e => (
+                  <div key={e.id} style={{ fontSize: 10.5, lineHeight: 1.3, color: TYPE_COLOR[e.type] || SUB, wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>{e.name}</div>
+                ))}
+                {tds.map(x => (
+                  <div key={x.id} onClick={ev => { ev.stopPropagation(); toggle(iso, x.id) }} title={x.done ? '완료 취소' : '눌러서 완료'}
+                    style={{ display: 'flex', gap: 3, alignItems: 'flex-start', fontSize: 11.5, lineHeight: 1.35, color: x.done ? FAINT : todoColor(x.color), fontWeight: x.color && !x.done ? 700 : 500, cursor: 'pointer' }}>
+                    <span style={{ flex: 'none', width: 9, textAlign: 'center' }}>{x.done ? '✓' : '•'}</span>
+                    <span style={{ flex: 1, minWidth: 0, textDecoration: x.done ? 'line-through' : 'none', wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>{x.text}</span>
+                  </div>
+                ))}
+                {cellEdit && cellEdit.iso === iso && (
+                  <input
+                    autoFocus
+                    aria-label={(d.getMonth() + 1) + '월 ' + d.getDate() + '일 할 일'}
+                    value={cellEdit.text}
+                    onChange={e => setCellEdit({ iso, text: e.target.value })}
+                    onClick={e => e.stopPropagation()}
+                    onDoubleClick={e => e.stopPropagation()}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); commitCell() }
+                      if (e.key === 'Escape') setCellEdit(null)
+                    }}
+                    onBlur={commitCell}
+                    placeholder="할 일"
+                    style={{ width: '100%', boxSizing: 'border-box', border: '1px solid ' + GREEN, borderRadius: 4, fontSize: 11.5, padding: '2px 4px', marginTop: 1, background: '#FFFFFF' }}
+                  />
+                )}
+              </div>
+            )
+          }))}
+        </div>
       </div>
       <form onSubmit={add} style={{ display: 'flex', gap: 6, marginTop: 6, alignItems: 'center' }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: SUB, flex: 'none' }}>{selD.getMonth() + 1}.{selD.getDate()} {DAYS[selD.getDay()]}</span>
