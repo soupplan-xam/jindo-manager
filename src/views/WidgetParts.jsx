@@ -9,6 +9,16 @@ const MAKEUP_BG = '#E8EBEF'
 const NOTE_FG = '#7A4B12'
 // 바탕화면 모드(glass): 흰 면은 비우고, 색 면은 반투명으로. 화면 전체가 반전되므로 선은 어둡게 둔다(반전 뒤 밝은 선)
 const tint = (c, glass, a = '73') => (glass && /^#[0-9a-f]{6}$/i.test(c) ? c + a : c)
+// 바탕화면 모드에서 칠한 날 색 — 반전(invert + hue-rotate 180°)을 미리 거꾸로 걸어, 반전 뒤 고른 색 그대로 보이게
+const HUE180 = [[-0.574, 1.43, 0.144], [0.426, 0.43, 0.144], [0.426, 1.43, -0.856]]
+function glassPaint(hex, a = 0.3) {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex || '')
+  if (!m) return hex
+  const n = parseInt(m[1], 16)
+  const inv = [255 - (n >> 16), 255 - ((n >> 8) & 255), 255 - (n & 255)]
+  const c = HUE180.map(r => Math.max(0, Math.min(255, Math.round(r[0] * inv[0] + r[1] * inv[1] + r[2] * inv[2]))))
+  return 'rgba(' + c.join(',') + ',' + a + ')'
+}
 const lineOf = glass => '1px solid ' + (glass ? 'rgba(0,0,0,0.28)' : LINE_SOFT)
 const todoColor = k => (TODO_COLORS.find(x => x.k === (k || '')) || TODO_COLORS[0]).c
 
@@ -101,13 +111,12 @@ export function MiniWeek({ glass = false, data, setData, computed, today, period
   )
 }
 
-// 위젯 — 이번 달 달력. 날짜마다 학사일정·할 일(눌러서 체크). 날짜를 누르면 아래에서 그 날 할 일을 넣는다.
+// 위젯 — 이번 달 달력. 날짜마다 학사일정·할 일(눌러서 체크). 날짜를 더블클릭해 그 칸에서 바로 할 일을 넣는다.
 export function MiniMonth({ glass = false, data, setData, today }) {
   const line = lineOf(glass)
   const t0 = fromISO(today)
   const [ym, setYm] = useState({ y: t0.getFullYear(), m: t0.getMonth() })
   const [sel, setSel] = useState(today)
-  const [draft, setDraft] = useState('')
   const [cellEdit, setCellEdit] = useState(null) // 더블클릭한 날 { iso, text }
   const todos = data.todos || {}
   const colors = data.dayColors || {}
@@ -130,14 +139,6 @@ export function MiniMonth({ glass = false, data, setData, today }) {
     return { ...d, todos: tt }
   })
   const toggle = (iso, id) => setTodos(iso, (todos[iso] || []).map(x => (x.id === id ? { ...x, done: !x.done } : x)))
-  const add = e => {
-    e.preventDefault()
-    const v = draft.trim()
-    if (!v) return
-    setTodos(sel, [...(todos[sel] || []), { id: Date.now(), text: v, done: false }])
-    setDraft('')
-  }
-  const selD = fromISO(sel)
   const commitCell = () => {
     if (!cellEdit) return
     const v = cellEdit.text.trim()
@@ -151,7 +152,7 @@ export function MiniMonth({ glass = false, data, setData, today }) {
         <button type="button" onClick={() => move(-1)} aria-label="이전 달" className="hov" style={navBtn}>‹</button>
         <div style={{ fontSize: 16, fontWeight: 800, color: INK, minWidth: 92, textAlign: 'center' }}>{ym.y}.{String(ym.m + 1).padStart(2, '0')}</div>
         <button type="button" onClick={() => move(1)} aria-label="다음 달" className="hov" style={navBtn}>›</button>
-        <button type="button" onClick={() => { setYm({ y: t0.getFullYear(), m: t0.getMonth() }); setSel(today) }} style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', color: SUB, fontSize: 11.5, padding: '2px 8px', cursor: 'pointer', marginLeft: 4 }}>오늘</button>
+        <button type="button" onClick={() => { setYm({ y: t0.getFullYear(), m: t0.getMonth() }); setSel(today) }} className="wg-btn" style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', color: SUB, fontSize: 11.5, padding: '2px 8px', cursor: 'pointer', marginLeft: 4 }}>오늘</button>
       </div>
       {/* 요일 머리와 날짜 칸을 한 격자에 두어 열이 정확히 맞는다. 주(줄) 높이는 같게 나누고,
           할 일이 많은 주만 늘어난다(넘치면 달력 안에서 스크롤) */}
@@ -168,7 +169,7 @@ export function MiniMonth({ glass = false, data, setData, today }) {
             const evs = eventsOn(iso)
             const tds = todos[iso] || []
             const isSel = iso === sel
-            const bg = colors[iso] ? tint(colors[iso], glass) : offDay(iso, i) ? (glass ? 'rgba(18,132,202,0.10)' : '#EEF5FC') : glass ? 'transparent' : '#FFFFFF'
+            const bg = colors[iso] ? (glass ? glassPaint(colors[iso]) : colors[iso]) : offDay(iso, i) ? (glass ? 'rgba(0,0,0,0.07)' : '#EEF5FC') : glass ? 'transparent' : '#FFFFFF'
             return (
               <div key={iso} onClick={() => setSel(iso)} onDoubleClick={() => { setSel(iso); setCellEdit({ iso, text: '' }) }} title="더블클릭하면 할 일을 바로 넣습니다"
                 style={{ minWidth: 0, padding: '4px 5px 5px', cursor: 'pointer', background: bg, opacity: out ? 0.45 : 1,
@@ -209,11 +210,6 @@ export function MiniMonth({ glass = false, data, setData, today }) {
           }))}
         </div>
       </div>
-      <form onSubmit={add} style={{ display: 'flex', gap: 6, marginTop: 6, alignItems: 'center' }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: SUB, flex: 'none' }}>{selD.getMonth() + 1}.{selD.getDate()} {DAYS[selD.getDay()]}</span>
-        <input aria-label="할 일 추가" value={draft} onChange={e => setDraft(e.target.value)} placeholder="할 일 추가 (날짜 더블클릭해도 돼요)" style={{ flex: 1, minWidth: 0, border: '1px solid ' + LINE, borderRadius: 8, fontSize: 12.5, padding: '5px 8px' }} />
-        <button type="submit" style={{ border: 'none', borderRadius: 8, background: draft.trim() ? GREEN : '#D1D6DB', color: '#FFFFFF', fontSize: 12, fontWeight: 700, padding: '6px 10px', cursor: draft.trim() ? 'pointer' : 'default', flex: 'none' }}>추가</button>
-      </form>
     </div>
   )
 }

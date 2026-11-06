@@ -13,7 +13,14 @@ import { MiniWeek, MiniMonth } from './WidgetParts.jsx'
 
 const desk = typeof window !== 'undefined' ? window.jindoDesktop : null
 const PREF_KEY = 'jindo.widget'
-const DEFAULT_PREF = { dday: true, opacity: 0.94, tab: 'month', glassA: 0.22 }
+const DEFAULT_PREF = { dday: true, opacity: 0.94, tab: 'month', glassA: 0.55, glassColor: '#1E2530' }
+// 바탕화면 모드 바탕색 고르기 — 흰 글씨가 잘 보이는 어두운 색들
+const GLASS_COLORS = [['#000000', '검정'], ['#1E2530', '먹색'], ['#14284B', '남색'], ['#0F3D4A', '청록'], ['#1F3A2E', '초록'], ['#3B2A4A', '보라'], ['#4A3426', '갈색'], ['#5A2330', '와인']]
+const rgba = (hex, a) => {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex || '')
+  const n = m ? parseInt(m[1], 16) : 0x1E2530
+  return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'
+}
 // 바탕화면 모드(윈도우 프로그램이 ?glass=1 로 연다): 창 바탕이 투명하고 바탕화면에 붙는다.
 // 밝은 화면을 반전해 어두운 유리 위 흰 글씨로 보이게 한다(.wg-glass). 브라우저에서 ?glass=1#widget 으로 미리 볼 수 있다
 const GLASS = typeof location !== 'undefined' && new URLSearchParams(location.search).get('glass') === '1'
@@ -96,12 +103,14 @@ export default function WidgetView({ shared = null }) {
   const iconBtn = { border: 'none', background: 'none', cursor: 'pointer', color: SUB, padding: '4px 6px', borderRadius: 6, fontSize: 13, lineHeight: 1, WebkitAppRegion: 'no-drag' }
 
   return (
-    <div style={{ height: '100vh', boxSizing: 'border-box', padding: desk || shared ? 0 : 16, display: 'flex' }}>
+    <div style={{ height: '100vh', boxSizing: 'border-box', padding: glass ? 0 : desk || shared ? 0 : 16, display: 'flex',
+      // 바탕화면 모드: 고른 바탕색은 반전 필터 밖(여기)에 깐다 — 고른 색 그대로 보인다
+      ...(glass ? { background: rgba(pref.glassColor, pref.glassA), borderRadius: 14, overflow: 'hidden' } : null) }}>
       <div
         className={'wg-wrap' + (glass ? ' wg-glass' : '')}
         style={{
           flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',
-          background: glass ? 'rgba(255,255,255,' + pref.glassA + ')' : desk || shared ? '#FFFFFF' : 'rgba(255,255,255,' + pref.opacity + ')', borderRadius: glass ? 14 : desk || shared ? 0 : 16,
+          background: glass ? 'transparent' : desk || shared ? '#FFFFFF' : 'rgba(255,255,255,' + pref.opacity + ')', borderRadius: glass ? 14 : desk || shared ? 0 : 16,
           boxShadow: desk || shared ? 'none' : '0 8px 30px rgba(25,31,40,0.18)', border: desk || shared ? 'none' : '1px solid rgba(225,229,234,0.9)',
           backdropFilter: glass ? 'none' : 'blur(12px)', margin: desk || shared ? 0 : '0 auto',
           ...(glass ? { boxShadow: 'none', border: 'none' } : null),
@@ -113,9 +122,9 @@ export default function WidgetView({ shared = null }) {
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontSize: 15, fontWeight: 800, color: INK, letterSpacing: '-0.02em' }}>
               {d.getMonth() + 1}월 {d.getDate()}일 <span style={{ color: d.getDay() === 0 ? RED : d.getDay() === 6 ? '#185FA5' : SUB, fontWeight: 600 }}>{DAYS[d.getDay()]}</span>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: FAINT, marginLeft: 8 }}>{String(info.now.getHours()).padStart(2, '0')}:{String(info.now.getMinutes()).padStart(2, '0')}</span>
+              <span className="wg-dim" style={{ fontSize: 12.5, fontWeight: 600, color: FAINT, marginLeft: 8 }}>{String(info.now.getHours()).padStart(2, '0')}:{String(info.now.getMinutes()).padStart(2, '0')}</span>
             </div>
-            {lessons.length > 0 && <div style={{ fontSize: 12, color: P && P.kind === 'class' ? GREEN : FAINT, fontWeight: 700 }}>{periodLabel(P)}</div>}
+            {lessons.length > 0 && <div className={P && P.kind === 'class' ? '' : 'wg-dim'} style={{ fontSize: 12, color: P && P.kind === 'class' ? GREEN : FAINT, fontWeight: 700 }}>{periodLabel(P)}</div>}
           </div>
           <div role="tablist" aria-label="위젯 보기" style={{ display: 'flex', background: '#F2F4F6', borderRadius: 8, padding: 2, flex: 'none', WebkitAppRegion: 'no-drag' }}>
             {[['month', '달력'], ['week', '시간표']].map(([k, label]) => (
@@ -140,17 +149,29 @@ export default function WidgetView({ shared = null }) {
         </header>
 
         {menu && (
-          <div style={{ padding: '8px 14px 12px', borderTop: '1px solid ' + LINE_SOFT, background: '#F9FAFB', fontSize: 13, color: INK, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div className="wg-menu" style={{ padding: '8px 14px 12px', borderTop: '1px solid ' + LINE_SOFT, background: '#F9FAFB', fontSize: 13, color: INK, display: 'flex', flexDirection: 'column', gap: 6 }}>
             {[['dday', 'D-day']].map(([k, label]) => (
               <label key={k} style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
                 <input type="checkbox" checked={!!pref[k]} onChange={() => setPref({ [k]: !pref[k] })} style={{ accentColor: GREEN, margin: 0 }} /> {label}
               </label>
             ))}
             {glass ? (
-              <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                바탕 진하기
-                <input type="range" min="0" max="0.8" step="0.05" value={pref.glassA} onChange={e => setPref({ glassA: Number(e.target.value) })} style={{ flex: 1, accentColor: GREEN }} />
-              </label>
+              <>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ marginRight: 2 }}>바탕색</span>
+                  {GLASS_COLORS.map(([c, name]) => (
+                    <button key={c} type="button" className="wg-raw" title={name} aria-label={'바탕색 ' + name} aria-pressed={pref.glassColor === c} onClick={() => setPref({ glassColor: c })}
+                      style={{ width: 20, height: 20, borderRadius: 999, background: c, border: '2px solid ' + (pref.glassColor === c ? '#FFFFFF' : 'rgba(255,255,255,0.35)'), boxShadow: pref.glassColor === c ? '0 0 0 2px ' + GREEN : 'none', cursor: 'pointer', padding: 0 }} />
+                  ))}
+                  <label title="다른 색 고르기" className="wg-raw" style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                    <input type="color" aria-label="바탕색 직접 고르기" value={pref.glassColor} onChange={e => setPref({ glassColor: e.target.value })} style={{ width: 26, height: 22, padding: 0, border: 'none', background: 'none', cursor: 'pointer' }} />
+                  </label>
+                </div>
+                <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  진하기
+                  <input type="range" min="0.1" max="0.95" step="0.05" value={pref.glassA} onChange={e => setPref({ glassA: Number(e.target.value) })} style={{ flex: 1, accentColor: GREEN }} />
+                </label>
+              </>
             ) : (
               <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 투명도

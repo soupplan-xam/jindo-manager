@@ -4,7 +4,6 @@ import { compute, toISO, fromISO, DAYS, GREEN, SUB, CHIP_BTN } from './logic.js'
 import GridView from './views/GridView.jsx'
 import ImportView from './views/ImportView.jsx'
 import SettingsModal from './views/SettingsModal.jsx'
-import HamilModal from './views/HamilModal.jsx'
 import SchoolCalendarModal from './views/SchoolCalendarModal.jsx'
 import ScheduleGuideModal from './views/ScheduleGuideModal.jsx'
 import SetupGuideModal from './views/SetupGuideModal.jsx'
@@ -86,7 +85,6 @@ export default function App() {
   const [importKind, setImportKind] = useState('timetable')
   const [stagger, setStagger] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [hamilOpen, setHamilOpen] = useState(false)
   const [schoolOpen, setSchoolOpen] = useState(false)
   // 처음 시작할 때 학사일정 넣는 길을 먼저 안내한다.
   // 이미 일정이 있거나 한 번 본 뒤라면 뜨지 않는다.
@@ -213,18 +211,7 @@ export default function App() {
           <span style={{ display: 'inline-block', width: 5, height: isMobile ? 16 : 22, borderRadius: 2, background: GREEN, flex: 'none' }} />
           진도계획표
         </div>
-        {view === 'setup' ? (
-          // 설정 화면: 제목 옆 학교 로고 — 누르면 이름 검색으로 시간표를 불러온다
-          <button
-            data-intro-hamil
-            onClick={() => setHamilOpen(true)}
-            title="해밀고 시간표 불러오기"
-            className="hov"
-            style={{ border: 'none', background: 'none', borderRadius: 8, padding: 3, cursor: 'pointer', display: 'flex', alignItems: 'center', flex: 'none' }}
-          >
-            <HamilMark />
-          </button>
-        ) : (
+        {view === 'setup' ? null : (
           <div style={{ fontSize: isMobile ? 12 : 13, fontWeight: 500, color: SUB, whiteSpace: 'nowrap', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{todayLabel}</div>
         )}
         <div style={{ flex: 1 }} />
@@ -335,21 +322,12 @@ export default function App() {
       {setupGuideOpen && (
         <SetupGuideModal data={data} patch={patch} onClose={() => setSetupGuideOpen(false)} />
       )}
-      {hamilOpen && (
-        <HamilModal
-          data={data}
-          setData={setData}
-          setSnack={sn => { setSnack(sn); if (view === 'setup') setView('grid') }}
-          onClose={() => setHamilOpen(false)}
-        />
-      )}
 
       <Snackbar snack={snack} setSnack={setSnack} data={data} setData={setData} />
     </div>
   )
 }
 
-// 학교 로고: public/haemil.png 가 있으면 그 이미지를, 없으면 글자 배지를 쓴다.
 const iconBtn = { border: 'none', background: 'none', padding: 5, borderRadius: 8, cursor: 'pointer', display: 'flex', color: SUB, flex: 'none' }
 
 function GuideIcon() {
@@ -358,25 +336,6 @@ function GuideIcon() {
       <path d="M2 4.5A2.5 2.5 0 0 1 4.5 2H12v17H4.5A2.5 2.5 0 0 0 2 21.5z" />
       <path d="M22 4.5A2.5 2.5 0 0 0 19.5 2H12v17h7.5a2.5 2.5 0 0 1 2.5 2.5z" />
     </svg>
-  )
-}
-
-function HamilMark() {
-  const [failed, setFailed] = useState(false)
-  if (failed) {
-    return (
-      <span style={{ display: 'inline-block', borderRadius: 5, background: GREEN, color: '#FFFFFF', fontSize: 12, fontWeight: 700, padding: '5px 9px', lineHeight: 1 }}>
-        해밀
-      </span>
-    )
-  }
-  return (
-    <img
-      src={import.meta.env.BASE_URL + 'haemil.png'}
-      alt="해밀고등학교"
-      onError={() => setFailed(true)}
-      style={{ height: 28, width: 'auto', display: 'block' }}
-    />
   )
 }
 
