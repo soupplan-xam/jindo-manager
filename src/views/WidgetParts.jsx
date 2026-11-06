@@ -98,7 +98,7 @@ export function MiniWeek({ glass = false, inv = false, data, setData, computed, 
               const base = s ? (s.activity || s.makeup ? MAKEUP_BG : s.canceled ? null : colorOf(data, s.cls)) : null
               // 바탕화면 모드: 반 색은 고른 색 그대로 반투명, 수행·결손 칸은 옅은 막만
               const bg = glass
-                ? (s && (s.activity || s.makeup) ? (inv ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.35)') : base ? (inv ? pre(vivid(base), 0.5) : rgbaOf(base, 0.75)) : s ? 'rgba(0,0,0,0.05)' : 'transparent')
+                ? (s && (s.activity || s.makeup) ? (inv ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.35)') : base ? (inv ? pre(vivid(base, 0.5, 0.6), 0.55) : rgbaOf(base, 0.75)) : s ? 'rgba(0,0,0,0.05)' : 'transparent')
                 : !s ? (iso === today ? '#FAFCFE' : '#FFFFFF') : base || '#FFFFFF'
               const tag = s && !s.num && !s.activity ? (s.makeup ? '보강' : s.perf ? '수행' : s.reason || '결손') : ''
               return (
