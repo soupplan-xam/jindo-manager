@@ -6,11 +6,28 @@ import { TODO_COLORS } from './MonthCalendar.jsx'
 
 const SAT = '#185FA5'
 const MAKEUP_BG = '#E8EBEF'
+const NOTE_FG = '#7A4B12'
 const todoColor = k => (TODO_COLORS.find(x => x.k === (k || '')) || TODO_COLORS[0]).c
 
 // 위젯 — 이번 주 시간표(월~금 × 교시). 칸마다 반 · 차시. 오늘 열과 지금 교시를 강조한다.
 // 주말에는 다음 주를 보여 준다. 시간표 탭에서 창 전체를 채운다(글자는 자르지 않고 줄바꿈).
-export function MiniWeek({ data, computed, today, period, periods = 7 }) {
+// 수업 칸을 더블클릭하면 그 칸 메모(진도표의 칸 메모와 같은 notes)를 바로 적는다.
+export function MiniWeek({ data, setData, computed, today, period, periods = 7 }) {
+  const [edit, setEdit] = useState(null) // { key, text }
+  const notes = data.notes || {}
+  const commit = () => {
+    if (!edit) return
+    const v = edit.text.trim()
+    if (v !== (notes[edit.key] || '')) {
+      setData(d => {
+        const n = { ...(d.notes || {}) }
+        if (v) n[edit.key] = v
+        else delete n[edit.key]
+        return { ...d, notes: n }
+      })
+    }
+    setEdit(null)
+  }
   const t = fromISO(today)
   const dow = t.getDay()
   let mon = addDays(t, dow === 0 ? -6 : 1 - dow)
@@ -40,14 +57,34 @@ export function MiniWeek({ data, computed, today, period, periods = 7 }) {
               const bg = !s ? (iso === today ? '#FAFCFE' : '#FFFFFF') : s.makeup ? MAKEUP_BG : s.canceled ? '#FFFFFF' : colorOf(data, s.cls)
               const tag = s && !s.num ? (s.makeup ? '보강' : s.perf ? '수행' : s.reason || '결손') : ''
               return (
-                <div key={iso} title={s ? (s.makeup ? (s.place || '') + ' 보강' : s.cls + (s.num ? ' ' + s.num + '차시' : ' ' + (s.reason || ''))) : ''}
-                  style={{ minWidth: 0, borderTop: line, borderLeft: line, padding: '4px 6px', background: bg, boxShadow: isNow ? 'inset 0 0 0 2px ' + GREEN : 'none',
+                <div key={iso} title={s ? (s.makeup ? (s.place || '') + ' 보강' : s.cls + (s.num ? ' ' + s.num + '차시' : ' ' + (s.reason || ''))) + ' — 더블클릭해 메모' : ''}
+                  onDoubleClick={s ? () => setEdit({ key: iso + '|' + p, text: notes[iso + '|' + p] || '' }) : undefined}
+                  style={{ minWidth: 0, borderTop: line, borderLeft: line, padding: '4px 6px', background: bg, boxShadow: isNow ? 'inset 0 0 0 2px ' + GREEN : 'none', cursor: s ? 'pointer' : 'default',
                     display: 'flex', flexWrap: 'wrap', alignItems: 'center', alignContent: 'center', gap: '0 6px', wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>
                   {s && (
                     <>
                       <span style={{ fontSize: 13, fontWeight: 700, color: s.canceled && !s.makeup ? FAINT : SUB, lineHeight: 1.25 }}>{s.makeup ? s.place || '보강' : s.cls}</span>
                       {s.num ? <span style={{ fontSize: 15, fontWeight: 800, color: INK, lineHeight: 1.25 }}>{s.num}<span style={{ fontSize: 10.5, fontWeight: 600, color: FAINT }}>차시</span></span>
                         : <span style={{ fontSize: 11.5, fontWeight: 700, color: s.perf ? RED : FAINT, lineHeight: 1.25 }}>{tag}</span>}
+                      {edit && edit.key === iso + '|' + p ? (
+                        <textarea
+                          autoFocus
+                          rows={2}
+                          aria-label={DAYS[fromISO(iso).getDay()] + ' ' + p + '교시 메모'}
+                          value={edit.text}
+                          onChange={e => setEdit({ ...edit, text: e.target.value })}
+                          onDoubleClick={e => e.stopPropagation()}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); commit() }
+                            if (e.key === 'Escape') { e.preventDefault(); setEdit(null) }
+                          }}
+                          onBlur={commit}
+                          placeholder="메모 (엔터 저장 · 비우면 지움)"
+                          style={{ flexBasis: '100%', width: '100%', boxSizing: 'border-box', resize: 'none', border: '1px solid ' + GREEN, borderRadius: 4, fontSize: 11.5, lineHeight: 1.35, padding: '2px 4px', marginTop: 2, fontFamily: 'inherit', background: '#FFFFFF' }}
+                        />
+                      ) : notes[iso + '|' + p] && (
+                        <span style={{ flexBasis: '100%', fontSize: 11, lineHeight: 1.35, color: NOTE_FG, whiteSpace: 'pre-wrap' }}>✎ {notes[iso + '|' + p]}</span>
+                      )}
                     </>
                   )}
                 </div>

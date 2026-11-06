@@ -148,7 +148,7 @@ export default function WidgetView({ shared = null }) {
         {/* 본문: 달력 탭 / 시간표 탭 — 각각 창 전체를 쓴다 */}
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '0 12px 12px' }}>
           {tab === 'week'
-            ? <MiniWeek data={data} computed={computed} today={today} period={P} periods={Math.max(7, (data.cfg.bells || []).length)} />
+            ? <MiniWeek data={data} setData={setData} computed={computed} today={today} period={P} periods={Math.max(7, (data.cfg.bells || []).length)} />
             : <MiniMonth data={data} setData={setData} today={today} />}
         </div>
       </div>
