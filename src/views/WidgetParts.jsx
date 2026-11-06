@@ -77,6 +77,30 @@ export function MiniWeek({ glass = false, inv = false, data, setData, computed, 
     }
     setEdit(null)
   }
+  // 메모 우클릭 메뉴 [고치기 · 삭제], 삭제 뒤 잠깐 [되돌리기]
+  const boxRef = useRef(null)
+  const [ctx, setCtx] = useState(null) // { key, x, y }
+  const [removed, setRemoved] = useState(null) // { key, text }
+  const undoTimer = useRef(null)
+  const openCtx = (ev, key) => {
+    ev.preventDefault()
+    ev.stopPropagation()
+    const r = boxRef.current.getBoundingClientRect()
+    setCtx({ key, x: Math.min(ev.clientX - r.left, r.width - 130), y: Math.min(ev.clientY - r.top, r.height - 80) })
+  }
+  const removeNote = key => {
+    const text = notes[key]
+    setData(d => { const n = { ...(d.notes || {}) }; delete n[key]; return { ...d, notes: n } })
+    setRemoved({ key, text })
+    clearTimeout(undoTimer.current)
+    undoTimer.current = setTimeout(() => setRemoved(null), 6000)
+  }
+  const undoRemove = () => {
+    if (!removed) return
+    setData(d => ({ ...d, notes: { ...(d.notes || {}), [removed.key]: removed.text } }))
+    setRemoved(null)
+  }
+  useCtxClose(ctx, setCtx)
   const t = fromISO(today)
   const dow = t.getDay()
   let mon = addDays(t, dow === 0 ? -6 : 1 - dow)
@@ -85,6 +109,7 @@ export function MiniWeek({ glass = false, inv = false, data, setData, computed, 
   const nowP = period && period.kind === 'class' ? period.period : null
   const line = lineOf(glass, inv)
   return (
+    <div ref={boxRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
     <div className="soft-scroll" style={{ flex: 1, minHeight: 0, overflow: 'auto', border: glass ? line : '1px solid ' + LINE, borderRadius: 10, background: glass ? 'transparent' : '#FFFFFF' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '30px repeat(5, minmax(0, 1fr))', gridTemplateRows: 'auto repeat(' + periods + ', minmax(40px, 1fr))', minHeight: '100%' }}>
         <div style={{ background: glass ? 'transparent' : '#F2F4F6', position: 'sticky', top: 0, zIndex: 1 }} />
@@ -137,11 +162,12 @@ export function MiniWeek({ glass = false, inv = false, data, setData, computed, 
                             if (e.key === 'Escape') { e.preventDefault(); setEdit(null) }
                           }}
                           onBlur={commit}
-                          placeholder="메모 (엔터 저장 · 비우면 지움)"
-                          style={{ flexBasis: '100%', width: '100%', boxSizing: 'border-box', resize: 'none', border: '1px solid ' + GREEN, borderRadius: 4, fontSize: 11.5, lineHeight: 1.35, padding: '2px 4px', marginTop: 2, fontFamily: 'inherit', background: '#FFFFFF' }}
+                          placeholder="메모 · 엔터로 저장"
+                          className="wg-input"
+                          style={{ flexBasis: '100%', marginTop: 3 }}
                         />
                       ) : notes[iso + '|' + p] && (
-                        <span style={{ flexBasis: '100%', fontSize: s ? 11 : 12, lineHeight: 1.35, color: s ? NOTE_FG : INK, fontWeight: s ? 400 : 600, whiteSpace: 'pre-wrap' }}>✎ {notes[iso + '|' + p]}</span>
+                        <span onContextMenu={ev => openCtx(ev, iso + '|' + p)} title="우클릭하면 메뉴" style={{ flexBasis: '100%', fontSize: s ? 11 : 12, lineHeight: 1.35, color: s ? NOTE_FG : INK, fontWeight: s ? 400 : 600, whiteSpace: 'pre-wrap', borderRadius: 3, outline: ctx && ctx.key === iso + '|' + p ? '1px dashed ' + GREEN : 'none' }}>✎ {notes[iso + '|' + p]}</span>
                       )}
                 </div>
               )
@@ -149,6 +175,44 @@ export function MiniWeek({ glass = false, inv = false, data, setData, computed, 
           </React.Fragment>
         ))}
       </div>
+    </div>
+      {ctx && notes[ctx.key] && (
+        <CtxMenu x={ctx.x} y={ctx.y} items={[
+          ['메모 고치기', () => { setEdit({ key: ctx.key, text: notes[ctx.key] || '' }); setCtx(null) }],
+          ['삭제', () => { removeNote(ctx.key); setCtx(null) }, true],
+        ]} />
+      )}
+      {removed && <UndoToast text={'메모 「' + removed.text.split('\n')[0] + '」 지웠어요'} onUndo={undoRemove} />}
+    </div>
+  )
+}
+
+// 우클릭 메뉴 — 바깥을 누르거나 Esc 로 닫는다
+function useCtxClose(ctx, setCtx) {
+  useEffect(() => {
+    if (!ctx) return
+    const close = e => { if (!(e.target.closest && e.target.closest('[data-ctx]'))) setCtx(null) }
+    const esc = e => { if (e.key === 'Escape') setCtx(null) }
+    document.addEventListener('mousedown', close)
+    document.addEventListener('keydown', esc)
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', esc) }
+  }, [ctx])
+}
+function CtxMenu({ x, y, items }) {
+  const mi = { display: 'block', width: '100%', textAlign: 'left', border: 'none', background: 'none', padding: '7px 12px', fontSize: 12.5, cursor: 'pointer', color: INK }
+  return (
+    <div data-ctx="" data-hit="" role="menu" style={{ position: 'absolute', left: x, top: y, zIndex: 6, minWidth: 120, background: '#FFFFFF', border: '1px solid ' + LINE, borderRadius: 8, boxShadow: '0 6px 18px rgba(0,0,0,0.18)', padding: '4px 0' }}>
+      {items.map(([label, fn, danger]) => (
+        <button key={label} type="button" role="menuitem" className="hov2" style={danger ? { ...mi, color: RED, fontWeight: 700 } : mi} onClick={fn}>{label}</button>
+      ))}
+    </div>
+  )
+}
+function UndoToast({ text, onUndo }) {
+  return (
+    <div role="status" data-hit="" style={{ position: 'absolute', left: '50%', bottom: 10, transform: 'translateX(-50%)', zIndex: 5, display: 'flex', alignItems: 'center', gap: 12, background: INK, color: '#FFFFFF', borderRadius: 999, padding: '7px 8px 7px 14px', fontSize: 12.5, boxShadow: '0 4px 14px rgba(0,0,0,0.25)', whiteSpace: 'nowrap', maxWidth: '90%' }}>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{text}</span>
+      <button type="button" onClick={onUndo} style={{ border: 'none', background: 'rgba(255,255,255,0.16)', color: '#FFFFFF', borderRadius: 999, padding: '3px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer', flex: 'none' }}>되돌리기</button>
     </div>
   )
 }
@@ -226,14 +290,7 @@ export function MiniMonth({ glass = false, inv = false, data, setData, today }) 
     const r = boxRef.current.getBoundingClientRect()
     setCtx({ iso, id, x: Math.min(ev.clientX - r.left, r.width - 130), y: Math.min(ev.clientY - r.top, r.height - 80) })
   }
-  useEffect(() => {
-    if (!ctx) return
-    const close = e => { if (!(e.target.closest && e.target.closest('[data-ctx]'))) setCtx(null) }
-    const esc = e => { if (e.key === 'Escape') setCtx(null) }
-    document.addEventListener('mousedown', close)
-    document.addEventListener('keydown', esc)
-    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', esc) }
-  }, [ctx])
+  useCtxClose(ctx, setCtx)
   const toggle = (iso, id) => setTodos(iso, (todos[iso] || []).map(x => (x.id === id ? { ...x, done: !x.done } : x)))
   const commitCell = () => {
     if (!cellEdit) return
@@ -309,8 +366,9 @@ export function MiniMonth({ glass = false, inv = false, data, setData, today }) 
                       if (e.key === 'Escape') setCellEdit(null)
                     }}
                     onBlur={commitCell}
-                    placeholder="할 일"
-                    style={{ width: '100%', boxSizing: 'border-box', border: '1px solid ' + GREEN, borderRadius: 4, fontSize: 11.5, padding: '2px 4px', marginTop: 1, background: '#FFFFFF' }}
+                    placeholder="할 일 · 엔터로 저장"
+                    className="wg-input"
+                    style={{ marginTop: 2 }}
                   />
                 )}
               </div>
@@ -321,20 +379,12 @@ export function MiniMonth({ glass = false, inv = false, data, setData, today }) 
       {ctx && (() => {
         const item = (todos[ctx.iso] || []).find(x => x.id === ctx.id)
         if (!item) return null
-        const mi = { display: 'block', width: '100%', textAlign: 'left', border: 'none', background: 'none', padding: '7px 12px', fontSize: 12.5, cursor: 'pointer', color: INK }
-        return (
-          <div data-ctx="" data-hit="" role="menu" style={{ position: 'absolute', left: ctx.x, top: ctx.y, zIndex: 6, minWidth: 120, background: '#FFFFFF', border: '1px solid ' + LINE, borderRadius: 8, boxShadow: '0 6px 18px rgba(0,0,0,0.18)', padding: '4px 0' }}>
-            <button type="button" role="menuitem" className="hov2" style={mi} onClick={() => { toggle(ctx.iso, ctx.id); setCtx(null) }}>{item.done ? '완료 취소' : '완료'}</button>
-            <button type="button" role="menuitem" className="hov2" style={{ ...mi, color: RED, fontWeight: 700 }} onClick={() => { remove(ctx.iso, ctx.id); setCtx(null) }}>삭제</button>
-          </div>
-        )
+        return <CtxMenu x={ctx.x} y={ctx.y} items={[
+          [item.done ? '완료 취소' : '완료', () => { toggle(ctx.iso, ctx.id); setCtx(null) }],
+          ['삭제', () => { remove(ctx.iso, ctx.id); setCtx(null) }, true],
+        ]} />
       })()}
-      {removed && (
-        <div role="status" data-hit="" style={{ position: 'absolute', left: '50%', bottom: 10, transform: 'translateX(-50%)', zIndex: 5, display: 'flex', alignItems: 'center', gap: 12, background: INK, color: '#FFFFFF', borderRadius: 999, padding: '7px 8px 7px 14px', fontSize: 12.5, boxShadow: '0 4px 14px rgba(0,0,0,0.25)', whiteSpace: 'nowrap', maxWidth: '90%' }}>
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>「{removed.item.text}」 지웠어요</span>
-          <button type="button" onClick={undoRemove} style={{ border: 'none', background: 'rgba(255,255,255,0.16)', color: '#FFFFFF', borderRadius: 999, padding: '3px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer', flex: 'none' }}>되돌리기</button>
-        </div>
-      )}
+      {removed && <UndoToast text={'「' + removed.item.text + '」 지웠어요'} onUndo={undoRemove} />}
     </div>
   )
 }
