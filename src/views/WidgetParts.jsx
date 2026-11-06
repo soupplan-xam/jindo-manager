@@ -67,7 +67,7 @@ export function MiniWeek({ glass = false, data, setData, computed, today, period
             {days.map(iso => {
               const s = computed.sessions[iso + '|' + p]
               const isNow = iso === today && nowP === p
-              const bg = !s ? (glass ? 'transparent' : iso === today ? '#FAFCFE' : '#FFFFFF') : tint(s.activity ? '#EFEBFA' : s.makeup ? MAKEUP_BG : s.canceled ? '#FFFFFF' : colorOf(data, s.cls), glass)
+              const bg = !s ? (glass ? 'transparent' : iso === today ? '#FAFCFE' : '#FFFFFF') : tint(s.activity || s.makeup ? MAKEUP_BG : s.canceled ? '#FFFFFF' : colorOf(data, s.cls), glass)
               const tag = s && !s.num && !s.activity ? (s.makeup ? '보강' : s.perf ? '수행' : s.reason || '결손') : ''
               return (
                 <div key={iso} title={s ? (s.activity ? s.place : s.makeup ? (s.place || '') + ' 보강' : s.cls + (s.num ? ' ' + s.num + '차시' : ' ' + (s.reason || ''))) + ' — 더블클릭해 메모' : ''}

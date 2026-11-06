@@ -1386,7 +1386,7 @@ const ellipBase = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'n
 const ellip = (size, weight) => ({ fontSize: size, fontWeight: weight, lineHeight: 1.3, ...ellipBase })
 // 보강 칸 — 진도를 세지 않는 수업이라 반 색 대신 회색
 const MAKEUP_BG = '#E8EBEF'
-const ACT_BG = '#EFEBFA' // 매주 고정 시간(창체 등)
+const ACT_BG = MAKEUP_BG // 매주 고정 시간(창체 등) — 보강처럼 회색
 // 칸 메모 글씨 — 진한 갈색이라 파랑·노랑·회색 칸 위에서 모두 읽힌다
 const NOTE_FG = '#7A4B12'
 const LOSS_REASONS = ['출장', '연수', '학교 행사', '학급 사정', '시험 감독']
