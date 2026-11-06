@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, RED, DAYS, fromISO, toISO, addDays, colorOf } from '../logic.js'
 import { holidayOn, solarTermOn } from '../kcal.js'
 import { TYPE_COLOR } from './ScheduleCalendar.jsx'
@@ -18,6 +18,26 @@ function glassPaint(hex, a = 0.3) {
   const inv = [255 - (n >> 16), 255 - ((n >> 8) & 255), 255 - (n & 255)]
   const c = HUE180.map(r => Math.max(0, Math.min(255, Math.round(r[0] * inv[0] + r[1] * inv[1] + r[2] * inv[2]))))
   return 'rgba(' + c.join(',') + ',' + a + ')'
+}
+// 연한 반 색을 같은 색 계열의 진한 색으로 — 어두운 유리 위에서 반끼리 구분되고 흰 글씨가 읽힌다
+function vivid(hex) {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex || '')
+  if (!m) return hex
+  const n = parseInt(m[1], 16)
+  const r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b)
+  let h = 0
+  if (mx !== mn) {
+    const d = mx - mn
+    h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4
+    h *= 60
+    if (h < 0) h += 360
+  }
+  const S = mx === mn ? 0 : 0.36, L = 0.34
+  const C = (1 - Math.abs(2 * L - 1)) * S, X = C * (1 - Math.abs(((h / 60) % 2) - 1)), M = L - C / 2
+  const [r1, g1, b1] = h < 60 ? [C, X, 0] : h < 120 ? [X, C, 0] : h < 180 ? [0, C, X] : h < 240 ? [0, X, C] : h < 300 ? [X, 0, C] : [C, 0, X]
+  const to = v => Math.round((v + M) * 255).toString(16).padStart(2, '0')
+  return '#' + to(r1) + to(g1) + to(b1)
 }
 const lineOf = glass => '1px solid ' + (glass ? 'rgba(0,0,0,0.28)' : LINE_SOFT)
 const todoColor = k => (TODO_COLORS.find(x => x.k === (k || '')) || TODO_COLORS[0]).c
@@ -67,7 +87,11 @@ export function MiniWeek({ glass = false, data, setData, computed, today, period
             {days.map(iso => {
               const s = computed.sessions[iso + '|' + p]
               const isNow = iso === today && nowP === p
-              const bg = !s ? (glass ? 'transparent' : iso === today ? '#FAFCFE' : '#FFFFFF') : tint(s.activity || s.makeup ? MAKEUP_BG : s.canceled ? '#FFFFFF' : colorOf(data, s.cls), glass)
+              const base = s ? (s.activity || s.makeup ? MAKEUP_BG : s.canceled ? null : colorOf(data, s.cls)) : null
+              // 바탕화면 모드: 반 색은 고른 색 그대로 반투명, 수행·결손 칸은 옅은 막만
+              const bg = glass
+                ? (s && (s.activity || s.makeup) ? 'rgba(0,0,0,0.12)' : base ? glassPaint(vivid(base), 0.5) : s ? 'rgba(0,0,0,0.05)' : 'transparent')
+                : !s ? (iso === today ? '#FAFCFE' : '#FFFFFF') : base || '#FFFFFF'
               const tag = s && !s.num && !s.activity ? (s.makeup ? '보강' : s.perf ? '수행' : s.reason || '결손') : ''
               return (
                 <div key={iso} title={s ? (s.activity ? s.place : s.makeup ? (s.place || '') + ' 보강' : s.cls + (s.num ? ' ' + s.num + '차시' : ' ' + (s.reason || ''))) + ' — 더블클릭해 메모' : ''}
@@ -77,9 +101,9 @@ export function MiniWeek({ glass = false, data, setData, computed, today, period
                     display: 'flex', flexWrap: 'wrap', alignItems: 'center', alignContent: 'center', gap: '0 6px', wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>
                   {s && (
                     <>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: s.canceled && !s.makeup && !s.activity ? FAINT : SUB, lineHeight: 1.25 }}>{s.makeup || s.activity ? s.place || '보강' : s.cls}</span>
-                      {s.num ? <span style={{ fontSize: 15, fontWeight: 800, color: INK, lineHeight: 1.25 }}>{s.num}<span style={{ fontSize: 10.5, fontWeight: 600, color: FAINT }}>차시</span></span>
-                        : tag && <span style={{ fontSize: 11.5, fontWeight: 700, color: s.perf ? RED : FAINT, lineHeight: 1.25 }}>{tag}</span>}
+                      <span className={glass ? 'wg-strong' : ''} style={{ fontSize: 13, fontWeight: 700, color: s.canceled && !s.makeup && !s.activity ? FAINT : SUB, lineHeight: 1.25 }}>{s.makeup || s.activity ? s.place || '보강' : s.cls}</span>
+                      {s.num ? <span style={{ fontSize: 15, fontWeight: 800, color: INK, lineHeight: 1.25 }}>{s.num}<span className="wg-faint" style={{ fontSize: 10.5, fontWeight: 600, color: FAINT }}>차시</span></span>
+                        : tag && <span className={s.perf ? '' : 'wg-faint'} style={{ fontSize: 11.5, fontWeight: 700, color: s.perf ? RED : FAINT, lineHeight: 1.25 }}>{tag}</span>}
                       {edit && edit.key === iso + '|' + p ? (
                         <textarea
                           autoFocus
@@ -118,6 +142,8 @@ export function MiniMonth({ glass = false, data, setData, today }) {
   const [ym, setYm] = useState({ y: t0.getFullYear(), m: t0.getMonth() })
   const [sel, setSel] = useState(today)
   const [cellEdit, setCellEdit] = useState(null) // 더블클릭한 날 { iso, text }
+  const [removed, setRemoved] = useState(null) // 방금 우클릭으로 지운 할 일 { iso, item, index }
+  const undoTimer = useRef(null)
   const todos = data.todos || {}
   const colors = data.dayColors || {}
   const first = new Date(ym.y, ym.m, 1)
@@ -138,6 +164,25 @@ export function MiniMonth({ glass = false, data, setData, today }) {
     else delete tt[iso]
     return { ...d, todos: tt }
   })
+  // 우클릭으로 지우기 — 잠깐 [되돌리기]를 띄운다
+  const remove = (iso, id) => {
+    const list = todos[iso] || []
+    const index = list.findIndex(x => x.id === id)
+    if (index < 0) return
+    setTodos(iso, list.filter(x => x.id !== id))
+    setRemoved({ iso, item: list[index], index })
+    clearTimeout(undoTimer.current)
+    undoTimer.current = setTimeout(() => setRemoved(null), 6000)
+  }
+  const undoRemove = () => {
+    if (!removed) return
+    setData(d => {
+      const list = [...((d.todos || {})[removed.iso] || [])]
+      list.splice(Math.min(removed.index, list.length), 0, removed.item)
+      return { ...d, todos: { ...(d.todos || {}), [removed.iso]: list } }
+    })
+    setRemoved(null)
+  }
   const toggle = (iso, id) => setTodos(iso, (todos[iso] || []).map(x => (x.id === id ? { ...x, done: !x.done } : x)))
   const commitCell = () => {
     if (!cellEdit) return
@@ -147,7 +192,7 @@ export function MiniMonth({ glass = false, data, setData, today }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%', position: 'relative' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
         <button type="button" onClick={() => move(-1)} aria-label="이전 달" className="hov" style={navBtn}>‹</button>
         <div style={{ fontSize: 16, fontWeight: 800, color: INK, minWidth: 92, textAlign: 'center' }}>{ym.y}.{String(ym.m + 1).padStart(2, '0')}</div>
@@ -171,7 +216,7 @@ export function MiniMonth({ glass = false, data, setData, today }) {
             const isSel = iso === sel
             const bg = colors[iso] ? (glass ? glassPaint(colors[iso]) : colors[iso]) : offDay(iso, i) ? (glass ? 'rgba(0,0,0,0.07)' : '#EEF5FC') : glass ? 'transparent' : '#FFFFFF'
             return (
-              <div key={iso} onClick={() => setSel(iso)} onDoubleClick={() => { setSel(iso); setCellEdit({ iso, text: '' }) }} title="더블클릭하면 할 일을 바로 넣습니다"
+              <div key={iso} data-hit="" onClick={() => setSel(iso)} onDoubleClick={() => { setSel(iso); setCellEdit({ iso, text: '' }) }} title="더블클릭하면 할 일을 바로 넣습니다"
                 style={{ minWidth: 0, padding: '4px 5px 5px', cursor: 'pointer', background: bg, opacity: out ? (glass ? 0.6 : 0.45) : 1,
                   borderTop: wi ? line : 'none', borderLeft: i ? line : 'none', boxShadow: isSel ? 'inset 0 0 0 2px ' + GREEN : 'none', display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, minHeight: 18 }}>
@@ -182,7 +227,7 @@ export function MiniMonth({ glass = false, data, setData, today }) {
                   <div key={e.id} style={{ fontSize: 10.5, lineHeight: 1.3, fontWeight: glass ? 700 : 400, color: TYPE_COLOR[e.type] || SUB, wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>{e.name}</div>
                 ))}
                 {tds.map(x => (
-                  <div key={x.id} data-hit="" className={x.done ? 'wg-faint' : ''} onClick={ev => { ev.stopPropagation(); toggle(iso, x.id) }} title={x.done ? '완료 취소' : '눌러서 완료'}
+                  <div key={x.id} data-hit="" className={x.done ? 'wg-faint' : ''} onClick={ev => { ev.stopPropagation(); toggle(iso, x.id) }} onDoubleClick={ev => ev.stopPropagation()} onContextMenu={ev => { ev.preventDefault(); ev.stopPropagation(); remove(iso, x.id) }} title={(x.done ? '완료 취소' : '눌러서 완료') + ' · 우클릭하면 지웁니다'}
                     style={{ display: 'flex', gap: 3, alignItems: 'flex-start', fontSize: 11.5, lineHeight: 1.35, color: x.done ? FAINT : todoColor(x.color), fontWeight: x.color && !x.done ? 700 : 500, cursor: 'pointer' }}>
                     <span style={{ flex: 'none', width: 9, textAlign: 'center' }}>{x.done ? '✓' : '•'}</span>
                     <span style={{ flex: 1, minWidth: 0, textDecoration: x.done ? 'line-through' : 'none', wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>{x.text}</span>
@@ -210,6 +255,12 @@ export function MiniMonth({ glass = false, data, setData, today }) {
           }))}
         </div>
       </div>
+      {removed && (
+        <div role="status" data-hit="" style={{ position: 'absolute', left: '50%', bottom: 10, transform: 'translateX(-50%)', zIndex: 5, display: 'flex', alignItems: 'center', gap: 12, background: INK, color: '#FFFFFF', borderRadius: 999, padding: '7px 8px 7px 14px', fontSize: 12.5, boxShadow: '0 4px 14px rgba(0,0,0,0.25)', whiteSpace: 'nowrap', maxWidth: '90%' }}>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>「{removed.item.text}」 지웠어요</span>
+          <button type="button" onClick={undoRemove} style={{ border: 'none', background: 'rgba(255,255,255,0.16)', color: '#FFFFFF', borderRadius: 999, padding: '3px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer', flex: 'none' }}>되돌리기</button>
+        </div>
+      )}
     </div>
   )
 }

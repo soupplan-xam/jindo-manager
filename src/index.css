@@ -84,6 +84,7 @@ html.widget-mode, html.widget-mode body { background: transparent; overflow: hid
 .wg-glass { filter: invert(1) hue-rotate(180deg) brightness(1.35); }
 /* 흐린 글씨(완료한 할 일·D-day 이름·요일·학사일정)가 어두운 유리 위에서 묻히지 않게 한 단계 진하게(반전 뒤 밝게) */
 .wg-glass .wg-faint { color: #4E5968 !important; }
+.wg-glass .wg-strong { color: #191F28 !important; }
 .wg-glass .wg-raw { filter: brightness(0.74) invert(1) hue-rotate(180deg); }
 .wg-glass [role=tablist] { background: rgba(0,0,0,0.12) !important; }
 .wg-glass [role=tab][aria-selected=true] { background: rgba(0,0,0,0.22) !important; box-shadow: none !important; }
