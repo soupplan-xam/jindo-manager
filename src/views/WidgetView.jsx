@@ -129,13 +129,13 @@ export default function WidgetView({ shared = null }) {
       >
         {/* 머리줄 — 윈도우 프로그램에서는 여기를 끌어 창을 옮긴다 */}
         <header style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 10px 8px 14px', WebkitAppRegion: glass ? 'no-drag' : 'drag', userSelect: 'none' }}>
-          <span style={{ width: 4, height: 16, borderRadius: 2, background: GREEN, flex: 'none' }} />
+          <span style={{ width: 4, height: 16, borderRadius: 2, background: glass ? INK : GREEN, flex: 'none' }} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontSize: 15, fontWeight: 800, color: INK, letterSpacing: '-0.02em' }}>
               {d.getMonth() + 1}월 {d.getDate()}일 <span style={{ color: d.getDay() === 0 ? RED : d.getDay() === 6 ? '#185FA5' : SUB, fontWeight: 600 }}>{DAYS[d.getDay()]}</span>
               <span className="wg-dim" style={{ fontSize: 12.5, fontWeight: 600, color: FAINT, marginLeft: 8 }}>{String(info.now.getHours()).padStart(2, '0')}:{String(info.now.getMinutes()).padStart(2, '0')}</span>
             </div>
-            {lessons.length > 0 && <div className={P && P.kind === 'class' ? '' : 'wg-dim'} style={{ fontSize: 12, color: P && P.kind === 'class' ? GREEN : FAINT, fontWeight: 700 }}>{periodLabel(P)}</div>}
+            {lessons.length > 0 && <div className={P && P.kind === 'class' ? '' : 'wg-dim'} style={{ fontSize: 12, color: P && P.kind === 'class' ? (glass ? INK : GREEN) : FAINT, fontWeight: 700 }}>{periodLabel(P)}</div>}
           </div>
           <div role="tablist" aria-label="위젯 보기" style={{ display: 'flex', background: '#F2F4F6', borderRadius: 8, padding: 2, flex: 'none', WebkitAppRegion: 'no-drag' }}>
             {[['month', '달력'], ['week', '시간표']].map(([k, label]) => (

@@ -47,6 +47,14 @@ function vivid(hex, S0 = 0.36, L0 = 0.34) {
   const to = v => Math.round((v + M) * 255).toString(16).padStart(2, '0')
   return '#' + to(r1) + to(g1) + to(b1)
 }
+// 바탕화면 모드에서 「지금」 칸(고른 날·지금 교시) — 흰 네온 테두리. 반전 화면에서는 검정이 흰빛이 된다.
+// 밝은 바탕에서는 흰빛이 안 보이므로 짙은 빛으로. strong=false 면 옅게(다음 교시)
+function neon(glass, inv, strong = true) {
+  if (!glass) return strong ? 'inset 0 0 0 2px ' + GREEN : 'inset 0 0 0 1px ' + GREEN
+  const c = inv ? '0,0,0' : '25,31,40'
+  const a = strong ? 1 : 0.5
+  return 'inset 0 0 0 1.5px rgba(' + c + ',' + 0.95 * a + '), inset 0 0 12px rgba(' + c + ',' + 0.45 * a + '), 0 0 10px rgba(' + c + ',' + 0.7 * a + '), 0 0 22px rgba(' + c + ',' + 0.35 * a + ')'
+}
 const lineOf = (glass, inv) => '1px solid ' + (inv ? 'rgba(0,0,0,0.28)' : glass ? 'rgba(0,0,0,0.13)' : LINE_SOFT)
 const todoColor = k => (TODO_COLORS.find(x => x.k === (k || '')) || TODO_COLORS[0]).c
 
@@ -84,17 +92,18 @@ export function MiniWeek({ glass = false, inv = false, data, setData, computed, 
           const d = fromISO(iso)
           const isToday = iso === today
           return (
-            <div key={iso} style={{ textAlign: 'center', padding: '6px 0', fontSize: 13, fontWeight: 700, color: isToday ? GREEN : holidayOn(iso) ? inkOf(RED, inv) : SUB, background: glass ? (isToday ? 'rgba(18,132,202,0.18)' : 'transparent') : isToday ? '#E9F6FE' : '#F2F4F6', borderLeft: line, position: 'sticky', top: 0, zIndex: 1 }}>
+            <div key={iso} style={{ textAlign: 'center', padding: '6px 0', fontSize: 13, fontWeight: 700, color: isToday ? (glass ? INK : GREEN) : holidayOn(iso) ? inkOf(RED, inv) : SUB, fontWeight: isToday && glass ? 800 : 700, background: glass ? (isToday ? (inv ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.4)') : 'transparent') : isToday ? '#E9F6FE' : '#F2F4F6', borderLeft: line, position: 'sticky', top: 0, zIndex: 1 }}>
               {DAYS[d.getDay()]} {d.getMonth() + 1}.{d.getDate()}
             </div>
           )
         })}
         {Array.from({ length: periods }, (_, k) => k + 1).map(p => (
           <React.Fragment key={p}>
-            <div style={{ borderTop: line, fontSize: 12.5, color: nowP === p ? GREEN : FAINT, fontWeight: nowP === p ? 800 : 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{p}</div>
+            <div style={{ borderTop: line, fontSize: 12.5, color: nowP === p ? (glass ? INK : GREEN) : FAINT, fontWeight: nowP === p ? 800 : 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{p}</div>
             {days.map(iso => {
               const s = computed.sessions[iso + '|' + p]
               const isNow = iso === today && nowP === p
+              const isNext = !nowP && iso === today && period && period.next === p && period.kind !== 'after'
               const base = s ? (s.activity || s.makeup ? MAKEUP_BG : s.canceled ? null : colorOf(data, s.cls)) : null
               // 바탕화면 모드: 반 색은 고른 색 그대로 반투명, 수행·결손 칸은 옅은 막만
               const bg = glass
@@ -105,7 +114,7 @@ export function MiniWeek({ glass = false, inv = false, data, setData, computed, 
                 <div key={iso} title={s ? (s.activity ? s.place : s.makeup ? (s.place || '') + ' 보강' : s.cls + (s.num ? ' ' + s.num + '차시' : ' ' + (s.reason || ''))) + ' — 더블클릭해 메모' : ''}
                   data-hit={s ? '' : undefined}
                   onDoubleClick={s ? () => setEdit({ key: iso + '|' + p, text: notes[iso + '|' + p] || '' }) : undefined}
-                  style={{ minWidth: 0, borderTop: line, borderLeft: line, padding: '4px 6px', background: bg, boxShadow: isNow ? 'inset 0 0 0 2px ' + GREEN : 'none', cursor: s ? 'pointer' : 'default',
+                  style={{ minWidth: 0, borderTop: line, borderLeft: line, padding: '4px 6px', background: bg, boxShadow: isNow ? neon(glass, inv) : isNext && glass ? neon(glass, inv, false) : 'none', position: isNow || isNext ? 'relative' : undefined, zIndex: isNow || isNext ? 1 : undefined, cursor: s ? 'pointer' : 'default',
                     display: 'flex', flexWrap: 'wrap', alignItems: 'center', alignContent: 'center', gap: '0 6px', wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>
                   {s && (
                     <>
@@ -267,9 +276,9 @@ export function MiniMonth({ glass = false, inv = false, data, setData, today }) 
                 onDragOver={drag ? e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (over !== iso) setOver(iso) } : undefined}
                 onDrop={drag ? e => { e.preventDefault(); moveTodo(drag.iso, drag.id, iso); setDrag(null); setOver(null); setSel(iso) } : undefined}
                 style={{ minWidth: 0, padding: '4px 5px 5px', cursor: 'pointer', background: bg, opacity: out ? (glass ? 0.6 : 0.45) : 1,
-                  borderTop: wi ? line : 'none', borderLeft: i ? line : 'none', boxShadow: over === iso && drag ? 'inset 0 0 0 2px ' + GREEN + ', inset 0 0 0 999px rgba(18,132,202,0.12)' : isSel ? 'inset 0 0 0 2px ' + GREEN : 'none', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  borderTop: wi ? line : 'none', borderLeft: i ? line : 'none', boxShadow: over === iso && drag ? 'inset 0 0 0 2px ' + GREEN + ', inset 0 0 0 999px rgba(18,132,202,0.12)' : isSel ? neon(glass, inv) : 'none', position: isSel ? 'relative' : undefined, zIndex: isSel ? 1 : undefined, display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, minHeight: 18 }}>
-                  <span data-hit="" title="더블클릭하면 할 일을 바로 넣습니다" style={{ fontSize: 12.5, fontWeight: 800, flex: 'none', lineHeight: '18px', cursor: 'pointer', color: iso === today ? '#FFFFFF' : i === 0 || hol ? inkOf(RED, inv) : i === 6 ? inkOf(SAT, inv) : INK, background: iso === today ? GREEN : 'transparent', borderRadius: 999, padding: iso === today ? '0 6px' : 0 }}>{d.getDate()}</span>
+                  <span data-hit="" title="더블클릭하면 할 일을 바로 넣습니다" style={{ fontSize: 12.5, fontWeight: 800, flex: 'none', lineHeight: '18px', cursor: 'pointer', color: iso === today ? '#FFFFFF' : i === 0 || hol ? inkOf(RED, inv) : i === 6 ? inkOf(SAT, inv) : INK, background: iso === today ? (glass ? INK : GREEN) : 'transparent', borderRadius: 999, padding: iso === today ? '0 6px' : 0 }}>{d.getDate()}</span>
                   {(hol || term) && <span style={{ fontSize: 10.5, fontWeight: 700, color: hol ? inkOf(RED, inv) : inkOf('#2B8A3E', inv), minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hol || term}</span>}
                 </div>
                 {evs.map(e => (
