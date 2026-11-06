@@ -60,7 +60,7 @@ const todoColor = k => (TODO_COLORS.find(x => x.k === (k || '')) || TODO_COLORS[
 
 // 위젯 — 이번 주 시간표(월~금 × 교시). 칸마다 반 · 차시. 오늘 열과 지금 교시를 강조한다.
 // 주말에는 다음 주를 보여 준다. 시간표 탭에서 창 전체를 채운다(글자는 자르지 않고 줄바꿈).
-// 수업 칸을 더블클릭하면 그 칸 메모(진도표의 칸 메모와 같은 notes)를 바로 적는다.
+// 칸을 더블클릭하면 그 칸 메모(진도표의 칸 메모와 같은 notes)를 바로 적는다. 수업 없는 빈 시간도 된다.
 export function MiniWeek({ glass = false, inv = false, data, setData, computed, today, period, periods = 7 }) {
   const [edit, setEdit] = useState(null) // { key, text }
   const notes = data.notes || {}
@@ -111,17 +111,20 @@ export function MiniWeek({ glass = false, inv = false, data, setData, computed, 
                 : !s ? (iso === today ? '#FAFCFE' : '#FFFFFF') : base || '#FFFFFF'
               const tag = s && !s.num && !s.activity ? (s.makeup ? '보강' : s.perf ? '수행' : s.reason || '결손') : ''
               return (
-                <div key={iso} title={s ? (s.activity ? s.place : s.makeup ? (s.place || '') + ' 보강' : s.cls + (s.num ? ' ' + s.num + '차시' : ' ' + (s.reason || ''))) + ' — 더블클릭해 메모' : ''}
-                  data-hit={s ? '' : undefined}
-                  onDoubleClick={s ? () => setEdit({ key: iso + '|' + p, text: notes[iso + '|' + p] || '' }) : undefined}
-                  style={{ minWidth: 0, borderTop: line, borderLeft: line, padding: '4px 6px', background: bg, boxShadow: isNow ? neon(glass, inv) : isNext && glass ? neon(glass, inv, false) : 'none', position: isNow || isNext ? 'relative' : undefined, zIndex: isNow || isNext ? 1 : undefined, cursor: s ? 'pointer' : 'default',
+                <div key={iso} title={(s ? (s.activity ? s.place : s.makeup ? (s.place || '') + ' 보강' : s.cls + (s.num ? ' ' + s.num + '차시' : ' ' + (s.reason || ''))) + ' — ' : '') + '더블클릭해 메모'}
+                  data-hit=""
+                  onDoubleClick={() => setEdit({ key: iso + '|' + p, text: notes[iso + '|' + p] || '' })}
+                  style={{ minWidth: 0, borderTop: line, borderLeft: line, padding: '4px 6px', background: bg, boxShadow: isNow ? neon(glass, inv) : isNext && glass ? neon(glass, inv, false) : 'none', position: isNow || isNext ? 'relative' : undefined, zIndex: isNow || isNext ? 1 : undefined, cursor: 'pointer',
                     display: 'flex', flexWrap: 'wrap', alignItems: 'center', alignContent: 'center', gap: '0 6px', wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>
                   {s && (
                     <>
                       <span className={glass ? 'wg-strong' : ''} style={{ fontSize: 13, fontWeight: 700, color: s.canceled && !s.makeup && !s.activity ? FAINT : SUB, lineHeight: 1.25 }}>{s.makeup || s.activity ? s.place || '보강' : s.cls}</span>
                       {s.num ? <span style={{ fontSize: 15, fontWeight: 800, color: INK, lineHeight: 1.25 }}>{s.num}<span className="wg-faint" style={{ fontSize: 10.5, fontWeight: 600, color: FAINT }}>차시</span></span>
                         : tag && <span className={s.perf ? '' : 'wg-faint'} style={{ fontSize: 11.5, fontWeight: 700, color: s.perf ? inkOf(RED, inv) : FAINT, lineHeight: 1.25 }}>{tag}</span>}
-                      {edit && edit.key === iso + '|' + p ? (
+                    </>
+                  )}
+                  {/* 칸 메모 — 수업 없는 빈 시간에도 그 시간에 할 일을 적어 둔다 */}
+                  {edit && edit.key === iso + '|' + p ? (
                         <textarea
                           autoFocus
                           rows={2}
@@ -138,10 +141,8 @@ export function MiniWeek({ glass = false, inv = false, data, setData, computed, 
                           style={{ flexBasis: '100%', width: '100%', boxSizing: 'border-box', resize: 'none', border: '1px solid ' + GREEN, borderRadius: 4, fontSize: 11.5, lineHeight: 1.35, padding: '2px 4px', marginTop: 2, fontFamily: 'inherit', background: '#FFFFFF' }}
                         />
                       ) : notes[iso + '|' + p] && (
-                        <span style={{ flexBasis: '100%', fontSize: 11, lineHeight: 1.35, color: NOTE_FG, whiteSpace: 'pre-wrap' }}>✎ {notes[iso + '|' + p]}</span>
+                        <span style={{ flexBasis: '100%', fontSize: s ? 11 : 12, lineHeight: 1.35, color: s ? NOTE_FG : INK, fontWeight: s ? 400 : 600, whiteSpace: 'pre-wrap' }}>✎ {notes[iso + '|' + p]}</span>
                       )}
-                    </>
-                  )}
                 </div>
               )
             })}

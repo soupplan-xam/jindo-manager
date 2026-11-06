@@ -368,6 +368,10 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
       )}
       {pop.mode === 'pick' && (
         <div style={{ padding: '10px 14px 12px' }}>
+          <button type="button" className="hov2" onClick={() => setPop({ ...pop, mode: 'note', note: notes[pop.key] || '' })}
+            style={{ display: 'block', width: '100%', textAlign: 'left', border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', padding: '6px 10px', marginBottom: 10, cursor: 'pointer', fontSize: 13, color: INK }}>
+            {notes[pop.key] ? '메모 고치기' : '메모'} <span style={{ fontSize: 11.5, color: FAINT }}>· 빈 시간에 할 일</span>
+          </button>
           <div role="radiogroup" aria-label="수업 종류" style={{ display: 'flex', gap: 5, marginBottom: 10 }}>
             {[['swap', '교환', '진도 셈'], ['makeup', '보강', '진도 안 셈'], ['fixed', '고정', '매주 · 창체 등']].map(([k, t, note]) => {
               const on = (pop.kind || 'swap') === k
@@ -625,11 +629,11 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             </div>
           )}
           {/* 칸 메모 — 그 날 그 칸에만. 휴대폰에서는 한 줄로 줄인다 */}
-          {s && notes[key] && (
+          {notes[key] && (
             <div
               title={notes[key]}
               style={{
-                position: 'relative', padding: isMobile ? '0 5px 2px' : '0 9px 3px', fontSize: isMobile ? 9.5 : 11, lineHeight: 1.3,
+                position: 'relative', padding: s ? (isMobile ? '0 5px 2px' : '0 9px 3px') : (isMobile ? '4px 5px 2px' : '6px 9px 3px'), fontSize: isMobile ? 9.5 : 11, lineHeight: 1.3,
                 color: NOTE_FG, fontWeight: 600, flex: 'none', minWidth: 0, ...ellipBase,
               }}
             >
