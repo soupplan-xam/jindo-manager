@@ -28,7 +28,7 @@ const paintOf = (hex, a, inv) => (inv ? pre(hex, a) : rgbaOf(hex, a))
 const LIGHT_INK = { [RED]: '#FF9A9A', '#185FA5': '#8CCBFF', '#2B8A3E': '#86E3A2', '#A32D2D': '#FFA3A3', '#BA7517': '#FFC37A', '#3F5C4C': '#9BE8B0' }
 const inkOf = (hex, inv) => (inv && LIGHT_INK[hex] ? pre(LIGHT_INK[hex]) : hex)
 // 연한 반 색을 같은 색 계열의 진한 색으로 — 어두운 유리 위에서 반끼리 구분되고 흰 글씨가 읽힌다
-function vivid(hex) {
+function vivid(hex, S0 = 0.36, L0 = 0.34) {
   const m = /^#([0-9a-f]{6})$/i.exec(hex || '')
   if (!m) return hex
   const n = parseInt(m[1], 16)
@@ -41,7 +41,7 @@ function vivid(hex) {
     h *= 60
     if (h < 0) h += 360
   }
-  const S = mx === mn ? 0 : 0.36, L = 0.34
+  const S = mx === mn ? 0 : S0, L = L0
   const C = (1 - Math.abs(2 * L - 1)) * S, X = C * (1 - Math.abs(((h / 60) % 2) - 1)), M = L - C / 2
   const [r1, g1, b1] = h < 60 ? [C, X, 0] : h < 120 ? [X, C, 0] : h < 180 ? [0, C, X] : h < 240 ? [0, X, C] : h < 300 ? [X, 0, C] : [C, 0, X]
   const to = v => Math.round((v + M) * 255).toString(16).padStart(2, '0')
@@ -255,11 +255,12 @@ export function MiniMonth({ glass = false, inv = false, data, setData, today }) 
             const evs = eventsOn(iso)
             const tds = todos[iso] || []
             const isSel = iso === sel
-            // 칠한 색(흰색은 '칠 지움') > 쉬는 날 자동 색 > 바탕 — 달력 탭과 같다
+            // 칠한 색(흰색은 '칠 지움') > 쉬는 날 자동 색 > 바탕 — 달력 탭과 같다.
+            // 어두운 바탕에서 쉬는 날은 차분하게, 직접 칠한 날은 밝은 같은 계열 색으로 눈에 띄게
             const painted = colors[iso] && colors[iso].toUpperCase() !== '#FFFFFF' ? colors[iso] : null
             const fill = painted || (!colors[iso] && autoOff && offReasonOf(data, iso, i) ? OFF_BG : null)
             const bg = fill
-              ? (glass ? (inv ? pre(vivid(fill), painted ? 0.5 : 0.32) : rgbaOf(fill, painted ? 0.7 : 0.5)) : fill)
+              ? (glass ? (inv ? (painted ? pre(vivid(fill, 0.5, 0.6), 0.55) : pre(vivid(fill), 0.32)) : rgbaOf(fill, painted ? 0.7 : 0.5)) : fill)
               : glass ? 'transparent' : '#FFFFFF'
             return (
               <div key={iso} data-hit="" onClick={() => setSel(iso)} onDoubleClick={() => { setSel(iso); setCellEdit({ iso, text: '' }) }} title="더블클릭하면 할 일을 바로 넣습니다"
