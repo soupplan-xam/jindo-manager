@@ -172,17 +172,17 @@ export function MiniMonth({ glass = false, data, setData, today }) {
             const bg = colors[iso] ? (glass ? glassPaint(colors[iso]) : colors[iso]) : offDay(iso, i) ? (glass ? 'rgba(0,0,0,0.07)' : '#EEF5FC') : glass ? 'transparent' : '#FFFFFF'
             return (
               <div key={iso} onClick={() => setSel(iso)} onDoubleClick={() => { setSel(iso); setCellEdit({ iso, text: '' }) }} title="더블클릭하면 할 일을 바로 넣습니다"
-                style={{ minWidth: 0, padding: '4px 5px 5px', cursor: 'pointer', background: bg, opacity: out ? 0.45 : 1,
+                style={{ minWidth: 0, padding: '4px 5px 5px', cursor: 'pointer', background: bg, opacity: out ? (glass ? 0.6 : 0.45) : 1,
                   borderTop: wi ? line : 'none', borderLeft: i ? line : 'none', boxShadow: isSel ? 'inset 0 0 0 2px ' + GREEN : 'none', display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, minHeight: 18 }}>
                   <span data-hit="" title="더블클릭하면 할 일을 바로 넣습니다" style={{ fontSize: 12.5, fontWeight: 800, flex: 'none', lineHeight: '18px', cursor: 'pointer', color: iso === today ? '#FFFFFF' : i === 0 || hol ? RED : i === 6 ? SAT : INK, background: iso === today ? GREEN : 'transparent', borderRadius: 999, padding: iso === today ? '0 6px' : 0 }}>{d.getDate()}</span>
                   {(hol || term) && <span style={{ fontSize: 10, fontWeight: 700, color: hol ? RED : '#2B8A3E', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hol || term}</span>}
                 </div>
                 {evs.map(e => (
-                  <div key={e.id} style={{ fontSize: 10.5, lineHeight: 1.3, color: TYPE_COLOR[e.type] || SUB, wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>{e.name}</div>
+                  <div key={e.id} style={{ fontSize: 10.5, lineHeight: 1.3, fontWeight: glass ? 700 : 400, color: TYPE_COLOR[e.type] || SUB, wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>{e.name}</div>
                 ))}
                 {tds.map(x => (
-                  <div key={x.id} data-hit="" onClick={ev => { ev.stopPropagation(); toggle(iso, x.id) }} title={x.done ? '완료 취소' : '눌러서 완료'}
+                  <div key={x.id} data-hit="" className={x.done ? 'wg-faint' : ''} onClick={ev => { ev.stopPropagation(); toggle(iso, x.id) }} title={x.done ? '완료 취소' : '눌러서 완료'}
                     style={{ display: 'flex', gap: 3, alignItems: 'flex-start', fontSize: 11.5, lineHeight: 1.35, color: x.done ? FAINT : todoColor(x.color), fontWeight: x.color && !x.done ? 700 : 500, cursor: 'pointer' }}>
                     <span style={{ flex: 'none', width: 9, textAlign: 'center' }}>{x.done ? '✓' : '•'}</span>
                     <span style={{ flex: 1, minWidth: 0, textDecoration: x.done ? 'line-through' : 'none', wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>{x.text}</span>

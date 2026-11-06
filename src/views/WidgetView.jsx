@@ -193,7 +193,7 @@ export default function WidgetView({ shared = null }) {
         )}
 
         {pref.dday && ddays.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px', alignItems: 'baseline', fontSize: 12, color: SUB, padding: '0 14px 6px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px', alignItems: 'baseline', fontSize: 12, color: glass ? INK : SUB, padding: '0 14px 6px' }}>
             {ddays.map(x => (
               <span key={x.id}><b style={{ fontSize: 13, color: x.days <= 7 ? '#D9480F' : INK }}>{ddayText(x.days)}</b> {x.name}</span>
             ))}
