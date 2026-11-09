@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import TimeInput from './TimeInput.jsx'
 import { GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, RED, WARN, SECTION_TITLE, fromISO, toISO, DAYS } from '../logic.js'
 import { DEFAULT_TRAVEL, REGION_LABEL, tripCost, tripDays, monthTrips } from '../travel.js'
 import DateField from './DateField.jsx'
@@ -123,9 +124,9 @@ export default function TravelView({ data, setData, setSnack }) {
             </div>
             <div style={row}>
               <span style={lab}>시간</span>
-              <input type="time" aria-label="출장 시작" value={form.start} onChange={e => set({ start: e.target.value })} style={field} />
+              <TimeInput aria-label="출장 시작" value={form.start} onChange={v => set({ start: v })} style={field} />
               <span style={{ color: FAINT }}>~</span>
-              <input type="time" aria-label="출장 끝" value={form.end} onChange={e => set({ end: e.target.value })} style={field} />
+              <TimeInput aria-label="출장 끝" value={form.end} onChange={v => set({ end: v })} style={field} />
             </div>
             <div style={row}>
               <span style={lab}>장소</span>

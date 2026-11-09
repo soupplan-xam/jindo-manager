@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react'
+import TimeInput from './TimeInput.jsx'
 import { GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, RED, WARN, SECTION_TITLE, fromISO, toISO, DAYS } from '../logic.js'
 import { DEFAULT_OT, defaultOvertime, monthOvertime, dayOvertime, parsePlanText, fileText, fmtMin, isOffDay, workDaysIn, allowance, effectiveRate, rateByStep, RATES, RATE_YEAR, VICE_RATE, planTime } from '../overtime.js'
 import { DateRangeField } from './DateField.jsx'
@@ -199,14 +200,14 @@ export default function OvertimeView({ data, setData, setSnack }) {
       </div>
       <div style={{ marginTop: 12, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: SUB, width: 62 }}>{day.off ? '근무 시간' : '퇴근 시각'}</span>
-        {day.off && <input type="time" aria-label="시작 시각" value={selLog.start || ''} onChange={e => setLog(sel, { start: e.target.value })} style={field} />}
+        {day.off && <TimeInput allowEmpty aria-label="시작 시각" value={selLog.start} onChange={v => setLog(sel, { start: v })} style={field} />}
         {day.off && <span style={{ color: FAINT }}>~</span>}
-        <input type="time" aria-label={day.off ? '끝 시각' : '퇴근 시각'} value={selLog.end || ''} onChange={e => setLog(sel, { end: e.target.value })} style={field} />
+        <TimeInput allowEmpty aria-label={day.off ? '끝 시각' : '퇴근 시각'} value={selLog.end} onChange={v => setLog(sel, { end: v })} style={field} />
       </div>
       {!day.off && (
         <div style={{ marginTop: 6, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: SUB, width: 62 }}>조기출근</span>
-          <input type="time" aria-label="조기출근 시각" value={selLog.arrive || ''} onChange={e => setLog(sel, { arrive: e.target.value })} style={field} />
+          <TimeInput allowEmpty aria-label="조기출근 시각" value={selLog.arrive} onChange={v => setLog(sel, { arrive: v })} style={field} />
           <span style={{ fontSize: 12, color: FAINT }}>출근 기준 {cfg.onTime}보다 1시간 이상 일찍 온 날만</span>
         </div>
       )}
@@ -257,8 +258,8 @@ export default function OvertimeView({ data, setData, setSnack }) {
     <section style={card} aria-label="계산 기준">
       <div style={{ ...SECTION_TITLE, marginBottom: 10 }}>계산 기준</div>
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, minmax(0, 1fr))', gap: 10, fontSize: 12.5, color: SUB }}>
-        <label>출근 기준시각<input type="time" value={cfg.onTime} onChange={e => setCfg({ onTime: e.target.value })} style={{ ...field, width: '100%', marginTop: 4 }} /></label>
-        <label>퇴근 기준시각<input type="time" value={cfg.offTime} onChange={e => setCfg({ offTime: e.target.value })} style={{ ...field, width: '100%', marginTop: 4 }} /></label>
+        <label>출근 기준시각<TimeInput value={cfg.onTime} onChange={v => setCfg({ onTime: v })} style={{ ...field, width: '100%', marginTop: 4 }} /></label>
+        <label>퇴근 기준시각<TimeInput value={cfg.offTime} onChange={v => setCfg({ offTime: v })} style={{ ...field, width: '100%', marginTop: 4 }} /></label>
         <label>호봉<input type="number" min="1" max="40" value={cfg.step || ''} placeholder="예: 8" onChange={e => setCfg({ step: Math.max(0, Math.round(+e.target.value || 0)) })} style={{ ...field, width: '100%', marginTop: 4 }} /></label>
         <label>직위<select value={cfg.role} onChange={e => setCfg({ role: e.target.value })} style={{ ...field, width: '100%', marginTop: 4 }}><option value="teacher">교사</option><option value="vice">교감</option></select></label>
         <label>시간당 단가(원)<input type="number" min="0" step="1" value={cfg.rate || ''} placeholder={autoRate ? '자동 ' + autoRate.toLocaleString('ko-KR') : '호봉을 넣으세요'} onChange={e => setCfg({ rate: Math.max(0, Math.round(+e.target.value || 0)) })} style={{ ...field, width: '100%', marginTop: 4 }} />
@@ -367,9 +368,9 @@ function PlanEditor({ plan, setPlan, onSave, onCancel, field, btn }) {
       <input aria-label="강좌 이름" value={plan.name} onChange={e => set({ name: e.target.value })} placeholder="강좌 이름" style={field} />
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
         <span style={{ color: SUB, width: 34 }}>{plan.dates && plan.dates.length ? '기본' : '시간'}</span>
-        <input type="time" aria-label="방과후 시작" value={plan.from} onChange={e => set({ from: e.target.value })} style={field} />
+        <TimeInput aria-label="방과후 시작" value={plan.from} onChange={v => set({ from: v })} style={field} />
         <span style={{ color: FAINT }}>~</span>
-        <input type="time" aria-label="방과후 끝" value={plan.to} onChange={e => set({ to: e.target.value })} style={field} />
+        <TimeInput aria-label="방과후 끝" value={plan.to} onChange={v => set({ to: v })} style={field} />
       </div>
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
         <span style={{ color: SUB, width: 34 }}>기간</span>

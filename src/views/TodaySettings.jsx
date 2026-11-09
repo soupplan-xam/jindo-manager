@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import TimeInput from './TimeInput.jsx'
 import { GREEN, INK, SUB, FAINT, LINE, WARN } from '../logic.js'
 import { neisSearchSchools } from '../schools.js'
 import { DEFAULT_BELLS, REGION_COORD, weatherPlace, searchPlace, cityFromAddress, makeBells, parseBellText } from '../today.js'
@@ -149,7 +150,7 @@ export function BellSettings({ data, setData }) {
     <div style={{ padding: '0 0 16px', fontSize: 13.5 }}>
       <div style={{ background: '#F5F8FB', borderRadius: 10, padding: '10px 12px', marginBottom: 12, display: 'flex', flexWrap: 'wrap', gap: '8px 14px', alignItems: 'center', fontSize: 12.5, color: SUB }}>
         <b style={{ color: INK, width: '100%' }}>한꺼번에 채우기</b>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>1교시 시작 <input type="time" value={gen.start} onChange={e => g({ start: e.target.value })} style={field} /></label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>1교시 시작 <TimeInput value={gen.start} onChange={v => g({ start: v })} style={field} /></label>
         {num('lesson', '수업', '분', 30, 60)}
         {num('rest', '쉬는 시간', '분', 0, 30)}
         {num('lunchAfter', '점심은', '교시 뒤', 1, 8)}
@@ -161,9 +162,9 @@ export function BellSettings({ data, setData }) {
         {bells.map((b, i) => (
           <React.Fragment key={i}>
             <span style={{ color: SUB, fontWeight: 700 }}>{i + 1}교시</span>
-            <input type="time" aria-label={i + 1 + '교시 시작'} value={b[0]} onChange={e => set(i, 0, e.target.value)} style={field} />
+            <TimeInput aria-label={i + 1 + '교시 시작'} value={b[0]} onChange={v => set(i, 0, v)} style={field} />
             <span style={{ color: FAINT }}>~</span>
-            <input type="time" aria-label={i + 1 + '교시 끝'} value={b[1]} onChange={e => set(i, 1, e.target.value)} style={field} />
+            <TimeInput aria-label={i + 1 + '교시 끝'} value={b[1]} onChange={v => set(i, 1, v)} style={field} />
           </React.Fragment>
         ))}
       </div>
@@ -239,9 +240,9 @@ function ShortBellSets({ data, setData, gen }) {
             {x.bells.map((b, i) => (
               <React.Fragment key={i}>
                 <span style={{ color: SUB, fontWeight: 700 }}>{i + 1}교시</span>
-                <input type="time" aria-label={x.name + ' ' + (i + 1) + '교시 시작'} value={b[0]} onChange={e => setOne(x.id, { bells: x.bells.map((y, j) => (j === i ? [e.target.value, y[1]] : y)) })} style={field} />
+                <TimeInput aria-label={x.name + ' ' + (i + 1) + '교시 시작'} value={b[0]} onChange={v => setOne(x.id, { bells: x.bells.map((y, j) => (j === i ? [v, y[1]] : y)) })} style={field} />
                 <span style={{ color: FAINT }}>~</span>
-                <input type="time" aria-label={x.name + ' ' + (i + 1) + '교시 끝'} value={b[1]} onChange={e => setOne(x.id, { bells: x.bells.map((y, j) => (j === i ? [y[0], e.target.value] : y)) })} style={field} />
+                <TimeInput aria-label={x.name + ' ' + (i + 1) + '교시 끝'} value={b[1]} onChange={v => setOne(x.id, { bells: x.bells.map((y, j) => (j === i ? [y[0], v] : y)) })} style={field} />
               </React.Fragment>
             ))}
           </div>

@@ -85,36 +85,6 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
     </button>
   )
 
-  // 펼칠 수 있다는 걸 바로 알아채도록 화살표를 제목 옆에 붙이고 배경으로 강조한다.
-  const Sec = ({ id, title, children }) => (
-    <div style={{ borderTop: '1px solid ' + LINE }}>
-      <button
-        onClick={() => toggleSec(id)}
-        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '14px 0', border: 'none', background: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 700, textAlign: 'left' }}
-      >
-        {title}
-        <span
-          style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            width: 20, height: 20, borderRadius: 5, flex: 'none',
-            background: open[id] ? GREEN : '#E8EBEE',
-            color: open[id] ? '#FFFFFF' : SUB,
-            transition: 'background 150ms, color 150ms',
-          }}
-        >
-          <svg
-            width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"
-            style={{ transform: open[id] ? 'rotate(180deg)' : 'none', transition: 'transform 180ms' }}
-          >
-            <polyline points="5 9 12 16 19 9" />
-          </svg>
-        </span>
-      </button>
-      {open[id] && children}
-    </div>
-  )
-
   // 스위치는 라벨 바로 옆에 — 시선이 멀리 건너뛰지 않게
   const row = { display: 'flex', alignItems: 'center', gap: 10 }
   const SwitchRow = ({ label, on, onClick }) => (
@@ -134,7 +104,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
   return (
     <Modal title="설정" onClose={onClose}>
       <div style={{ marginTop: 16 }}>
-        <Sec id="sem" title="학기 설정">
+        <Sec open={open} toggleSec={toggleSec} id="sem" title="학기 설정">
           <div style={{ padding: '0 0 16px', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 12, color: SUB }}>
               시작일
@@ -147,7 +117,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
           </div>
         </Sec>
 
-        <Sec id="count" title="차시 카운팅">
+        <Sec open={open} toggleSec={toggleSec} id="count" title="차시 카운팅">
           <div style={{ padding: '0 0 16px', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14 }}>
             <SwitchRow label="고사 후 1차시부터 다시" on={cfg.examReset} onClick={() => setCfg({ examReset: !cfg.examReset })} />
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
@@ -173,7 +143,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
           </div>
         </Sec>
 
-        <Sec id="targetExam" title="진도 목표 고사">
+        <Sec open={open} toggleSec={toggleSec} id="targetExam" title="진도 목표 고사">
           <div style={{ paddingBottom: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <select aria-label="진도 목표 고사" value={cfg.targetExamId ?? ''}
               onChange={e => setCfg({ targetExamId: e.target.value || null })} style={uSelect}>
@@ -185,7 +155,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
           </div>
         </Sec>
 
-        <Sec id="view" title="글씨 크기">
+        <Sec open={open} toggleSec={toggleSec} id="view" title="글씨 크기">
           <div style={{ padding: '0 0 16px', display: 'flex', gap: 8 }}>
             {[[0.9, '작게'], [1, '보통'], [1.1, '크게'], [1.25, '더 크게']].map(([v, labelText]) => {
               const on = (cfg.fontScale || 1) === v
@@ -206,7 +176,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
           </div>
         </Sec>
 
-        <Sec id="dash" title="대시보드">
+        <Sec open={open} toggleSec={toggleSec} id="dash" title="대시보드">
           <div style={{ padding: '0 0 16px', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14 }}>
             {[['today', '오늘의 수업'], ['progress', '반별 진도'], ['exam', '고사 D-day'], ['meal', '급식 · 날씨']].map(([k, labelText]) => (
               <SwitchRow key={k} label={labelText} on={cfg.dash[k]} onClick={() => setCfg({ dash: { ...cfg.dash, [k]: !cfg.dash[k] } })} />
@@ -214,7 +184,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
           </div>
         </Sec>
 
-        <Sec id="print" title="인쇄">
+        <Sec open={open} toggleSec={toggleSec} id="print" title="인쇄">
           <div style={{ padding: '0 0 16px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
             {/* 범위를 먼저 고른다 — 고를 수 있는 크기가 범위에 따라 달라지므로 */}
             <div style={{ display: 'flex', gap: 8 }}>
@@ -264,15 +234,15 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
           </div>
         </Sec>
 
-        <Sec id="school" title="우리 학교 · 급식 · 날씨">
+        <Sec open={open} toggleSec={toggleSec} id="school" title="우리 학교 · 급식 · 날씨">
           <SchoolWeatherSettings data={data} setData={setData} />
         </Sec>
 
-        <Sec id="bells" title="교시 시각">
+        <Sec open={open} toggleSec={toggleSec} id="bells" title="교시 시각">
           <BellSettings data={data} setData={setData} />
         </Sec>
 
-        <Sec id="install" title="앱으로 설치 · 바탕화면 위젯">
+        <Sec open={open} toggleSec={toggleSec} id="install" title="앱으로 설치 · 바탕화면 위젯">
           <div style={{ padding: '0 0 16px', fontSize: 13, color: SUB, lineHeight: 1.65 }}>
             <div style={{ marginBottom: 12, padding: '10px 12px', background: '#F5F8FB', borderRadius: 10 }}>
               <b style={{ color: '#191F28' }}>위젯 (설치 없이)</b>
@@ -305,7 +275,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
           </div>
         </Sec>
 
-        <Sec id="data" title="데이터">
+        <Sec open={open} toggleSec={toggleSec} id="data" title="데이터">
           <div style={{ padding: '0 0 16px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
             <button onClick={() => exportJSON(data, today)} style={linkBtn}>전체 데이터 저장 (.json)</button>
             <button onClick={() => jsonRef.current.click()} style={linkBtn}>저장한 파일 불러오기 (.json)</button>
@@ -319,7 +289,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
           </div>
         </Sec>
 
-        <Sec id="file" title="파일 인식">
+        <Sec open={open} toggleSec={toggleSec} id="file" title="파일 인식">
           <div style={{ padding: '0 0 16px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
               <input
@@ -398,3 +368,36 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
 
 const uInput = { border: 'none', borderBottom: '1px solid ' + LINE, background: 'transparent', fontSize: 14, padding: '4px 0' }
 const uSelect = { border: 'none', borderBottom: '1px solid ' + LINE, background: 'transparent', fontSize: 13, padding: '2px 0' }
+
+// 설정 칸(펼치기) — 컴포넌트 밖에 두어야 값을 고칠 때마다 칸 안이 새로 만들어지지 않는다(입력 중 칸이 초기화되던 문제)
+// 펼칠 수 있다는 걸 바로 알아채도록 화살표를 제목 옆에 붙이고 배경으로 강조한다.
+function Sec({ id, title, children, open, toggleSec }) {
+  return (
+    <div style={{ borderTop: '1px solid ' + LINE }}>
+      <button
+        onClick={() => toggleSec(id)}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '14px 0', border: 'none', background: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 700, textAlign: 'left' }}
+      >
+        {title}
+        <span
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 20, height: 20, borderRadius: 5, flex: 'none',
+            background: open[id] ? GREEN : '#E8EBEE',
+            color: open[id] ? '#FFFFFF' : SUB,
+            transition: 'background 150ms, color 150ms',
+          }}
+        >
+          <svg
+            width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"
+            style={{ transform: open[id] ? 'rotate(180deg)' : 'none', transition: 'transform 180ms' }}
+          >
+            <polyline points="5 9 12 16 19 9" />
+          </svg>
+        </span>
+      </button>
+      {open[id] && children}
+    </div>
+  )
+}
