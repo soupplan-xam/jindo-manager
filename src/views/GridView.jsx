@@ -2,7 +2,7 @@
 import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF, addDays, fromISO, toISO, colorOf, subjectOf, progressFor, progressGroups, contentOf, withContent, ddayText, upcomingDdays, printSizes, fitScale } from '../logic.js'
 import ContentsPanel from './ContentsPanel.jsx'
 import useTodayInfo from '../useTodayInfo.js'
-import { WeatherLine, MealView, periodLabel, NOW_BG } from './TodayCards.jsx'
+import { periodLabel, NOW_BG } from './TodayCards.jsx'
 import DateField from './DateField.jsx'
 import Palette from './Palette.jsx'
 import useWindowWidth from '../useWindowWidth.js'
@@ -1127,8 +1127,8 @@ function DashStrip({ data, setData, computed, today, setUI, setWeekOffset, mon0,
     .sort((a, b) => b.behind - a.behind)
   const chip = c => ({ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: colorOf(data, c), border: '1px solid rgba(26,26,26,0.16)', flex: 'none' })
   const show = data.cfg.dash
-  const tileCount = (show.today ? 1 : 0) + (show.progress ? 1 : 0) + (show.exam ? 1 : 0) + (show.meal ? 1 : 0)
-  const info = useTodayInfo(data, { meal: !!show.meal, weather: !!show.meal })
+  const tileCount = (show.today ? 1 : 0) + (show.progress ? 1 : 0) + (show.exam ? 1 : 0)
+  const info = useTodayInfo(data, { meal: false, weather: false })
   const nowP = info.today === today ? info.period : null
   // 반이 많아도 겹치지 않도록 칸 최소 너비를 정해두고 자동으로 줄을 채운다.
   const autoCols = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(165px, 1fr))', gap: '6px 12px' }
@@ -1284,38 +1284,6 @@ function DashStrip({ data, setData, computed, today, setUI, setWeekOffset, mon0,
                 ) : (
                   <button type="button" onClick={() => setDdAdd({ name: '', date: today })} style={{ alignSelf: 'flex-start', border: 'none', background: 'none', padding: '2px 0', cursor: 'pointer', fontSize: 12, fontWeight: 700, color: GREEN }}>+ D-day</button>
                 )}
-              </div>
-            </Tile>
-          )}
-
-          {!isMobile && show.meal && (show.exam || show.progress || show.today) && handle(show.exam ? 'exam' : show.progress ? 'progress' : 'today', 'meal')}
-
-          {/* 급식 · 날씨 */}
-          {show.meal && (
-            <Tile label="급식 · 날씨" min={min} grow={isMobile ? undefined : growOf('meal')} minWidth={isMobile ? undefined : 220}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <WeatherLine weather={info.weather} weatherErr={info.weatherErr} place={info.place} size={12.5} />
-                {/* 급식 메뉴는 접어 두고, 볼 때 편다(이 기기에서만 기억) */}
-                <div style={{ borderTop: '1px solid ' + LINE_SOFT, paddingTop: 6 }}>
-                  <button
-                    type="button"
-                    onClick={() => setUI({ mealOpen: !data.ui.mealOpen })}
-                    aria-expanded={!!data.ui.mealOpen}
-                    style={{ border: 'none', background: 'none', padding: '2px 0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, width: '100%', fontSize: 12.5, fontWeight: 700, color: SUB }}
-                  >
-                    <span>{data.ui.mealOpen ? '▾' : '▸'} 오늘 급식</span>
-                    {info.meal && info.meal.length > 0 && (
-                      <span style={{ fontWeight: 400, color: FAINT, fontSize: 11.5, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {(info.meal.find(m => m.meal === '중식') || info.meal[0]).dishes.length}가지{(info.meal.find(m => m.meal === '중식') || info.meal[0]).cal ? ' · ' + (info.meal.find(m => m.meal === '중식') || info.meal[0]).cal.replace(/\s*Kcal/i, ' kcal') : ''}
-                      </span>
-                    )}
-                  </button>
-                  {data.ui.mealOpen && (
-                    <div style={{ marginTop: 6 }}>
-                      <MealView meal={info.meal} mealErr={info.mealErr} school={info.school} size={13} only="중식" />
-                    </div>
-                  )}
-                </div>
               </div>
             </Tile>
           )}

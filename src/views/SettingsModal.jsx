@@ -3,7 +3,7 @@ import { GREEN, FAINT, INK, LINE, SUB, WARN, RED, exportCSV, printSizes, fitScal
 import { getApiKey, setApiKey, getModel, setModel, exportJSON, importJSON, defaultData } from '../storage.js'
 import { checkKey } from '../importer.js'
 import DateField from './DateField.jsx'
-import { SchoolWeatherSettings, BellSettings } from './TodaySettings.jsx'
+import { BellSettings } from './TodaySettings.jsx'
 import Modal from './Modal.jsx'
 
 export default function SettingsModal({ data, setData, computed, today, setSnack, onClose, onResetSetup, onImport, onSchools }) {
@@ -178,7 +178,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
 
         <Sec open={open} toggleSec={toggleSec} id="dash" title="대시보드">
           <div style={{ padding: '0 0 16px', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14 }}>
-            {[['today', '오늘의 수업'], ['progress', '반별 진도'], ['exam', '고사 D-day'], ['meal', '급식 · 날씨']].map(([k, labelText]) => (
+            {[['today', '오늘의 수업'], ['progress', '반별 진도'], ['exam', '고사 D-day']].map(([k, labelText]) => (
               <SwitchRow key={k} label={labelText} on={cfg.dash[k]} onClick={() => setCfg({ dash: { ...cfg.dash, [k]: !cfg.dash[k] } })} />
             ))}
           </div>
@@ -234,10 +234,6 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
           </div>
         </Sec>
 
-        <Sec open={open} toggleSec={toggleSec} id="school" title="우리 학교 · 급식 · 날씨">
-          <SchoolWeatherSettings data={data} setData={setData} />
-        </Sec>
-
         <Sec open={open} toggleSec={toggleSec} id="bells" title="교시 시각">
           <BellSettings data={data} setData={setData} />
         </Sec>
@@ -246,9 +242,9 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
           <div style={{ padding: '0 0 16px', fontSize: 13, color: SUB, lineHeight: 1.65 }}>
             <div style={{ marginBottom: 12, padding: '10px 12px', background: '#F5F8FB', borderRadius: 10 }}>
               <b style={{ color: '#191F28' }}>위젯 (설치 없이)</b>
-              <div>오른쪽 위 <b>[위젯]</b> 버튼을 누르면 오늘 수업·할 일·급식·날씨가 담긴 작은 창이 다른 창 위에 항상 떠 있습니다(크롬·엣지). 이 창(또는 설치한 앱 창)을 열어 둔 동안 떠 있습니다.</div>
+              <div>오른쪽 위 <b>[위젯]</b> 버튼을 누르면 오늘 시간표·달력·할 일이 담긴 작은 창이 다른 창 위에 항상 떠 있습니다(크롬·엣지). 이 창(또는 설치한 앱 창)을 열어 둔 동안 떠 있습니다.</div>
               <b style={{ color: '#191F28', display: 'block', marginTop: 8 }}>바탕화면 위젯 (윈도우 프로그램)</b>
-              <div>오늘 수업·지금 교시·할 일·D-day·급식·날씨를 바탕화면 작은 창에 띄웁니다.</div>
+              <div>시간표·지금 교시·달력·할 일·D-day를 바탕화면 작은 창에 띄웁니다.</div>
               <div style={{ display: 'flex', gap: 12, marginTop: 6, flexWrap: 'wrap' }}>
                 <a href="https://github.com/soupplan-xam/jindo-manager/releases/latest" target="_blank" rel="noreferrer" style={{ fontWeight: 700 }}>설치 파일 받기</a>
                 <a href={location.pathname + '#widget'} target="_blank" rel="noreferrer">브라우저에서 위젯 미리보기</a>
