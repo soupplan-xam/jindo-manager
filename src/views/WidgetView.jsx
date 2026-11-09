@@ -135,7 +135,19 @@ export default function WidgetView({ shared = null }) {
               {d.getMonth() + 1}월 {d.getDate()}일 <span style={{ color: d.getDay() === 0 ? RED : d.getDay() === 6 ? '#185FA5' : SUB, fontWeight: 600 }}>{DAYS[d.getDay()]}</span>
               <span className="wg-dim" style={{ fontSize: 12.5, fontWeight: 600, color: FAINT, marginLeft: 8 }}>{String(info.now.getHours()).padStart(2, '0')}:{String(info.now.getMinutes()).padStart(2, '0')}</span>
             </div>
-            {lessons.length > 0 && <div className={P && P.kind === 'class' ? '' : 'wg-dim'} style={{ fontSize: 12, color: P && P.kind === 'class' ? (glass ? INK : GREEN) : FAINT, fontWeight: 700 }}>{periodLabel(P)}</div>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minWidth: 0 }}>
+              {lessons.length > 0 && <span className={P && P.kind === 'class' ? '' : 'wg-dim'} style={{ fontSize: 12, color: P && P.kind === 'class' ? (glass ? INK : GREEN) : FAINT, fontWeight: 700 }}>{periodLabel(P)}</span>}
+              {/* 오늘 시각표 — 단축수업 날은 여기서 고른다(할 일에 「30분 단축」이 있으면 저절로) */}
+              {(data.bellSets || []).length > 0 && (
+                <select className="wg-btn" aria-label="오늘 시각표" title="오늘 시각표 (단축수업이면 여기서 고르세요)" value={(data.bellByDate || {})[today] || ''}
+                  onChange={e => { const v = e.target.value; setData(dd => { const b = { ...(dd.bellByDate || {}) }; if (v) b[today] = v; else delete b[today]; return { ...dd, bellByDate: b } }) }}
+                  style={{ WebkitAppRegion: 'no-drag', border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', color: info.bellSet ? INK : SUB, fontSize: 11.5, fontWeight: info.bellSet ? 700 : 500, padding: '1px 4px', cursor: 'pointer', maxWidth: 150 }}>
+                  <option value="">{info.bellSet ? info.bellSet.name + ' (자동)' : '평소 시각'}</option>
+                  <option value="normal">평소 시각</option>
+                  {(data.bellSets || []).map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+                </select>
+              )}
+            </div>
           </div>
           <div role="tablist" aria-label="위젯 보기" style={{ display: 'flex', background: '#F2F4F6', borderRadius: 8, padding: 2, flex: 'none', WebkitAppRegion: 'no-drag' }}>
             {[['month', '달력'], ['week', '시간표']].map(([k, label]) => (

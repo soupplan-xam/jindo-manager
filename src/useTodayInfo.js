@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { toISO } from './logic.js'
-import { fetchMeal, fetchWeather, weatherPlace, periodNow } from './today.js'
+import { fetchMeal, fetchWeather, weatherPlace, periodNow, bellsFor } from './today.js'
 
 // 지금 시각(30초마다) · 현재 교시 · 오늘 급식 · 날씨(30분마다)
 export default function useTodayInfo(data, { meal: wantMeal = true, weather: wantWx = true } = {}) {
@@ -10,7 +10,9 @@ export default function useTodayInfo(data, { meal: wantMeal = true, weather: wan
     return () => clearInterval(t)
   }, [])
   const today = toISO(now)
-  const period = periodNow(data.cfg.bells, now)
+  // 단축수업 날은 그 날 시각표로
+  const bellInfo = bellsFor(data, today)
+  const period = periodNow(bellInfo.bells, now)
 
   const [meal, setMeal] = useState({ rows: null, err: '' })
   const school = data.school
@@ -39,5 +41,5 @@ export default function useTodayInfo(data, { meal: wantMeal = true, weather: wan
     return () => { alive = false }
   }, [wantWx, place && place.lat, place && place.lon, tick])
 
-  return { now, today, period, meal: meal.rows, mealErr: meal.err, weather: wx.w, weatherErr: wx.err, place, school }
+  return { now, today, period, bellSet: bellInfo.set, bellAuto: bellInfo.auto, meal: meal.rows, mealErr: meal.err, weather: wx.w, weatherErr: wx.err, place, school }
 }

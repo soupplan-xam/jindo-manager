@@ -1146,7 +1146,7 @@ function DashStrip({ data, setData, computed, today, setUI, setWeekOffset, mon0,
         >
           {/* 오늘의 수업 */}
           {show.today && (
-            <Tile label="오늘" sub={dateLabel + (todayRows.length && nowP ? ' · ' + periodLabel(nowP) : '')} min={min} grow={isMobile ? undefined : growOf('today')}>
+            <Tile label="오늘" sub={dateLabel + (info.bellSet ? ' · ' + info.bellSet.name : '') + (todayRows.length && nowP ? ' · ' + periodLabel(nowP) : '')} min={min} grow={isMobile ? undefined : growOf('today')}>
               {todayRows.length === 0 ? (
                 <div style={{ fontSize: 14, fontWeight: 600, color: FAINT }}>수업 없음</div>
               ) : (

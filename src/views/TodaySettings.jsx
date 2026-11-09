@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { GREEN, INK, SUB, FAINT, LINE, WARN } from '../logic.js'
 import { neisSearchSchools } from '../schools.js'
-import { DEFAULT_BELLS, REGION_COORD, weatherPlace, searchPlace, cityFromAddress, makeBells } from '../today.js'
+import { DEFAULT_BELLS, REGION_COORD, weatherPlace, searchPlace, cityFromAddress, makeBells, parseBellText } from '../today.js'
+import { fileText } from '../overtime.js'
 
 // 설정 > 우리 학교 · 급식 · 날씨
 export function SchoolWeatherSettings({ data, setData }) {
@@ -174,6 +175,100 @@ export function BellSettings({ data, setData }) {
         )}
         <span style={{ fontSize: 11.5, color: FAINT }}>대시보드 「오늘」과 위젯에 지금 교시가 표시됩니다.</span>
       </div>
+      <ShortBellSets data={data} setData={setData} gen={gen} />
     </div>
+  )
+}
+
+// 단축 시각표 — 「수업 40분」처럼 이름을 붙여 몇 개 저장해 두고, 그 날만 골라 쓴다
+// (위젯 머리줄 시각·달력 날짜에서 고르기, 할 일·학사일정에 「30분 단축」이라 적힌 날은 저절로)
+function ShortBellSets({ data, setData, gen }) {
+  const sets = data.bellSets || []
+  const [paste, setPaste] = useState(null) // 붙여 넣는 글 | null
+  const [msg, setMsg] = useState('')
+  const field = { border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', fontSize: 13, padding: '4px 6px', boxSizing: 'border-box' }
+  const link = { border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 12.5, color: GREEN }
+  const save = next => setData(d => ({ ...d, bellSets: next }))
+  const add = (name, bells) => {
+    if (!bells.length) { setMsg('「1교시 08:50 ~ 09:30」 같은 교시 시각을 찾지 못했습니다.'); return }
+    const nm = name || '단축 ' + (sets.length + 1)
+    save([...sets, { id: 'b' + Date.now().toString(36), name: nm, bells }])
+    setMsg('「' + nm + '」 시각표를 넣었습니다 (' + bells.length + '교시까지).')
+  }
+  const fromText = text => { const r = parseBellText(text); add(r.name, r.bells) }
+  const onFile = async e => {
+    const f = e.target.files && e.target.files[0]
+    e.target.value = ''
+    if (!f) return
+    setMsg('읽는 중…')
+    try { fromText(await fileText(f)) } catch (err) { setMsg(err.message || '파일을 읽지 못했습니다.') }
+  }
+  const setOne = (id, patch) => save(sets.map(x => (x.id === id ? { ...x, ...patch } : x)))
+  const remove = id => {
+    save(sets.filter(x => x.id !== id))
+    setData(d => { const b = { ...(d.bellByDate || {}) }; Object.keys(b).forEach(k => { if (b[k] === id) delete b[k] }); return { ...d, bellByDate: b } })
+  }
+  return (
+    <div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid ' + LINE }}>
+      <b style={{ fontSize: 13.5, color: INK }}>단축 시각표</b>
+      <div style={{ fontSize: 12, color: FAINT, margin: '4px 0 10px', lineHeight: 1.5 }}>
+        학교에서 받은 단축 시간표(HWPX·PDF)를 올리면 교시 시각을 읽어 넣습니다. 그 날은 위젯 머리줄의 시각이나 달력 날짜에서 고르고,
+        할 일·학사일정에 「30분 단축」처럼 적어 두면 이름에 「30분」이 들어간 시각표가 저절로 쓰입니다.
+      </div>
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
+        <label style={{ ...link, fontWeight: 700 }}>+ 시간표 파일 올리기<input type="file" accept=".hwpx,.pdf,.txt" onChange={onFile} style={{ display: 'none' }} /></label>
+        <button type="button" style={link} onClick={() => setPaste(paste === null ? '' : null)}>+ 글로 붙여 넣기</button>
+        <button type="button" style={link} onClick={() => add('수업 ' + gen.lesson + '분', makeBells(gen))}>+ 위 「한꺼번에 채우기」 값으로 만들기 (수업 {gen.lesson}분)</button>
+      </div>
+      {paste !== null && (
+        <div style={{ marginBottom: 10 }}>
+          <textarea value={paste} onChange={e => setPaste(e.target.value)} rows={4} placeholder={'수업 시간표(40분)\n1교시 08:50 ~ 09:30\n2교시 09:40 ~ 10:20 …'} style={{ ...field, width: '100%', fontFamily: 'inherit', resize: 'vertical' }} />
+          <button type="button" onClick={() => { fromText(paste); setPaste(null) }} style={{ border: 'none', borderRadius: 8, background: GREEN, color: '#FFFFFF', padding: '5px 12px', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', marginTop: 4 }}>읽어서 넣기</button>
+        </div>
+      )}
+      {msg && <div role="status" style={{ fontSize: 12.5, color: SUB, marginBottom: 8 }}>{msg}</div>}
+      {sets.map(x => (
+        <details key={x.id} style={{ border: '1px solid ' + LINE, borderRadius: 10, padding: '8px 10px', marginBottom: 8 }}>
+          <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input value={x.name} aria-label="시각표 이름" onClick={e => e.stopPropagation()} onChange={e => setOne(x.id, { name: e.target.value })} style={{ ...field, width: 120, fontWeight: 700 }} />
+            <span style={{ fontSize: 12, color: FAINT }}>{x.bells.length}교시 · {x.bells[0] ? x.bells[0][0] : ''} ~ {x.bells.length ? x.bells[x.bells.length - 1][1] : ''}</span>
+            <span style={{ flex: 1 }} />
+            <button type="button" onClick={e => { e.preventDefault(); remove(x.id) }} style={{ ...link, color: WARN }}>지우기</button>
+          </summary>
+          <div style={{ display: 'grid', gridTemplateColumns: 'auto auto auto auto', gap: '6px 8px', alignItems: 'center', justifyContent: 'start', marginTop: 8 }}>
+            {x.bells.map((b, i) => (
+              <React.Fragment key={i}>
+                <span style={{ color: SUB, fontWeight: 700 }}>{i + 1}교시</span>
+                <input type="time" aria-label={x.name + ' ' + (i + 1) + '교시 시작'} value={b[0]} onChange={e => setOne(x.id, { bells: x.bells.map((y, j) => (j === i ? [e.target.value, y[1]] : y)) })} style={field} />
+                <span style={{ color: FAINT }}>~</span>
+                <input type="time" aria-label={x.name + ' ' + (i + 1) + '교시 끝'} value={b[1]} onChange={e => setOne(x.id, { bells: x.bells.map((y, j) => (j === i ? [y[0], e.target.value] : y)) })} style={field} />
+              </React.Fragment>
+            ))}
+          </div>
+        </details>
+      ))}
+    </div>
+  )
+}
+
+// 그 날 시각표 고르기 [평소 · 수업 40분 · …] — 달력·위젯에서 쓴다. 자동으로 고른 날은 (자동) 표시
+export function BellDayPicker({ data, setData, iso, size = 12.5 }) {
+  const sets = data.bellSets || []
+  if (!sets.length) return null
+  const pick = (data.bellByDate || {})[iso]
+  const set = v => setData(d => ({ ...d, bellByDate: { ...(d.bellByDate || {}), [iso]: v } }))
+  return (
+    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: size, color: SUB }}>
+      시각표
+      <select value={pick || ''} onChange={e => {
+        const v = e.target.value
+        if (!v) setData(d => { const b = { ...(d.bellByDate || {}) }; delete b[iso]; return { ...d, bellByDate: b } })
+        else set(v)
+      }} style={{ border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', fontSize: size, padding: '3px 6px' }}>
+        <option value="">자동 (평소 · 「N분 단축」이면 그 시각표)</option>
+        <option value="normal">평소</option>
+        {sets.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+      </select>
+    </label>
   )
 }

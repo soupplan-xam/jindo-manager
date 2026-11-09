@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react'
+import { BellDayPicker } from './TodaySettings.jsx'
 import { GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, RED, WARN, SECTION_TITLE, fromISO, toISO, DAYS } from '../logic.js'
 import { holidayOn, solarTermOn } from '../kcal.js'
 import { TYPE_COLOR } from './ScheduleCalendar.jsx'
@@ -235,6 +236,9 @@ export default function MonthCalendar({ data, setData, setSnack }) {
       </div>
       {autoOff && !selHoliday && offReason(sel, selD.getDay()) && offReason(sel, selD.getDay()) !== '주말' && (
         <div style={{ marginTop: 4, fontSize: 13, fontWeight: 700, color: SUB }}>{offReason(sel, selD.getDay())}</div>
+      )}
+      {selD.getDay() !== 0 && selD.getDay() !== 6 && (data.bellSets || []).length > 0 && (
+        <div style={{ marginTop: 6 }}><BellDayPicker data={data} setData={setData} iso={sel} /></div>
       )}
       {(selHoliday || selTerm) && (
         <div style={{ marginTop: 4, fontSize: 13, fontWeight: 700 }}>

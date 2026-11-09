@@ -18,6 +18,56 @@ export function makeBells({ start = '08:50', lesson = 50, rest = 10, lunchAfter 
   }
   return out
 }
+// ---- 단축 시각표 ----
+// data.bellSets = [{ id, name, bells }] (예: 「수업 40분」), data.bellByDate = { 'iso': 시각표 id | 'normal' }
+// 그 날 시각: 직접 고른 것 > 할 일·학사일정에 「30분 단축」처럼 적힌 날은 이름에 「30분」이 들어간 시각표 > 평소
+export function bellsFor(data, iso) {
+  const normal = data.cfg && data.cfg.bells && data.cfg.bells.length ? data.cfg.bells : DEFAULT_BELLS
+  const sets = data.bellSets || []
+  const pick = (data.bellByDate || {})[iso]
+  if (pick === 'normal') return { bells: normal, set: null, auto: false }
+  const chosen = pick && sets.find(x => x.id === pick)
+  if (chosen) return { bells: chosen.bells, set: chosen, auto: false }
+  const auto = autoBellSet(data, iso)
+  if (auto) return { bells: auto.bells, set: auto, auto: true }
+  return { bells: normal, set: null, auto: false }
+}
+// 「30분 단축」「단축(40분)」「40분 단축수업」 → 이름에 「30분」이 들어간 시각표
+export function autoBellSet(data, iso) {
+  const sets = data.bellSets || []
+  if (!sets.length) return null
+  const texts = [
+    ...((data.todos || {})[iso] || []).map(t => t.text),
+    ...(data.events || []).filter(e => e.start <= iso && iso <= e.end).map(e => e.name),
+  ]
+  for (const t of texts) {
+    const m = /(\d{2})\s*분\s*단축|단축[^\d]{0,6}(\d{2})\s*분/.exec(t || '')
+    if (!m) continue
+    const n = m[1] || m[2]
+    const hit = sets.find(x => new RegExp('(^|[^\\d])' + n + '\\s*분').test(x.name))
+    if (hit) return hit
+  }
+  return null
+}
+// 시간표 문서 글자에서 「1교시 08:50 ~ 09:30」을 찾아 교시 순서대로. 이름은 「수업 시간표(40분)」이면 「수업 40분」
+export function parseBellText(text) {
+  const found = {}
+  const re = /(\d{1,2})\s*교시[^\d]{0,30}?(\d{1,2})\s*[:：]\s*(\d{2})\s*[~∼〜\-–]\s*(\d{1,2})\s*[:：]\s*(\d{2})/g
+  let m
+  const hm = (h, mm) => String(+h).padStart(2, '0') + ':' + mm
+  while ((m = re.exec(text || ''))) {
+    const p = +m[1]
+    if (p >= 1 && p <= 12 && !found[p]) found[p] = [hm(m[2], m[3]), hm(m[4], m[5])]
+  }
+  const ps = Object.keys(found).map(Number).sort((a, b) => a - b)
+  const bells = []
+  for (let p = 1; p <= (ps.length ? ps[ps.length - 1] : 0); p++) {
+    if (!found[p]) break
+    bells.push(found[p])
+  }
+  const t = /수업\s*시간표\s*\(?\s*(\d{2})\s*분/.exec(text || '') || /(\d{2})\s*분\s*수업/.exec(text || '')
+  return { bells, name: t ? '수업 ' + t[1] + '분' : '' }
+}
 const mins = t => { const [h, m] = String(t || '').split(':').map(Number); return h * 60 + (m || 0) }
 
 // 지금 상태: { kind: 'before' | 'class' | 'break' | 'after', period, next, left(분) }
