@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, RED, DAYS, fromISO, toISO, addDays, colorOf } from '../logic.js'
 import { holidayOn, solarTermOn } from '../kcal.js'
+import { bellsFor } from '../today.js'
 import { TYPE_COLOR } from './ScheduleCalendar.jsx'
 import { TODO_COLORS, OFF_BG, offReasonOf } from './MonthCalendar.jsx'
 
@@ -128,11 +129,12 @@ export function MiniWeek({ glass = false, inv = false, data, setData, computed, 
   if (dow === 0 || dow === 6) mon = addDays(mon, 7)
   const days = [0, 1, 2, 3, 4].map(i => toISO(addDays(mon, i)))
   const nowP = period && period.kind === 'class' ? period.period : null
+  const todayBells = bellsFor(data, today).bells
   const line = lineOf(glass, inv)
   return (
     <div ref={boxRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
     <div className="soft-scroll" style={{ flex: 1, minHeight: 0, overflow: 'auto', border: glass ? line : '1px solid ' + LINE, borderRadius: 10, background: glass ? 'transparent' : '#FFFFFF' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '30px repeat(5, minmax(0, 1fr))', gridTemplateRows: 'auto repeat(' + periods + ', minmax(40px, 1fr))', minHeight: '100%' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '46px repeat(5, minmax(0, 1fr))', gridTemplateRows: 'auto repeat(' + periods + ', minmax(40px, 1fr))', minHeight: '100%' }}>
         <div style={{ background: glass ? 'transparent' : '#F2F4F6', position: 'sticky', top: 0, zIndex: 1 }} />
         {days.map(iso => {
           const d = fromISO(iso)
@@ -145,7 +147,11 @@ export function MiniWeek({ glass = false, inv = false, data, setData, computed, 
         })}
         {Array.from({ length: periods }, (_, k) => k + 1).map(p => (
           <React.Fragment key={p}>
-            <div style={{ borderTop: line, fontSize: 12.5, color: nowP === p ? (glass ? INK : GREEN) : FAINT, fontWeight: nowP === p ? 800 : 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{p}</div>
+            {/* 교시 번호 아래 오늘 교시 시각(단축수업 날은 그 날 시각표) */}
+            <div style={{ borderTop: line, fontSize: 12.5, color: nowP === p ? (glass ? INK : GREEN) : FAINT, fontWeight: nowP === p ? 800 : 600, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: 1.2 }}>
+              {p}
+              {todayBells[p - 1] && <span className={nowP === p ? '' : 'wg-faint'} style={{ fontSize: 9.5, fontWeight: 500, marginTop: 2, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', textAlign: 'center' }}>{todayBells[p - 1][0]}<br />~{todayBells[p - 1][1]}</span>}
+            </div>
             {days.map(iso => {
               const s = computed.sessions[iso + '|' + p]
               const isNow = iso === today && nowP === p

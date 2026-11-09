@@ -7,6 +7,7 @@ import DateField from './DateField.jsx'
 import Palette from './Palette.jsx'
 import useWindowWidth from '../useWindowWidth.js'
 import useSplit from '../useSplit.js'
+import { DEFAULT_BELLS } from '../today.js'
 
 export default function GridView({ data, setData, computed, today, setSnack, go, goImport, weekOffset, setWeekOffset, stagger, fit }) {
   const { sessions, perClass, exam } = computed
@@ -558,6 +559,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   const weekRange = weekNums.length ? { min: Math.min(...weekNums), max: Math.max(...weekNums) } : null
 
   const rows = []
+  const bellRows = data.cfg.bells && data.cfg.bells.length ? data.cfg.bells : DEFAULT_BELLS
   for (let p = 1; p <= 7; p++) {
     const cells = days.map(day => {
       const key = day.iso + '|' + p
@@ -662,7 +664,15 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
     })
     rows.push(
       <div key={p} style={{ display: 'contents' }}>
-        <div style={{ borderTop: '1px solid ' + LINE_SOFT, padding: isMobile ? '6px 0 0 0' : '8px 0 0 10px', fontSize: isMobile ? 10 : 12, color: FAINT, textAlign: isMobile ? 'center' : 'left' }}>{p}</div>
+        {/* 교시 번호 아래 평소 교시 시각 (설정 > 교시 시각) */}
+        <div style={{ borderTop: '1px solid ' + LINE_SOFT, padding: isMobile ? '6px 0 0 0' : '8px 0 0 8px', fontSize: isMobile ? 10 : 12, color: FAINT, textAlign: isMobile ? 'center' : 'left', lineHeight: 1.25 }}>
+          <div style={{ fontWeight: 700, color: SUB }}>{p}</div>
+          {bellRows[p - 1] && (
+            <div style={{ fontSize: isMobile ? 8 : 10, marginTop: 2, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>
+              {bellRows[p - 1][0]}<br />~{bellRows[p - 1][1]}
+            </div>
+          )}
+        </div>
         {cells}
       </div>
     )
@@ -799,7 +809,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
     >
       <div
         style={{
-          display: 'grid', gridTemplateColumns: (isMobile ? '22px' : '34px') + ' repeat(5,minmax(0,1fr))',
+          display: 'grid', gridTemplateColumns: (isMobile ? '30px' : '50px') + ' repeat(5,minmax(0,1fr))',
           gridTemplateRows: fit ? 'auto repeat(7, minmax(0,1fr))' : undefined, height: fit ? '100%' : undefined,
         }}
       >
