@@ -1,21 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="진도계획표">
-  <!-- 시간표 아이콘 — 앱의 딥그린 바탕에 요일 머리줄과 반별 색이 칠해진 수업 칸.
-       탭에서 16px로 줄어도 격자로 읽히도록 칸을 크게, 색은 또렷하게 두었다. -->
-  <rect width="64" height="64" rx="14" fill="#0F5C4D"/>
+  <!-- 시간표 아이콘 — 하늘색 바탕에 요일 머리줄과 반별 색이 칠해진 수업 칸.
+       탭에서 16px로 줄어도 격자로 읽히도록 칸을 크게 두었다. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6CC4F5"/>
+      <stop offset="1" stop-color="#1E8FD6"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#sky)"/>
   <!-- 요일 머리줄 -->
-  <g fill="#FFFFFF" opacity="0.62">
+  <g fill="#FFFFFF" opacity="0.8">
     <rect x="11" y="12" width="12" height="4.5" rx="2.25"/>
     <rect x="26" y="12" width="12" height="4.5" rx="2.25"/>
     <rect x="41" y="12" width="12" height="4.5" rx="2.25"/>
   </g>
-  <!-- 수업 칸 — 색이 칠해진 칸은 반이 배정된 자리 -->
+  <!-- 수업 칸 — 또렷한 칸은 반이 배정된 자리 -->
   <g>
-    <rect x="11" y="23" width="12" height="13" rx="3" fill="#D5E7DC"/>
-    <rect x="26" y="23" width="12" height="13" rx="3" fill="#FFFFFF" opacity="0.3"/>
-    <rect x="41" y="23" width="12" height="13" rx="3" fill="#F2E2C4"/>
+    <rect x="11" y="23" width="12" height="13" rx="3" fill="#FFFFFF"/>
+    <rect x="26" y="23" width="12" height="13" rx="3" fill="#FFFFFF" opacity="0.32"/>
+    <rect x="41" y="23" width="12" height="13" rx="3" fill="#FFF3C9"/>
 
-    <rect x="11" y="39" width="12" height="13" rx="3" fill="#FFFFFF" opacity="0.3"/>
-    <rect x="26" y="39" width="12" height="13" rx="3" fill="#D3DFF2"/>
-    <rect x="41" y="39" width="12" height="13" rx="3" fill="#FFFFFF" opacity="0.3"/>
+    <rect x="11" y="39" width="12" height="13" rx="3" fill="#FFFFFF" opacity="0.32"/>
+    <rect x="26" y="39" width="12" height="13" rx="3" fill="#DDF1FF"/>
+    <rect x="41" y="39" width="12" height="13" rx="3" fill="#FFFFFF" opacity="0.32"/>
   </g>
 </svg>
