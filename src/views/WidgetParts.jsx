@@ -330,7 +330,7 @@ export function MiniMonth({ glass = false, inv = false, data, setData, today }) 
             const tds = todosOn(data, iso)
             // 끝내지 못한 지난 할 일은 오늘 칸에 함께 보인다(원래 날짜에도 그대로 남는다)
             const late = iso === today ? carriedTo(data, today) : []
-            const marks = dayMarks(data, iso, today)
+            const marks = dayMarks(data, iso, today).filter(mk => mk.k === 'trip') // 초근·방과후는 칸에서 뺀다(할 일을 가려서)
             // 칠한 색(흰색은 '칠 지움') > 쉬는 날 자동 색 > 바탕 — 달력 탭과 같다.
             // 어두운 바탕에서 쉬는 날은 차분하게, 직접 칠한 날은 밝은 같은 계열 색으로 눈에 띄게
             const painted = colors[iso] && colors[iso].toUpperCase() !== '#FFFFFF' ? colors[iso] : null

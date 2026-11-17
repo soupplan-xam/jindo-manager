@@ -168,7 +168,7 @@ export default function MonthCalendar({ data, setData, setSnack }) {
             const term = solarTermOn(iso)
             const evs = eventsOn(iso)
             const tds = [...todosOn(data, iso), ...(iso === today ? carriedTo(data, today) : [])]
-            const marks = dayMarks(data, iso, today)
+            const marks = dayMarks(data, iso, today).filter(mk => mk.k === 'trip') // 초근·방과후는 칸에서 뺀다(할 일을 가려서) — 고른 날 칸에는 보인다
             const isSel = iso === sel
             const isToday = iso === today
             const numColor = out ? LINE : i === 0 || hol ? RED : i === 6 ? SAT : INK
