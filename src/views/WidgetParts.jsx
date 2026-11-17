@@ -139,12 +139,12 @@ export function MiniWeek({ glass = false, inv = false, data, setData, computed, 
     <div ref={boxRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
     <div className="soft-scroll" style={{ flex: 1, minHeight: 0, overflow: 'auto', border: glass ? 'none' : '1px solid ' + LINE, borderRadius: 10, background: glass ? 'transparent' : '#FFFFFF' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '46px repeat(5, minmax(0, 1fr))', gridTemplateRows: 'auto repeat(' + periods + ', minmax(40px, 1fr))', minHeight: '100%', gap: glass ? 4 : 0, boxSizing: 'border-box' }}>
-        <div style={{ background: glass ? 'transparent' : '#F2F4F6', position: 'sticky', top: 0, zIndex: 1 }} />
+        <div style={{ background: glass ? 'transparent' : '#F2F4F6', position: glass ? 'static' : 'sticky', top: 0, zIndex: 1 }} />
         {days.map(iso => {
           const d = fromISO(iso)
           const isToday = iso === today
           return (
-            <div key={iso} style={{ textAlign: 'center', padding: '6px 0', fontSize: 13, fontWeight: 700, color: isToday ? (glass ? INK : GREEN) : holidayOn(iso) ? inkOf(RED, inv) : SUB, fontWeight: isToday && glass ? 800 : 700, background: glass ? (isToday ? (inv ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.4)') : 'transparent') : isToday ? '#E9F6FE' : '#F2F4F6', borderLeft: glass ? 'none' : line, borderRadius: glass ? 9 : 0, position: 'sticky', top: 0, zIndex: 1 }}>
+            <div key={iso} style={{ textAlign: 'center', padding: '6px 0', fontSize: 13, fontWeight: 700, color: isToday ? (glass ? INK : GREEN) : holidayOn(iso) ? inkOf(RED, inv) : SUB, fontWeight: isToday && glass ? 800 : 700, background: glass ? (isToday ? (inv ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.4)') : 'transparent') : isToday ? '#E9F6FE' : '#F2F4F6', borderLeft: glass ? 'none' : line, borderRadius: glass ? 9 : 0, position: glass ? 'static' : 'sticky', top: 0, zIndex: 1 }}>
               {DAYS[d.getDay()]} {d.getMonth() + 1}.{d.getDate()}
             </div>
           )
@@ -322,7 +322,7 @@ export function MiniMonth({ glass = false, inv = false, data, setData, today }) 
       <div className="soft-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', border: glass ? 'none' : '1px solid ' + LINE, borderRadius: 10, background: glass ? 'transparent' : '#FFFFFF' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gridTemplateRows: 'auto repeat(' + weeks.length + ', minmax(84px, 1fr))', minHeight: '100%', gap: glass ? 4 : 0, boxSizing: 'border-box' }}>
           {DAYS.split('').map((w, i) => (
-            <div key={w} style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, padding: '5px 0', background: glass ? 'transparent' : '#F7F8FA', borderLeft: i && !glass ? line : 'none', borderBottom: glass ? 'none' : line, color: i === 0 ? inkOf(RED, inv) : i === 6 ? inkOf(SAT, inv) : SUB, position: 'sticky', top: 0, zIndex: 1 }}>{w}</div>
+            <div key={w} style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, padding: '5px 0', background: glass ? 'transparent' : '#F7F8FA', borderLeft: i && !glass ? line : 'none', borderBottom: glass ? 'none' : line, color: i === 0 ? inkOf(RED, inv) : i === 6 ? inkOf(SAT, inv) : SUB, position: glass ? 'static' : 'sticky', top: 0, zIndex: 1 }}>{w}</div>
           ))}
           {weeks.map((row, wi) => row.map((d, i) => {
             const iso = toISO(d)

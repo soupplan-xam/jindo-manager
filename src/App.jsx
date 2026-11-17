@@ -14,6 +14,7 @@ import OvertimeView from './views/OvertimeView.jsx'
 import TravelView from './views/TravelView.jsx'
 import PerfView from './views/PerfView.jsx'
 import useNotifier from './useNotifier.js'
+import { applyFont } from './fonts.js'
 import WidgetView from './views/WidgetView.jsx'
 import { createRoot } from 'react-dom/client'
 import Snackbar from './views/Snackbar.jsx'
@@ -26,6 +27,7 @@ export default function App() {
   useEffect(() => saveData(data), [data])
   const sync = useCloudSync(data, setData)
   useNotifier(data)
+  useEffect(() => { applyFont(data.cfg.font) }, [data.cfg.font])
   // 위젯 창 등 다른 창에서 고친 내용을 따라온다(같은 브라우저 저장소)
   useEffect(() => {
     const on = e => { if (e.key === 'jindo.data.v1' && e.newValue) setData(loadData()) }

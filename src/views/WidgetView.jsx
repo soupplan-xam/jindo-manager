@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { loadData, saveData } from '../storage.js'
 import { compute, toISO, fromISO, DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, RED, colorOf, subjectOf, contentOf, ddayText, upcomingDdays } from '../logic.js'
 import useTodayInfo from '../useTodayInfo.js'
 import useCloudSync from '../useCloudSync.js'
 import useNotifier from '../useNotifier.js'
+import { FONTS, applyFont, fontReady } from '../fonts.js'
 import { periodLabel } from './TodayCards.jsx'
 import { TODO_COLORS } from './MonthCalendar.jsx'
 import { MiniWeek, MiniMonth } from './WidgetParts.jsx'
@@ -86,6 +87,17 @@ export default function WidgetView({ shared = null }) {
   // 진도계획표 창이 닫혀 있어도 로그인돼 있으면 온라인 내용(휴대폰에서 고친 것)과 맞춘다
   useCloudSync(data, setData, !shared)
   useNotifier(data, !shared) // 본 창 안에 띄운 위젯은 본 창이 알린다
+  // 글꼴 — 이 화면이 그려진 문서(작은 창이면 그 창)에 입힌다
+  const rootRef = useRef(null)
+  const [fontMsg, setFontMsg] = useState('')
+  useEffect(() => { if (rootRef.current) applyFont(data.cfg.font, rootRef.current.ownerDocument) }, [data.cfg.font])
+  const pickFont = async k => {
+    setFontMsg('')
+    setData(dd => ({ ...dd, cfg: { ...dd.cfg, font: k } }))
+    const doc = rootRef.current ? rootRef.current.ownerDocument : document
+    applyFont(k, doc)
+    if (!(await fontReady(k, doc))) setFontMsg('글꼴을 불러오지 못했습니다(인터넷이 막혀 있을 수 있어요). 기본 글꼴로 보입니다.')
+  }
   const info = useTodayInfo(data, { meal: false, weather: false })
   const today = info.today
   const computed = useMemo(() => compute(data), [data])
@@ -117,7 +129,7 @@ export default function WidgetView({ shared = null }) {
   const iconBtn = { border: 'none', background: 'none', cursor: 'pointer', color: SUB, padding: '4px 6px', borderRadius: 6, fontSize: 13, lineHeight: 1, WebkitAppRegion: 'no-drag' }
 
   return (
-    <div style={{ height: '100vh', boxSizing: 'border-box', padding: glass ? 0 : desk || shared ? 0 : 16, display: 'flex',
+    <div ref={rootRef} style={{ height: '100vh', boxSizing: 'border-box', padding: glass ? 0 : desk || shared ? 0 : 16, display: 'flex',
       // 바탕화면 모드: 고른 바탕색은 반전 필터 밖(여기)에 깐다 — 고른 색 그대로 보인다
       ...(glass ? { background: rgba(pref.glassColor, pref.glassA), borderRadius: 14, overflow: 'hidden' } : null) }}>
       <div
@@ -181,6 +193,13 @@ export default function WidgetView({ shared = null }) {
                 <input type="checkbox" checked={!!pref[k]} onChange={() => setPref({ [k]: !pref[k] })} style={{ accentColor: GREEN, margin: 0 }} /> {label}
               </label>
             ))}
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              글꼴
+              <select aria-label="글꼴" value={data.cfg.font || ''} onChange={e => pickFont(e.target.value)} className="wg-raw" style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', color: INK, fontSize: 12.5, padding: '2px 6px' }}>
+                {FONTS.map(f => <option key={f.k} value={f.k}>{f.n}</option>)}
+              </select>
+            </label>
+            {fontMsg && <div role="status" style={{ fontSize: 11.5, color: '#D9480F' }}>{fontMsg}</div>}
             {glass ? (
               <>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>

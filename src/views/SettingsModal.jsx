@@ -5,6 +5,7 @@ import { checkKey } from '../importer.js'
 import DateField from './DateField.jsx'
 import { BellSettings } from './TodaySettings.jsx'
 import NotifySettings from './NotifySettings.jsx'
+import { FONTS, applyFont, fontReady, fontFamily } from '../fonts.js'
 import Modal from './Modal.jsx'
 
 export default function SettingsModal({ data, setData, computed, today, setSnack, onClose, onResetSetup, onImport, onSchools }) {
@@ -156,7 +157,8 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
           </div>
         </Sec>
 
-        <Sec open={open} toggleSec={toggleSec} id="view" title="글씨 크기">
+        <Sec open={open} toggleSec={toggleSec} id="view" title="글씨 크기 · 글꼴">
+          <FontPicker data={data} setData={setData} />
           <div style={{ padding: '0 0 16px', display: 'flex', gap: 8 }}>
             {[[0.9, '작게'], [1, '보통'], [1.1, '크게'], [1.25, '더 크게']].map(([v, labelText]) => {
               const on = (cfg.fontScale || 1) === v
@@ -401,4 +403,44 @@ function Sec({ id, title, children, open, toggleSec }) {
       {open[id] && children}
     </div>
   )
+}
+
+// 글꼴 고르기 — 고르면 바로 바뀌고, 기기 연동으로 위젯·다른 기기도 같이 바뀐다
+function FontPicker({ data, setData }) {
+  const [msg, setMsg] = React.useState('')
+  const cur = data.cfg.font || ''
+  const pick = async k => {
+    setMsg('')
+    setData(d => ({ ...d, cfg: { ...d.cfg, font: k } }))
+    applyFont(k)
+    if (!(await fontReady(k))) setMsg('글꼴을 불러오지 못했습니다(인터넷이 막혀 있을 수 있어요). 기본 글꼴로 보입니다.')
+  }
+  return (
+    <div style={{ padding: '0 0 14px' }}>
+      <div role="radiogroup" aria-label="글꼴" style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {FONTS.map(f => {
+          const on = cur === f.k
+          return (
+            <button key={f.k} type="button" role="radio" aria-checked={on} onClick={() => pick(f.k)} onMouseEnter={() => applyFontPreview(f.k)}
+              style={{ border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 999, padding: '5px 12px', cursor: 'pointer', background: on ? '#E9F6FE' : '#FFFFFF', color: on ? GREEN : SUB, fontSize: 13.5, fontWeight: on ? 700 : 500, fontFamily: fontFamily(f.k) }}>
+              {f.n}
+            </button>
+          )
+        })}
+      </div>
+      <div style={{ marginTop: 6, fontSize: 12, color: FAINT, lineHeight: 1.5 }}>Pretendard·맑은 고딕 말고는 고를 때 인터넷에서 글꼴을 받아 옵니다. 위젯과 다른 기기에도 같이 적용됩니다.</div>
+      {msg && <div role="status" style={{ marginTop: 4, fontSize: 12.5, color: WARN }}>{msg}</div>}
+    </div>
+  )
+}
+// 마우스를 올리면 그 글꼴 파일만 미리 받아 둔다(버튼 글씨가 그 글꼴로 보이게) — 화면 글꼴은 바꾸지 않는다
+function applyFontPreview(k) {
+  const f = FONTS.find(x => x.k === k)
+  if (!f) return
+  for (const href of f.css) {
+    if ([...document.querySelectorAll('link[data-font]')].some(l => l.getAttribute('href') === href)) continue
+    const l = document.createElement('link')
+    l.rel = 'stylesheet'; l.href = href; l.setAttribute('data-font', f.k)
+    document.head.appendChild(l)
+  }
 }
