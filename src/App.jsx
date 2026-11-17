@@ -12,6 +12,8 @@ import HomeroomView from './views/HomeroomView.jsx'
 import MonthCalendar from './views/MonthCalendar.jsx'
 import OvertimeView from './views/OvertimeView.jsx'
 import TravelView from './views/TravelView.jsx'
+import PerfView from './views/PerfView.jsx'
+import useNotifier from './useNotifier.js'
 import WidgetView from './views/WidgetView.jsx'
 import { createRoot } from 'react-dom/client'
 import Snackbar from './views/Snackbar.jsx'
@@ -23,6 +25,7 @@ export default function App() {
   const [data, setData] = useState(loadData)
   useEffect(() => saveData(data), [data])
   const sync = useCloudSync(data, setData)
+  useNotifier(data)
   // 위젯 창 등 다른 창에서 고친 내용을 따라온다(같은 브라우저 저장소)
   useEffect(() => {
     const on = e => { if (e.key === 'jindo.data.v1' && e.newValue) setData(loadData()) }
@@ -135,7 +138,7 @@ export default function App() {
   }
 
   // 화면 전환: 진도표 · 달력 · 담임
-  const NAV = [['grid', '진도표'], ['calendar', '달력'], ['homeroom', '담임'], ['overtime', '초근'], ['travel', '여비']]
+  const NAV = [['grid', '진도표'], ['calendar', '달력'], ['perf', '수행'], ['homeroom', '담임'], ['overtime', '초근'], ['travel', '여비']]
   const nav = view !== 'setup' && data.setupDone ? (
     <div role="tablist" aria-label="화면" style={{ display: 'flex', background: '#E8EBEF', borderRadius: 10, padding: 3, gap: 2, flex: isMobile ? 1 : 'none' }}>
       {NAV.map(([v, label]) => {
@@ -147,7 +150,7 @@ export default function App() {
             aria-selected={on}
             onClick={() => go(v)}
             style={{
-              flex: isMobile ? 1 : 'none', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 13, fontWeight: on ? 700 : 500,
+              flex: isMobile ? '1 1 auto' : 'none', border: 'none', borderRadius: 8, padding: isMobile ? '6px 4px' : '6px 14px', cursor: 'pointer', fontSize: 13, fontWeight: on ? 700 : 500, whiteSpace: 'nowrap',
               background: on ? '#FFFFFF' : 'transparent', color: on ? GREEN : SUB, boxShadow: on ? '0 1px 2px rgba(26,26,26,0.12)' : 'none',
             }}
           >
@@ -287,6 +290,7 @@ export default function App() {
         {view === 'calendar' && <MonthCalendar data={data} setData={setData} setSnack={setSnack} />}
         {view === 'overtime' && <OvertimeView data={data} setData={setData} setSnack={setSnack} />}
         {view === 'travel' && <TravelView data={data} setData={setData} setSnack={setSnack} />}
+        {view === 'perf' && <PerfView data={data} setData={setData} />}
       </div>
 
       {syncOpen && <SyncModal sync={sync} onClose={() => setSyncOpen(false)} />}

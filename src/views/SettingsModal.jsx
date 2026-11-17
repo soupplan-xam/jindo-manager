@@ -4,6 +4,7 @@ import { getApiKey, setApiKey, getModel, setModel, exportJSON, importJSON, defau
 import { checkKey } from '../importer.js'
 import DateField from './DateField.jsx'
 import { BellSettings } from './TodaySettings.jsx'
+import NotifySettings from './NotifySettings.jsx'
 import Modal from './Modal.jsx'
 
 export default function SettingsModal({ data, setData, computed, today, setSnack, onClose, onResetSetup, onImport, onSchools }) {
@@ -232,6 +233,10 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
                 : '보고 있는 주만 뽑습니다.'}
             </div>
           </div>
+        </Sec>
+
+        <Sec open={open} toggleSec={toggleSec} id="todo" title="할 일 · 알림">
+          <NotifySettings data={data} setData={setData} />
         </Sec>
 
         <Sec open={open} toggleSec={toggleSec} id="bells" title="교시 시각">

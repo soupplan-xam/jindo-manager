@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react'
 import { BellDayPicker } from './TodaySettings.jsx'
+import { todosOn, carriedTo, toggleTodo, removeTodo, addRepeat, moveTodo, isRepeatId, dayMarks, REPEAT_KINDS } from '../todos.js'
 import { GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, RED, WARN, SECTION_TITLE, fromISO, toISO, DAYS } from '../logic.js'
 import { holidayOn, solarTermOn } from '../kcal.js'
 import { TYPE_COLOR } from './ScheduleCalendar.jsx'
@@ -41,6 +42,7 @@ export default function MonthCalendar({ data, setData, setSnack }) {
   const [sel, setSel] = useState(today)
   const [draft, setDraft] = useState('')
   const [draftColor, setDraftColor] = useState('')
+  const [draftRepeat, setDraftRepeat] = useState('') // '' | weekly | monthly | daily
   const [paint, setPaint] = useState(null) // null | 색 | 'erase'
   const drag = useRef(null)
   const todos = data.todos || {}
@@ -77,8 +79,10 @@ export default function MonthCalendar({ data, setData, setSnack }) {
   const addTodo = () => {
     const v = draft.trim()
     if (!v) return
-    setTodos(sel, [...(todos[sel] || []), { id: Date.now(), text: v, done: false, ...(draftColor ? { color: draftColor } : null) }])
+    if (draftRepeat) setData(d => addRepeat(d, sel, v, draftRepeat, draftColor))
+    else setTodos(sel, [...(todos[sel] || []), { id: Date.now(), text: v, done: false, ...(draftColor ? { color: draftColor } : null) }])
     setDraft('')
+    setDraftRepeat('')
   }
   // 색 점을 누르면 기본 → 빨강 → 파랑 → 초록 차례로 바뀐다
   const cycleColor = id => setTodos(sel, (todos[sel] || []).map(t => {
@@ -88,11 +92,12 @@ export default function MonthCalendar({ data, setData, setSnack }) {
     const { color, ...rest } = t
     return next ? { ...rest, color: next } : rest
   }))
-  const toggle = id => setTodos(sel, (todos[sel] || []).map(t => (t.id === id ? { ...t, done: !t.done } : t)))
-  const remove = id => {
-    const prev = data.todos || {}
-    setTodos(sel, (todos[sel] || []).filter(t => t.id !== id))
-    setSnack({ text: '할 일을 지웠습니다.', kind: 'todos', prev, ms: 4000 })
+  // from: 그 할 일이 실제로 있는 날(오늘로 넘어온 지난 할 일은 원래 날짜)
+  const toggle = (id, from = sel) => setData(d => toggleTodo(d, from, id))
+  const remove = (id, from = sel, mode = 'one') => {
+    const prev = { todos: data.todos || {}, repeats: data.repeats || [] }
+    setData(d => removeTodo(d, from, id, mode))
+    setSnack({ text: mode === 'rest' ? '이 날부터 반복을 끝냈습니다.' : '할 일을 지웠습니다.', kind: 'todosAll', prev, ms: 4000 })
   }
 
   // ---- 칠하기: 누른 날부터 손을 뗀 날까지 날짜 순서대로 칠한다(터치도 같다) ----
@@ -136,7 +141,9 @@ export default function MonthCalendar({ data, setData, setSnack }) {
   const selEvents = eventsOn(sel)
   const selHoliday = holidayOn(sel)
   const selTerm = solarTermOn(sel)
-  const selTodos = todos[sel] || []
+  const selTodos = todosOn(data, sel)
+  const selLate = sel === today ? carriedTo(data, today) : []
+  const selMarks = dayMarks(data, sel, today)
 
   const cellH = isMobile ? 62 : 104
   const grid = (
@@ -160,13 +167,15 @@ export default function MonthCalendar({ data, setData, setSnack }) {
             const hol = holidayOn(iso)
             const term = solarTermOn(iso)
             const evs = eventsOn(iso)
-            const tds = todos[iso] || []
+            const tds = [...todosOn(data, iso), ...(iso === today ? carriedTo(data, today) : [])]
+            const marks = dayMarks(data, iso, today)
             const isSel = iso === sel
             const isToday = iso === today
             const numColor = out ? LINE : i === 0 || hol ? RED : i === 6 ? SAT : INK
             const items = [
               ...evs.map(e => ({ k: 'e' + e.id, t: e.name, c: TYPE_COLOR[e.type] || SUB })),
-              ...tds.map(t => ({ k: 't' + t.id, t: t.text, c: t.done ? FAINT : todoColor(t.color), done: t.done, todo: true })),
+              ...marks.map(mk => ({ k: 'm' + mk.k + mk.t, t: mk.t, c: mk.k === 'trip' ? '#BA7517' : mk.k === 'ot' ? SAT : FAINT })),
+              ...tds.map(t => ({ k: 't' + (t.from || '') + t.id, t: t.text, c: t.done ? FAINT : todoColor(t.color), done: t.done, todo: true, mark: t.from ? '↩ ' : t.repeat ? '↻ ' : '· ' })),
             ]
             const max = isMobile ? 0 : 3
             return (
@@ -213,7 +222,7 @@ export default function MonthCalendar({ data, setData, setSnack }) {
                   <div style={{ marginTop: 3, display: 'flex', flexDirection: 'column', gap: 1 }}>
                     {items.slice(0, max).map(it => (
                       <div key={it.k} title={it.t} style={{ fontSize: 11.5, lineHeight: 1.35, color: it.c, textDecoration: it.done ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {it.todo ? (it.done ? '✓ ' : '· ') : ''}{it.t}
+                        {it.todo ? (it.done ? '✓ ' : it.mark) : ''}{it.t}
                       </div>
                     ))}
                     {items.length > max && <div style={{ fontSize: 11, color: FAINT }}>+{items.length - max}</div>}
@@ -258,14 +267,25 @@ export default function MonthCalendar({ data, setData, setSnack }) {
           ))}
         </div>
       )}
+      {selMarks.length > 0 && (
+        <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: '2px 12px', fontSize: 13, fontWeight: 600 }}>
+          {selMarks.map(mk => <span key={mk.k + mk.t} style={{ color: mk.k === 'trip' ? '#BA7517' : mk.k === 'ot' ? SAT : SUB }}>{mk.t}</span>)}
+        </div>
+      )}
       <div style={{ marginTop: 14, fontSize: 12.5, fontWeight: 700, color: SUB }}>할 일</div>
       <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column' }}>
-        {selTodos.length === 0 && <div style={{ fontSize: 13, color: FAINT, padding: '4px 0' }}>아직 없습니다.</div>}
-        {selTodos.map(t => (
-          <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid ' + LINE_SOFT }}>
-            <input type="checkbox" checked={t.done} onChange={() => toggle(t.id)} aria-label={t.text + (t.done ? ' 완료 취소' : ' 완료')} style={{ accentColor: GREEN, width: 16, height: 16, margin: 0, flex: 'none' }} />
-            <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: t.color ? 600 : 400, color: t.done ? FAINT : todoColor(t.color), textDecoration: t.done ? 'line-through' : 'none', wordBreak: 'break-all' }}>{t.text}</span>
-            <button
+        {selTodos.length === 0 && selLate.length === 0 && <div style={{ fontSize: 13, color: FAINT, padding: '4px 0' }}>아직 없습니다.</div>}
+        {[...selTodos.map(t => ({ t, from: sel })), ...selLate.map(t => ({ t, from: t.from }))].map(({ t, from }) => (
+          <div key={from + t.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid ' + LINE_SOFT }}>
+            <input type="checkbox" checked={t.done} onChange={() => toggle(t.id, from)} aria-label={t.text + (t.done ? ' 완료 취소' : ' 완료')} style={{ accentColor: GREEN, width: 16, height: 16, margin: 0, flex: 'none' }} />
+            <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: t.color ? 600 : 400, color: t.done ? FAINT : todoColor(t.color), textDecoration: t.done ? 'line-through' : 'none', wordBreak: 'break-all' }}>
+              {t.text}
+              {t.repeat && <span style={{ marginLeft: 6, fontSize: 11.5, fontWeight: 500, color: FAINT, textDecoration: 'none', display: 'inline-block' }}>↻ {t.label}</span>}
+              {from !== sel && <span style={{ marginLeft: 6, fontSize: 11.5, fontWeight: 500, color: WARN, textDecoration: 'none', display: 'inline-block' }}>↩ {from.slice(5).replace('-', '.')}에 못 끝낸 일</span>}
+            </span>
+            {from !== sel && <button type="button" onClick={() => setData(d => moveTodo(d, from, t.id, sel))} title="오늘 할 일로 옮기기" style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', color: SUB, fontSize: 11.5, padding: '2px 6px', cursor: 'pointer', flex: 'none' }}>오늘로</button>}
+            {t.repeat && <button type="button" onClick={() => remove(t.id, from, 'rest')} title="이 날부터 반복을 끝냅니다(앞선 날의 기록은 남습니다)" style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', color: SUB, fontSize: 11.5, padding: '2px 6px', cursor: 'pointer', flex: 'none' }}>반복 끝</button>}
+            {!isRepeatId(t.id) && from === sel && <button
               type="button"
               onClick={() => cycleColor(t.id)}
               aria-label={t.text + ' 글씨 색 바꾸기 (지금 ' + (TODO_COLORS.find(x => x.k === (t.color || '')) || TODO_COLORS[0]).n + ')'}
@@ -273,8 +293,8 @@ export default function MonthCalendar({ data, setData, setSnack }) {
               style={{ width: 22, height: 22, border: 'none', background: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}
             >
               <span style={{ width: 12, height: 12, borderRadius: '50%', background: todoColor(t.color), boxShadow: '0 0 0 2px #FFFFFF, 0 0 0 3px ' + LINE }} />
-            </button>
-            <button type="button" onClick={() => remove(t.id)} aria-label={t.text + ' 지우기'} style={{ border: 'none', background: 'none', padding: '0 4px', cursor: 'pointer', color: FAINT, fontSize: 16, lineHeight: 1 }}>×</button>
+            </button>}
+            <button type="button" onClick={() => remove(t.id, from)} title={t.repeat ? '이 날만 지우기' : '지우기'} aria-label={t.text + ' 지우기'} style={{ border: 'none', background: 'none', padding: '0 4px', cursor: 'pointer', color: FAINT, fontSize: 16, lineHeight: 1 }}>×</button>
           </div>
         ))}
       </div>
@@ -297,6 +317,17 @@ export default function MonthCalendar({ data, setData, setSnack }) {
             >
               {x.n}
             </button>
+          )
+        })}
+      </div>
+      <div role="radiogroup" aria-label="반복" style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 12, color: FAINT, marginRight: 2 }}>반복</span>
+        {[['', '안 함'], ...REPEAT_KINDS].map(([k, n]) => {
+          const on = draftRepeat === k
+          const label = k === 'weekly' ? '매주 ' + DAYS[selD.getDay()] : k === 'monthly' ? '매달 ' + selD.getDate() + '일' : n
+          return (
+            <button key={k} type="button" role="radio" aria-checked={on} onClick={() => setDraftRepeat(k)}
+              style={{ border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 999, padding: '3px 10px', cursor: 'pointer', background: on ? '#E9F6FE' : 'transparent', color: on ? GREEN : SUB, fontSize: 12, fontWeight: on ? 700 : 500 }}>{label}</button>
           )
         })}
       </div>

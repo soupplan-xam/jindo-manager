@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, RED, DAYS, fromISO, toISO, addDays, colorOf } from '../logic.js'
 import { holidayOn, solarTermOn } from '../kcal.js'
 import { bellsFor } from '../today.js'
+import { todosOn, carriedTo, toggleTodo, removeTodo, makeRepeat, moveTodo as moveTodoIn, addTodo, dayMarks } from '../todos.js'
 import { TYPE_COLOR } from './ScheduleCalendar.jsx'
 import { TODO_COLORS, OFF_BG, offReasonOf } from './MonthCalendar.jsx'
 
@@ -276,57 +277,32 @@ export function MiniMonth({ glass = false, inv = false, data, setData, today }) 
   const eventsOn = iso => (data.events || []).filter(e => e.start <= iso && iso <= e.end && !e.period && !e.cls)
   // 쉬는 날 자동 색 — 달력 탭과 같은 규칙·설정(쉬는 날 자동 색 끄기 포함)
   const autoOff = data.cfg.autoOff !== false
-  const setTodos = (iso, list) => setData(d => {
-    const tt = { ...(d.todos || {}) }
-    if (list.length) tt[iso] = list
-    else delete tt[iso]
-    return { ...d, todos: tt }
-  })
-  // 지우기(우클릭 메뉴의 [삭제]) — 잠깐 [되돌리기]를 띄운다
-  const remove = (iso, id) => {
-    const list = todos[iso] || []
-    const index = list.findIndex(x => x.id === id)
-    if (index < 0) return
-    setTodos(iso, list.filter(x => x.id !== id))
-    setRemoved({ iso, item: list[index], index })
+  // 지우기(우클릭 메뉴) — 잠깐 [되돌리기]를 띄운다. 반복 할 일은 그 날만(one) 또는 그 날부터 끝내기(rest)
+  const remove = (iso, id, text, mode = 'one') => {
+    setRemoved({ text, prev: { todos: data.todos || {}, repeats: data.repeats || [] } })
+    setData(d => removeTodo(d, iso, id, mode))
     clearTimeout(undoTimer.current)
     undoTimer.current = setTimeout(() => setRemoved(null), 6000)
   }
   const undoRemove = () => {
     if (!removed) return
-    setData(d => {
-      const list = [...((d.todos || {})[removed.iso] || [])]
-      list.splice(Math.min(removed.index, list.length), 0, removed.item)
-      return { ...d, todos: { ...(d.todos || {}), [removed.iso]: list } }
-    })
+    setData(d => ({ ...d, todos: removed.prev.todos, repeats: removed.prev.repeats }))
     setRemoved(null)
   }
-  // 끌어서 다른 날로 옮기기
-  const moveTodo = (from, id, to) => {
-    if (!from || from === to) return
-    setData(d => {
-      const tt = { ...(d.todos || {}) }
-      const item = (tt[from] || []).find(x => x.id === id)
-      if (!item) return d
-      const rest = (tt[from] || []).filter(x => x.id !== id)
-      if (rest.length) tt[from] = rest
-      else delete tt[from]
-      tt[to] = [...(tt[to] || []), item]
-      return { ...d, todos: tt }
-    })
-  }
-  const openCtx = (ev, iso, id) => {
+  // 끌어서 다른 날로 옮기기(반복 할 일은 옮기지 않는다)
+  const moveTodo = (from, id, to) => setData(d => moveTodoIn(d, from, id, to))
+  const openCtx = (ev, iso, id, late) => {
     ev.preventDefault()
     ev.stopPropagation()
     const r = boxRef.current.getBoundingClientRect()
-    setCtx({ iso, id, x: Math.min(ev.clientX - r.left, r.width - 130), y: Math.min(ev.clientY - r.top, r.height - 80) })
+    setCtx({ iso, id, late: !!late, x: Math.min(ev.clientX - r.left, r.width - 170), y: Math.min(ev.clientY - r.top, r.height - 150) })
   }
   useCtxClose(ctx, setCtx)
-  const toggle = (iso, id) => setTodos(iso, (todos[iso] || []).map(x => (x.id === id ? { ...x, done: !x.done } : x)))
+  const toggle = (iso, id) => setData(d => toggleTodo(d, iso, id))
   const commitCell = () => {
     if (!cellEdit) return
     const v = cellEdit.text.trim()
-    if (v) setTodos(cellEdit.iso, [...(todos[cellEdit.iso] || []), { id: Date.now(), text: v, done: false }])
+    if (v) setData(d => addTodo(d, cellEdit.iso, v))
     setCellEdit(null)
   }
 
@@ -351,7 +327,10 @@ export function MiniMonth({ glass = false, inv = false, data, setData, today }) 
             const hol = holidayOn(iso)
             const term = solarTermOn(iso)
             const evs = eventsOn(iso)
-            const tds = todos[iso] || []
+            const tds = todosOn(data, iso)
+            // 끝내지 못한 지난 할 일은 오늘 칸에 함께 보인다(원래 날짜에도 그대로 남는다)
+            const late = iso === today ? carriedTo(data, today) : []
+            const marks = dayMarks(data, iso, today)
             // 칠한 색(흰색은 '칠 지움') > 쉬는 날 자동 색 > 바탕 — 달력 탭과 같다.
             // 어두운 바탕에서 쉬는 날은 차분하게, 직접 칠한 날은 밝은 같은 계열 색으로 눈에 띄게
             const painted = colors[iso] && colors[iso].toUpperCase() !== '#FFFFFF' ? colors[iso] : null
@@ -372,15 +351,18 @@ export function MiniMonth({ glass = false, inv = false, data, setData, today }) 
                 {evs.map(e => (
                   <div key={e.id} style={{ fontSize: 10.5, lineHeight: 1.3, fontWeight: glass ? 700 : 400, color: inkOf(TYPE_COLOR[e.type] || SUB, inv), wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>{e.name}</div>
                 ))}
-                {tds.map(x => (
-                  <div key={x.id} data-hit="" className={x.done ? 'wg-faint' : ''} draggable
-                    onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', x.text); setDrag({ iso, id: x.id }); setCtx(null) }}
+                {marks.map(mk => (
+                  <div key={mk.k + mk.t} className={mk.k === 'plan' ? 'wg-faint' : ''} style={{ fontSize: 10.5, lineHeight: 1.3, fontWeight: 600, color: mk.k === 'trip' ? inkOf('#BA7517', inv) : mk.k === 'ot' ? inkOf(SAT, inv) : FAINT, wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>{mk.t}</div>
+                ))}
+                {[...tds.map(x => ({ x, from: iso, late: false })), ...late.map(x => ({ x, from: x.from, late: true }))].map(({ x, from, late: isLate }) => (
+                  <div key={(isLate ? 'late' : '') + x.id} data-hit="" className={x.done ? 'wg-faint' : ''} draggable={!x.repeat}
+                    onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', x.text); setDrag({ iso: from, id: x.id }); setCtx(null) }}
                     onDragEnd={() => { setDrag(null); setOver(null) }}
-                    onClick={ev => { ev.stopPropagation(); toggle(iso, x.id) }} onDoubleClick={ev => ev.stopPropagation()} onContextMenu={ev => openCtx(ev, iso, x.id)}
-                    title={(x.done ? '눌러서 완료 취소' : '눌러서 완료') + ' · 끌어서 다른 날로 옮기기 · 우클릭하면 메뉴'}
-                    style={{ display: 'flex', gap: 3, alignItems: 'flex-start', fontSize: 11.5, lineHeight: 1.35, color: x.done ? FAINT : inkOf(todoColor(x.color), inv), fontWeight: x.color && !x.done ? 700 : 500, cursor: 'grab', opacity: drag && drag.id === x.id ? 0.4 : 1, outline: ctx && ctx.id === x.id ? '1px dashed ' + GREEN : 'none', borderRadius: 3 }}>
-                    <span style={{ flex: 'none', width: 9, textAlign: 'center' }}>{x.done ? '✓' : '•'}</span>
-                    <span style={{ flex: 1, minWidth: 0, textDecoration: x.done ? 'line-through' : 'none', wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>{x.text}</span>
+                    onClick={ev => { ev.stopPropagation(); toggle(from, x.id) }} onDoubleClick={ev => ev.stopPropagation()} onContextMenu={ev => openCtx(ev, from, x.id, isLate)}
+                    title={(x.done ? '눌러서 완료 취소' : '눌러서 완료') + (x.repeat ? ' · ' + x.label : ' · 끌어서 다른 날로 옮기기') + (isLate ? ' · ' + from.slice(5).replace('-', '.') + '에 못 끝낸 일' : '') + ' · 우클릭하면 메뉴'}
+                    style={{ display: 'flex', gap: 3, alignItems: 'flex-start', fontSize: 11.5, lineHeight: 1.35, color: x.done ? FAINT : inkOf(todoColor(x.color), inv), fontWeight: x.color && !x.done ? 700 : 500, cursor: x.repeat ? 'pointer' : 'grab', opacity: drag && drag.id === x.id ? 0.4 : 1, outline: ctx && ctx.id === x.id ? '1px dashed ' + GREEN : 'none', borderRadius: 3 }}>
+                    <span style={{ flex: 'none', width: 9, textAlign: 'center' }}>{x.done ? '✓' : isLate ? '↩' : x.repeat ? '↻' : '•'}</span>
+                    <span style={{ flex: 1, minWidth: 0, textDecoration: x.done ? 'line-through' : 'none', wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>{x.text}{isLate && <span className="wg-faint" style={{ fontSize: 9.5, fontWeight: 500, color: FAINT, marginLeft: 3 }}>{from.slice(5).replace('-', '.')}</span>}</span>
                   </div>
                 ))}
                 {cellEdit && cellEdit.iso === iso && (
@@ -407,14 +389,22 @@ export function MiniMonth({ glass = false, inv = false, data, setData, today }) 
         </div>
       </div>
       {ctx && (() => {
-        const item = (todos[ctx.iso] || []).find(x => x.id === ctx.id)
+        const item = todosOn(data, ctx.iso).find(x => x.id === ctx.id)
         if (!item) return null
-        return <CtxMenu x={ctx.x} y={ctx.y} items={[
-          [item.done ? '완료 취소' : '완료', () => { toggle(ctx.iso, ctx.id); setCtx(null) }],
-          ['삭제', () => { remove(ctx.iso, ctx.id); setCtx(null) }, true],
-        ]} />
+        const close = fn => () => { fn(); setCtx(null) }
+        const items = [[item.done ? '완료 취소' : '완료', close(() => toggle(ctx.iso, ctx.id))]]
+        if (item.repeat) {
+          items.push(['이 날만 지우기', close(() => remove(ctx.iso, ctx.id, item.text, 'one')), true])
+          items.push(['이 날부터 반복 끝내기', close(() => remove(ctx.iso, ctx.id, item.text + ' (' + item.label + ')', 'rest')), true])
+        } else {
+          if (ctx.late) items.push(['오늘로 옮기기', close(() => moveTodo(ctx.iso, ctx.id, today))])
+          items.push(['매주 반복', close(() => setData(d => makeRepeat(d, ctx.iso, ctx.id, 'weekly')))])
+          items.push(['매달 반복', close(() => setData(d => makeRepeat(d, ctx.iso, ctx.id, 'monthly')))])
+          items.push(['삭제', close(() => remove(ctx.iso, ctx.id, item.text)), true])
+        }
+        return <CtxMenu x={ctx.x} y={ctx.y} items={items} />
       })()}
-      {removed && <UndoToast text={'「' + removed.item.text + '」 지웠어요'} onUndo={undoRemove} />}
+      {removed && <UndoToast text={'「' + removed.text + '」 지웠어요'} onUndo={undoRemove} />}
     </div>
   )
 }

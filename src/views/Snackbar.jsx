@@ -16,6 +16,8 @@ export default function Snackbar({ snack, setSnack, data, setData }) {
       setData(d => ({ ...d, pattern: sn.prev, classes: sn.prevClasses || d.classes }))
     } else if (sn.kind === 'extras') {
       setData(d => ({ ...d, extras: sn.prev, extraKind: sn.prevKind || d.extraKind, classes: sn.prevClasses || d.classes }))
+    } else if (sn.kind === 'todosAll') {
+      setData(d => ({ ...d, todos: sn.prev.todos, repeats: sn.prev.repeats }))
     } else if (sn.kind === 'todos') {
       setData(d => ({ ...d, todos: sn.prev }))
     } else if (sn.kind === 'dayColors') {
