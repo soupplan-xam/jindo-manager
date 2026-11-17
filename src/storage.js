@@ -28,7 +28,8 @@ export const defaultData = () => ({
   weatherLoc: null, // {name, lat, lon} 날씨 위치 — 없으면 학교의 시·도
   ddays: [], // 직접 넣은 D-day [{id, name, date}]
   repeats: [], // 반복 할 일 [{id, text, kind: weekly|monthly|daily, dow?, dom?, start, end?, done:{iso}, skip:{iso}}] — todos.js
-  perf: {}, // 수행평가 기록 {'iso|p': {title, absent: [{no, done}]}} — 결시자는 번호만
+  perf: {}, // (예전) 날짜별 수행평가 기록 — 불러올 때 perfs 로 옮긴다
+  perfs: [], // 수행평가 [{id, title, absent: {'반': [{no, done}]}}] — 평가 이름별로 반마다 결시 번호만(이름은 저장하지 않음)
   bellSets: [], // 단축 시각표 [{id, name, bells}] (예: 수업 40분)
   bellByDate: {}, // {'iso': 시각표 id | 'normal'} 그 날 쓸 시각표
   todos: {}, // {'iso': [{id, text, done}]} 달력의 날짜별 할 일
@@ -78,17 +79,38 @@ function normalize(d) {
   out.ddays = Array.isArray(d.ddays) ? d.ddays : []
   out.repeats = Array.isArray(d.repeats) ? d.repeats.filter(r => r && r.id && r.text && r.start) : []
   out.perf = d.perf && typeof d.perf === 'object' ? d.perf : {}
+  out.perfs = Array.isArray(d.perfs) ? d.perfs.filter(x => x && x.id) : []
   out.bellSets = Array.isArray(d.bellSets) ? d.bellSets.filter(x => x && x.id && Array.isArray(x.bells)) : []
   out.bellByDate = d.bellByDate && typeof d.bellByDate === 'object' ? d.bellByDate : {}
   out.travelCfg = d.travelCfg && typeof d.travelCfg === 'object' ? d.travelCfg : {}
   const ot = d.overtime || {}
   out.overtime = { plans: Array.isArray(ot.plans) ? ot.plans : [], logs: ot.logs && typeof ot.logs === 'object' ? ot.logs : {}, workDays: ot.workDays && typeof ot.workDays === 'object' ? ot.workDays : {}, cfg: { ...DEFAULT_OT, ...(ot.cfg || {}) } }
   out.homeroom.docs = { ...DEFAULT_DOCS, ...((d.homeroom || {}).docs || {}) }
-  return migrateContents(migrateMemos(out))
+  return migratePerf(migrateContents(migrateMemos(out)))
 }
 
 // 예전 방식 보강(반으로 넣고 extraKind=makeup)을 장소 보강으로 옮긴다.
 // 보강 때문에만 생긴 반은 반 목록과 반 색에서 뺀다.
+// 예전 날짜별 수행평가 기록(perf['날짜|교시'])을 평가 이름별(perfs)로 옮긴다 — 같은 이름은 하나로, 반은 그 칸의 반
+function migratePerf(d) {
+  const keys = Object.keys(d.perf || {})
+  if (!keys.length) return d
+  let sessions = {}
+  try { if (d.semStart && d.semEnd) sessions = compute(d).sessions } catch { /* 반을 못 찾으면 '기타'로 */ }
+  const perfs = [...(d.perfs || [])]
+  keys.sort().forEach((k, i) => {
+    const r = d.perf[k] || {}
+    const title = (r.title || '').trim() || '수행평가'
+    const cls = (sessions[k] && sessions[k].cls) || '기타'
+    let item = perfs.find(x => x.title === title)
+    if (!item) { item = { id: 'p' + Date.now().toString(36) + i, title, absent: {} }; perfs.push(item) }
+    const cur = item.absent[cls] || []
+    for (const a of r.absent || []) if (!cur.some(x => x.no === a.no)) cur.push({ no: a.no, done: !!a.done })
+    if (cur.length) item.absent[cls] = cur.sort((a, b) => a.no - b.no)
+  })
+  return { ...d, perf: {}, perfs }
+}
+
 function migrateMakeups(d) {
   const old = Object.keys(d.extraKind).filter(k => d.extraKind[k] === 'makeup')
   if (!old.length) return

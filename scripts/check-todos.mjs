@@ -82,3 +82,16 @@ console.log('PASS: repeating todos (weekly/monthly/daily, done per day, skip, en
   assert.equal(todosOn(x, '2026-11-20')[0].text, '주간 계획 제출')
   console.log('PASS: edit todo text (own / repeat / blank ignored)')
 }
+
+// 예전 날짜별 수행평가 기록 → 평가 이름별(perfs). 같은 이름은 하나로, 반은 그 칸의 반
+{
+  const x = coerceData({ semStart: '2026-11-02', semEnd: '2026-11-30', classes: ['1-3', '1-8'], pattern: { '1-1': '1-3', '2-2': '1-8' },
+    cancels: { '2026-11-09|1': { kind: 'perf' }, '2026-11-10|2': { kind: 'perf' } },
+    perf: { '2026-11-09|1': { title: '서술형 1회', absent: [{ no: 15, done: false }, { no: 3, done: true }] }, '2026-11-10|2': { title: '서술형 1회', absent: [{ no: 7, done: false }] } } })
+  assert.deepEqual(x.perf, {})
+  assert.equal(x.perfs.length, 1)
+  assert.equal(x.perfs[0].title, '서술형 1회')
+  assert.deepEqual(x.perfs[0].absent, { '1-3': [{ no: 3, done: true }, { no: 15, done: false }], '1-8': [{ no: 7, done: false }] })
+  assert.equal(coerceData(x).perfs.length, 1) // 다시 불러와도 그대로
+  console.log('PASS: old per-date perf records migrate to per-assessment list')
+}
