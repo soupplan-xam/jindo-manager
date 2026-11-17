@@ -1,7 +1,7 @@
 {
   "name": "jindo-desktop",
   "productName": "진도계획표 위젯",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "진도계획표 바탕화면 위젯 (윈도우)",
   "main": "main.js",
   "private": true,

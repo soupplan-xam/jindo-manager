@@ -21,7 +21,8 @@ export const DEFAULT_TEMPLATE = `안녕하세요~ {학교} {반} 담임교사 {�
 
 감사합니다.`
 
-export const defaultHomeroom = () => ({ school: '', cls: '', teacher: '', template: DEFAULT_TEMPLATE, docs: { ...DEFAULT_DOCS } })
+// formUrl: 학부모의견서 양식 링크(구글 드라이브 공유 링크 등). 양식 파일 자체는 그 기기 브라우저에만 둔다(formFile.js)
+export const defaultHomeroom = () => ({ school: '', cls: '', teacher: '', template: DEFAULT_TEMPLATE, docs: { ...DEFAULT_DOCS }, formUrl: '' })
 
 // 11월 5일 / 11월 5일~7일 / 11월 30일~12월 2일
 export function dateText(start, end) {
@@ -36,11 +37,13 @@ export function dateText(start, end) {
 // 사유에 맞춰 처음 켜 둘 서류 안내
 export const docsFor = reason => ({ 질병: reason === '질병', 인정: reason === '인정' })
 
-// form: { start, end, name, reason, kind, docs: { 질병: bool, 인정: bool } }
+// form: { start, end, name, reason, kind, docs: { 질병: bool, 인정: bool }, link?: bool }
+// 출석인정 서류 안내를 켰고 양식 링크가 있으면(form.link 가 false 가 아니면) 안내 아래에 링크를 붙인다
 export function buildMessage(hr, form) {
   const docs = { ...DEFAULT_DOCS, ...(hr.docs || {}) }
   const lines = ['질병', '인정'].filter(k => form.docs && form.docs[k]).map(k => docs[k]).filter(Boolean)
-  const docText = lines.length ? lines.join(', ') + ' 하시면 됩니다.' : ''
+  const url = form.docs && form.docs.인정 && form.link !== false ? (hr.formUrl || '').trim() : ''
+  const docText = (lines.length ? lines.join(', ') + ' 하시면 됩니다.' : '') + (url ? '\n학부모의견서 양식: ' + url : '')
   const fill = {
     학교: hr.school || '', 반: hr.cls || '', 담임: hr.teacher || '',
     날짜: dateText(form.start, form.end), 이름: form.name || '', 사유: form.reason || '', 출결: form.kind || '',

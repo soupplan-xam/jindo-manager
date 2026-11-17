@@ -25,4 +25,10 @@ assert.ok(none.includes('홍길동 학생 기타 지각 관련'))
 
 assert.equal(dateText('2026-11-05', '2026-11-07'), '11월 5일~7일')
 assert.equal(dateText('2026-11-30', '2026-12-02'), '11월 30일~12월 2일')
+// 학부모의견서 양식 링크 — 출석인정 서류 안내를 켰을 때만, 끌 수 있다
+const hrL = { school: 'A고', cls: '1학년 1반', teacher: '김', formUrl: 'https://example.com/form' }
+const fL = { start: '2026-11-05', end: '2026-11-05', name: '홍길동', reason: '인정', kind: '결석', docs: { 질병: false, 인정: true } }
+assert.ok(buildMessage(hrL, fL).includes('하시면 됩니다.\n학부모의견서 양식: https://example.com/form'))
+assert.ok(!buildMessage(hrL, { ...fL, link: false }).includes('example.com'))
+assert.ok(!buildMessage(hrL, { ...fL, docs: { 질병: true, 인정: false } }).includes('example.com'))
 console.log('PASS: homeroom message template, document lines, blank paragraph cleanup, date ranges')
