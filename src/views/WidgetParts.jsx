@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, RED, DAYS, fromISO, toISO, addDays, colorOf } from '../logic.js'
 import { holidayOn, solarTermOn } from '../kcal.js'
 import { bellsFor } from '../today.js'
-import { todosOn, carriedTo, toggleTodo, removeTodo, makeRepeat, moveTodo as moveTodoIn, addTodo, dayMarks } from '../todos.js'
+import { todosOn, carriedTo, toggleTodo, removeTodo, makeRepeat, moveTodo as moveTodoIn, addTodo, editTodo, dayMarks } from '../todos.js'
 import { TYPE_COLOR } from './ScheduleCalendar.jsx'
 import { TODO_COLORS, OFF_BG, offReasonOf } from './MonthCalendar.jsx'
 
@@ -302,6 +302,16 @@ export function MiniMonth({ glass = false, inv = false, data, setData, today }) 
   }
   useCtxClose(ctx, setCtx)
   const toggle = (iso, id) => setData(d => toggleTodo(d, iso, id))
+  // 한 번 누르면 완료, 두 번 누르면 글 고치기 — 두 번 누를 때 완료가 깜빡이지 않게 잠깐 기다렸다 완료한다
+  const [itemEdit, setItemEdit] = useState(null) // { from, id, text }
+  const clickTimer = useRef(null)
+  const clickItem = (from, id) => { clearTimeout(clickTimer.current); clickTimer.current = setTimeout(() => toggle(from, id), 230) }
+  const startEdit = (from, x) => { clearTimeout(clickTimer.current); setCtx(null); setItemEdit({ from, id: x.id, text: x.text }) }
+  const commitItem = () => {
+    if (!itemEdit) return
+    setData(d => editTodo(d, itemEdit.from, itemEdit.id, itemEdit.text))
+    setItemEdit(null)
+  }
   const commitCell = () => {
     if (!cellEdit) return
     const v = cellEdit.text.trim()
@@ -358,11 +368,22 @@ export function MiniMonth({ glass = false, inv = false, data, setData, today }) 
                   <div key={mk.k + mk.t} className={mk.k === 'plan' ? 'wg-faint' : ''} style={{ fontSize: 10.5, lineHeight: 1.3, fontWeight: 600, color: mk.k === 'trip' ? inkOf('#BA7517', inv) : mk.k === 'ot' ? inkOf(SAT, inv) : FAINT, wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>{mk.t}</div>
                 ))}
                 {[...tds.map(x => ({ x, from: iso, late: false })), ...late.map(x => ({ x, from: x.from, late: true }))].map(({ x, from, late: isLate }) => (
+                  itemEdit && itemEdit.id === x.id && itemEdit.from === from ? (
+                    <input key={'edit' + x.id} autoFocus aria-label="할 일 고치기" value={itemEdit.text} className="wg-input"
+                      onChange={e => setItemEdit({ ...itemEdit, text: e.target.value })}
+                      onClick={e => e.stopPropagation()} onDoubleClick={e => e.stopPropagation()}
+                      onFocus={e => e.target.select()}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); commitItem() }
+                        if (e.key === 'Escape') setItemEdit(null)
+                      }}
+                      onBlur={commitItem} />
+                  ) :
                   <div key={(isLate ? 'late' : '') + x.id} data-hit="" className={x.done ? 'wg-faint' : ''} draggable={!x.repeat}
                     onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', x.text); setDrag({ iso: from, id: x.id }); setCtx(null) }}
                     onDragEnd={() => { setDrag(null); setOver(null) }}
-                    onClick={ev => { ev.stopPropagation(); toggle(from, x.id) }} onDoubleClick={ev => ev.stopPropagation()} onContextMenu={ev => openCtx(ev, from, x.id, isLate)}
-                    title={(x.done ? '눌러서 완료 취소' : '눌러서 완료') + (x.repeat ? ' · ' + x.label : ' · 끌어서 다른 날로 옮기기') + (isLate ? ' · ' + from.slice(5).replace('-', '.') + '에 못 끝낸 일' : '') + ' · 우클릭하면 메뉴'}
+                    onClick={ev => { ev.stopPropagation(); clickItem(from, x.id) }} onDoubleClick={ev => { ev.stopPropagation(); startEdit(from, x) }} onContextMenu={ev => openCtx(ev, from, x.id, isLate)}
+                    title={(x.done ? '눌러서 완료 취소' : '눌러서 완료') + ' · 더블클릭해 고치기' + (x.repeat ? ' · ' + x.label : ' · 끌어서 다른 날로 옮기기') + (isLate ? ' · ' + from.slice(5).replace('-', '.') + '에 못 끝낸 일' : '') + ' · 우클릭하면 메뉴'}
                     style={{ display: 'flex', gap: 3, alignItems: 'flex-start', fontSize: 11.5, lineHeight: 1.35, color: x.done ? FAINT : inkOf(todoColor(x.color), inv), fontWeight: x.color && !x.done ? 700 : 500, cursor: x.repeat ? 'pointer' : 'grab', opacity: drag && drag.id === x.id ? 0.4 : 1, outline: ctx && ctx.id === x.id ? '1px dashed ' + GREEN : 'none', borderRadius: 3 }}>
                     <span style={{ flex: 'none', width: 9, textAlign: 'center' }}>{x.done ? '✓' : isLate ? '↩' : x.repeat ? '↻' : '•'}</span>
                     <span style={{ flex: 1, minWidth: 0, textDecoration: x.done ? 'line-through' : 'none', wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>{x.text}{isLate && <span className="wg-faint" style={{ fontSize: 9.5, fontWeight: 500, color: FAINT, marginLeft: 3 }}>{from.slice(5).replace('-', '.')}</span>}</span>
@@ -395,7 +416,7 @@ export function MiniMonth({ glass = false, inv = false, data, setData, today }) 
         const item = todosOn(data, ctx.iso).find(x => x.id === ctx.id)
         if (!item) return null
         const close = fn => () => { fn(); setCtx(null) }
-        const items = [[item.done ? '완료 취소' : '완료', close(() => toggle(ctx.iso, ctx.id))]]
+        const items = [[item.done ? '완료 취소' : '완료', close(() => toggle(ctx.iso, ctx.id))], ['고치기', () => startEdit(ctx.iso, item)]]
         if (item.repeat) {
           items.push(['이 날만 지우기', close(() => remove(ctx.iso, ctx.id, item.text, 'one')), true])
           items.push(['이 날부터 반복 끝내기', close(() => remove(ctx.iso, ctx.id, item.text + ' (' + item.label + ')', 'rest')), true])

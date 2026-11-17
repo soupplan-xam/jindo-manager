@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react'
 import { BellDayPicker } from './TodaySettings.jsx'
-import { todosOn, carriedTo, toggleTodo, removeTodo, addRepeat, moveTodo, isRepeatId, dayMarks, REPEAT_KINDS } from '../todos.js'
+import { todosOn, carriedTo, toggleTodo, removeTodo, addRepeat, moveTodo, editTodo, isRepeatId, dayMarks, REPEAT_KINDS } from '../todos.js'
 import { GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, RED, WARN, SECTION_TITLE, fromISO, toISO, DAYS } from '../logic.js'
 import { holidayOn, solarTermOn } from '../kcal.js'
 import { TYPE_COLOR } from './ScheduleCalendar.jsx'
@@ -42,6 +42,8 @@ export default function MonthCalendar({ data, setData, setSnack }) {
   const [sel, setSel] = useState(today)
   const [draft, setDraft] = useState('')
   const [draftColor, setDraftColor] = useState('')
+  const [itemEdit, setItemEdit] = useState(null) // 더블클릭해 고치는 할 일 { from, id, text }
+  const commitItem = () => { if (itemEdit) { setData(d => editTodo(d, itemEdit.from, itemEdit.id, itemEdit.text)); setItemEdit(null) } }
   const [draftRepeat, setDraftRepeat] = useState('') // '' | weekly | monthly | daily
   const [paint, setPaint] = useState(null) // null | 색 | 'erase'
   const drag = useRef(null)
@@ -279,11 +281,17 @@ export default function MonthCalendar({ data, setData, setSnack }) {
         {[...selTodos.map(t => ({ t, from: sel })), ...selLate.map(t => ({ t, from: t.from }))].map(({ t, from }) => (
           <div key={from + t.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid ' + LINE_SOFT }}>
             <input type="checkbox" checked={t.done} onChange={() => toggle(t.id, from)} aria-label={t.text + (t.done ? ' 완료 취소' : ' 완료')} style={{ accentColor: GREEN, width: 16, height: 16, margin: 0, flex: 'none' }} />
-            <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: t.color ? 600 : 400, color: t.done ? FAINT : todoColor(t.color), textDecoration: t.done ? 'line-through' : 'none', wordBreak: 'break-all' }}>
+            {itemEdit && itemEdit.id === t.id && itemEdit.from === from ? (
+              <input autoFocus aria-label="할 일 고치기" value={itemEdit.text} onChange={e => setItemEdit({ ...itemEdit, text: e.target.value })} onFocus={e => e.target.select()}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); commitItem() } if (e.key === 'Escape') setItemEdit(null) }}
+                onBlur={commitItem} style={{ flex: 1, minWidth: 0, border: '1px solid ' + GREEN, borderRadius: 6, background: '#FFFFFF', fontSize: 14, padding: '3px 6px' }} />
+            ) : (
+            <span onDoubleClick={() => setItemEdit({ from, id: t.id, text: t.text })} title="더블클릭해 고치기" style={{ cursor: 'text', flex: 1, minWidth: 0, fontSize: 14, fontWeight: t.color ? 600 : 400, color: t.done ? FAINT : todoColor(t.color), textDecoration: t.done ? 'line-through' : 'none', wordBreak: 'break-all' }}>
               {t.text}
               {t.repeat && <span style={{ marginLeft: 6, fontSize: 11.5, fontWeight: 500, color: FAINT, textDecoration: 'none', display: 'inline-block' }}>↻ {t.label}</span>}
               {from !== sel && <span style={{ marginLeft: 6, fontSize: 11.5, fontWeight: 500, color: WARN, textDecoration: 'none', display: 'inline-block' }}>↩ {from.slice(5).replace('-', '.')}에 못 끝낸 일</span>}
             </span>
+            )}
             {from !== sel && <button type="button" onClick={() => setData(d => moveTodo(d, from, t.id, sel))} title="오늘 할 일로 옮기기" style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', color: SUB, fontSize: 11.5, padding: '2px 6px', cursor: 'pointer', flex: 'none' }}>오늘로</button>}
             {t.repeat && <button type="button" onClick={() => remove(t.id, from, 'rest')} title="이 날부터 반복을 끝냅니다(앞선 날의 기록은 남습니다)" style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', color: SUB, fontSize: 11.5, padding: '2px 6px', cursor: 'pointer', flex: 'none' }}>반복 끝</button>}
             {!isRepeatId(t.id) && from === sel && <button

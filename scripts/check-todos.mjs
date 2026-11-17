@@ -69,3 +69,16 @@ assert.equal(s.title, '오늘 할 일 1개 · 지난 할 일 1개')
 assert.ok(s.body.includes('D-1 기말') && s.body.includes('• 성적 입력') && s.body.includes('채점'))
 assert.equal(morningSummary(coerceData({ classes: [], pattern: {} }), '2026-11-16'), null)
 console.log('PASS: repeating todos (weekly/monthly/daily, done per day, skip, end), carry-over, move, calendar marks, morning summary')
+
+// 글 고치기 — 직접 넣은 할 일은 그 날 것만, 반복은 반복 전체. 빈 글이면 그대로 둔다
+{
+  const { editTodo } = await import('../src/todos.js')
+  let x = coerceData({ classes: [], pattern: {}, todos: { '2026-11-17': [{ id: 1, text: '채점', done: true }] } })
+  x = editTodo(x, '2026-11-17', 1, '  수행평가 채점 ')
+  assert.deepEqual(x.todos['2026-11-17'], [{ id: 1, text: '수행평가 채점', done: true }])
+  assert.equal(editTodo(x, '2026-11-17', 1, '   '), x)
+  x = addRepeat(x, '2026-11-20', '주간 계획', 'weekly')
+  x = editTodo(x, '2026-11-27', todosOn(x, '2026-11-27')[0].id, '주간 계획 제출')
+  assert.equal(todosOn(x, '2026-11-20')[0].text, '주간 계획 제출')
+  console.log('PASS: edit todo text (own / repeat / blank ignored)')
+}

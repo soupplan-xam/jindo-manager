@@ -75,6 +75,14 @@ export function removeTodo(d, iso, id, mode = 'one') {
   return withTodos(d, iso, ((d.todos || {})[iso] || []).filter(x => x.id !== id))
 }
 
+// 글 고치기. 반복 할 일은 그 반복 전체의 글이 바뀐다
+export function editTodo(d, iso, id, text) {
+  const v = String(text || '').trim()
+  if (!v) return d
+  if (isRepeatId(id)) return mapRepeat(d, id, r => ({ ...r, text: v }))
+  return withTodos(d, iso, ((d.todos || {})[iso] || []).map(x => (x.id === id ? { ...x, text: v } : x)))
+}
+
 export function addTodo(d, iso, text, color) {
   return withTodos(d, iso, [...((d.todos || {})[iso] || []), { id: Date.now(), text, done: false, ...(color ? { color } : null) }])
 }
