@@ -35,8 +35,6 @@ export function offReasonOf(data, iso, dow) {
   return ev ? (/방학/.test(ev.name) ? '방학' : '휴업일') : null
 }
 
-const tintOf = (hex, a) => { const m = /^#([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return hex; const n = parseInt(m[1], 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')' }
-
 export default function MonthCalendar({ data, setData, setSnack }) {
   const { isMobile } = useWindowWidth()
   const today = toISO(new Date())
@@ -154,16 +152,16 @@ export default function MonthCalendar({ data, setData, setSnack }) {
       onPointerMove={onMove}
       onPointerUp={onUp}
             onPointerCancel={onUp}
-      className="lg-cal"
-      style={{ border: 'none', borderRadius: 16, background: 'transparent', touchAction: paint ? 'none' : 'auto', userSelect: paint ? 'none' : 'auto' }}
+      className="glass-card"
+      style={{ border: '1px solid ' + LINE, borderRadius: 16, overflow: 'hidden', background: '#FFFFFF', touchAction: paint ? 'none' : 'auto', userSelect: paint ? 'none' : 'auto' }}
     >
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: isMobile ? 3 : 6, marginBottom: 2 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', background: '#F2F4F6', borderBottom: '1px solid ' + LINE }}>
         {DAYS.split('').map((w, i) => (
           <div key={w} style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, padding: '6px 0', color: i === 0 ? RED : i === 6 ? SAT : SUB }}>{w}</div>
         ))}
       </div>
       {weeks.map((row, wi) => (
-        <div key={wi} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: isMobile ? 3 : 6, marginTop: isMobile ? 3 : 6 }}>
+        <div key={wi} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
           {row.map((d, i) => {
             const iso = toISO(d)
             const out = d.getMonth() !== ym.m
@@ -185,7 +183,6 @@ export default function MonthCalendar({ data, setData, setSnack }) {
               <div
                 key={iso}
                 data-iso={iso}
-                className="lg-tile lg-day"
                 onClick={() => { if (!paint) setSel(iso) }}
                 role="button"
                 tabIndex={0}
@@ -194,10 +191,9 @@ export default function MonthCalendar({ data, setData, setSnack }) {
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSel(iso) } }}
                 style={{
                   minHeight: cellH, minWidth: 0, padding: isMobile ? '4px 4px' : '6px 7px', boxSizing: 'border-box', cursor: paint ? 'crosshair' : 'pointer',
-                  borderRadius: isMobile ? 9 : 14, border: '1px solid rgba(255,255,255,0.75)',
-                  // 색 칸은 반투명 색유리로(흰색으로 칠한 날은 '칠 지움')
-                  background: colors[iso] && colors[iso].toUpperCase() !== '#FFFFFF' ? tintOf(colors[iso], 0.62) : !colors[iso] && autoOff && offReason(iso, i) ? tintOf(OFF_BG, 0.5) : out ? '#F9FAFB' : '#FFFFFF',
-                  boxShadow: (isSel ? 'inset 0 0 0 2px ' + GREEN + ', ' : '') + '0 6px 18px rgba(40, 70, 120, 0.10)',
+                  borderTop: wi ? '1px solid ' + LINE_SOFT : 'none', borderLeft: i ? '1px solid ' + LINE_SOFT : 'none',
+                  background: colors[iso] || (autoOff && offReason(iso, i) ? OFF_BG : out ? '#F9FAFB' : '#FFFFFF'),
+                  boxShadow: isSel ? 'inset 0 0 0 2px ' + GREEN : 'none',
                   opacity: out ? 0.6 : 1, overflow: 'hidden',
                 }}
               >
