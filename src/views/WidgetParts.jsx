@@ -138,13 +138,13 @@ export function MiniWeek({ glass = false, inv = false, data, setData, computed, 
   return (
     <div ref={boxRef} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
     <div className="soft-scroll" style={{ flex: 1, minHeight: 0, overflow: 'auto', border: glass ? 'none' : '1px solid ' + LINE, borderRadius: 10, background: glass ? 'transparent' : '#FFFFFF' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '46px repeat(5, minmax(0, 1fr))', gridTemplateRows: 'auto repeat(' + periods + ', minmax(40px, 1fr))', minHeight: '100%', gap: glass ? 4 : 0, boxSizing: 'border-box' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '46px repeat(5, minmax(0, 1fr))', gridTemplateRows: 'auto repeat(' + periods + ', minmax(40px, 1fr))', minHeight: '100%', gap: glass ? 6 : 0, padding: glass ? 2 : 0, boxSizing: 'border-box' }}>
         <div style={{ background: glass ? 'transparent' : '#F2F4F6', position: glass ? 'static' : 'sticky', top: 0, zIndex: 1 }} />
         {days.map(iso => {
           const d = fromISO(iso)
           const isToday = iso === today
           return (
-            <div key={iso} style={{ textAlign: 'center', padding: '6px 0', fontSize: 13, fontWeight: 700, color: isToday ? (glass ? INK : GREEN) : holidayOn(iso) ? inkOf(RED, inv) : SUB, fontWeight: isToday && glass ? 800 : 700, background: glass ? (isToday ? (inv ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.4)') : 'transparent') : isToday ? '#E9F6FE' : '#F2F4F6', borderLeft: glass ? 'none' : line, borderRadius: glass ? 9 : 0, position: glass ? 'static' : 'sticky', top: 0, zIndex: 1 }}>
+            <div key={iso} style={{ textAlign: 'center', padding: '6px 0', fontSize: 13, fontWeight: 700, color: isToday ? (glass ? INK : GREEN) : holidayOn(iso) ? inkOf(RED, inv) : SUB, fontWeight: isToday && glass ? 800 : 700, background: glass ? (isToday ? (inv ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.4)') : 'transparent') : isToday ? '#E9F6FE' : '#F2F4F6', borderLeft: glass ? 'none' : line, borderRadius: glass ? 12 : 0, position: glass ? 'static' : 'sticky', top: 0, zIndex: 1 }}>
               {DAYS[d.getDay()]} {d.getMonth() + 1}.{d.getDate()}
             </div>
           )
@@ -169,10 +169,11 @@ export function MiniWeek({ glass = false, inv = false, data, setData, computed, 
               return (
                 <div key={iso} title={(s ? (s.activity ? s.place : s.makeup ? (s.place || '') + ' 보강' : s.cls + (s.num ? ' ' + s.num + '차시' : ' ' + (s.reason || ''))) + ' — ' : '') + '더블클릭해 메모'}
                   data-hit=""
+                  className={glass ? 'lg-tile' : ''}
                   onDoubleClick={() => setEdit({ key: iso + '|' + p, text: notes[iso + '|' + p] || '' })}
                   onDragOver={drag ? e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (over !== iso + '|' + p) setOver(iso + '|' + p) } : undefined}
                   onDrop={drag ? e => { e.preventDefault(); moveNote(drag, iso + '|' + p); setDrag(null); setOver(null) } : undefined}
-                  style={{ minWidth: 0, ...(glass ? { border: tileEdge(inv), borderRadius: 9 } : { borderTop: line, borderLeft: line }), padding: '4px 6px', background: glass && bg === 'transparent' ? tileBg(inv) : bg, boxShadow: drag && over === iso + '|' + p ? dropMark(glass, inv) : isNow ? neon(glass, inv) : isNext && glass ? neon(glass, inv, false) : 'none', position: isNow || isNext ? 'relative' : undefined, zIndex: isNow || isNext ? 1 : undefined, cursor: 'pointer',
+                  style={{ minWidth: 0, ...(glass ? { border: tileEdge(inv), borderRadius: 14 } : { borderTop: line, borderLeft: line }), padding: '4px 6px', background: glass && bg === 'transparent' ? tileBg(inv) : bg, boxShadow: drag && over === iso + '|' + p ? dropMark(glass, inv) : isNow ? neon(glass, inv) : isNext && glass ? neon(glass, inv, false) : 'none', position: isNow || isNext ? 'relative' : undefined, zIndex: isNow || isNext ? 1 : undefined, cursor: 'pointer',
                     display: 'flex', flexWrap: 'wrap', alignItems: 'center', alignContent: 'center', gap: '0 6px', wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>
                   {s && (
                     <>
@@ -320,7 +321,7 @@ export function MiniMonth({ glass = false, inv = false, data, setData, today }) 
       {/* 요일 머리와 날짜 칸을 한 격자에 두어 열이 정확히 맞는다. 주(줄) 높이는 같게 나누고,
           할 일이 많은 주만 늘어난다(넘치면 달력 안에서 스크롤) */}
       <div className="soft-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', border: glass ? 'none' : '1px solid ' + LINE, borderRadius: 10, background: glass ? 'transparent' : '#FFFFFF' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gridTemplateRows: 'auto repeat(' + weeks.length + ', minmax(84px, 1fr))', minHeight: '100%', gap: glass ? 4 : 0, boxSizing: 'border-box' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gridTemplateRows: 'auto repeat(' + weeks.length + ', minmax(84px, 1fr))', minHeight: '100%', gap: glass ? 6 : 0, padding: glass ? 2 : 0, boxSizing: 'border-box' }}>
           {DAYS.split('').map((w, i) => (
             <div key={w} style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, padding: '5px 0', background: glass ? 'transparent' : '#F7F8FA', borderLeft: i && !glass ? line : 'none', borderBottom: glass ? 'none' : line, color: i === 0 ? inkOf(RED, inv) : i === 6 ? inkOf(SAT, inv) : SUB, position: glass ? 'static' : 'sticky', top: 0, zIndex: 1 }}>{w}</div>
           ))}
@@ -342,11 +343,11 @@ export function MiniMonth({ glass = false, inv = false, data, setData, today }) 
               ? (glass ? (inv ? (painted ? pre(vivid(fill, 0.5, 0.6), 0.55) : pre(vivid(fill), 0.32)) : rgbaOf(fill, painted ? 0.7 : 0.5)) : fill)
               : glass ? tileBg(inv) : '#FFFFFF'
             return (
-              <div key={iso} data-hit="" onClick={() => setSel(iso)} onDoubleClick={() => { setSel(iso); setCellEdit({ iso, text: '' }) }} title="더블클릭하면 할 일을 바로 넣습니다"
+              <div key={iso} data-hit="" className={glass ? 'lg-tile' : ''} onClick={() => setSel(iso)} onDoubleClick={() => { setSel(iso); setCellEdit({ iso, text: '' }) }} title="더블클릭하면 할 일을 바로 넣습니다"
                 onDragOver={drag ? e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (over !== iso) setOver(iso) } : undefined}
                 onDrop={drag ? e => { e.preventDefault(); moveTodo(drag.iso, drag.id, iso); setDrag(null); setOver(null); setSel(iso) } : undefined}
-                style={{ minWidth: 0, padding: '4px 5px 5px', cursor: 'pointer', background: bg, opacity: out ? (glass ? 0.6 : 0.45) : 1,
-                  ...(glass ? { border: tileEdge(inv), borderRadius: 9 } : { borderTop: wi ? line : 'none', borderLeft: i ? line : 'none' }), boxShadow: over === iso && drag ? dropMark(glass, inv) : iso === today ? neon(glass, inv) : 'none', position: iso === today ? 'relative' : undefined, zIndex: iso === today ? 1 : undefined, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                style={{ minWidth: 0, padding: glass ? '6px 8px 7px' : '4px 5px 5px', cursor: 'pointer', background: bg, opacity: out ? (glass ? 0.6 : 0.45) : 1,
+                  ...(glass ? { border: tileEdge(inv), borderRadius: 14 } : { borderTop: wi ? line : 'none', borderLeft: i ? line : 'none' }), boxShadow: over === iso && drag ? dropMark(glass, inv) : iso === today ? neon(glass, inv) : 'none', position: iso === today ? 'relative' : undefined, zIndex: iso === today ? 1 : undefined, display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, minHeight: 18 }}>
                   <span data-hit="" title="더블클릭하면 할 일을 바로 넣습니다" style={{ fontSize: 12.5, fontWeight: 800, flex: 'none', lineHeight: '18px', cursor: 'pointer', color: iso === today ? '#FFFFFF' : i === 0 || hol ? inkOf(RED, inv) : i === 6 ? inkOf(SAT, inv) : INK, background: iso === today ? (glass ? INK : GREEN) : 'transparent', borderRadius: 999, padding: iso === today ? '0 6px' : 0 }}>{d.getDate()}</span>
                   {(hol || term) && <span style={{ fontSize: 10.5, fontWeight: 700, color: hol ? inkOf(RED, inv) : inkOf('#2B8A3E', inv), minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hol || term}</span>}
