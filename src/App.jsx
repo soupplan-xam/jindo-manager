@@ -194,7 +194,7 @@ export default function App() {
         minHeight: fit ? undefined : vh,
         overflow: fit ? 'hidden' : undefined,
         display: 'flex', flexDirection: 'column',
-        padding: isMobile ? '14px 14px 80px' : fit ? '16px 32px 18px' : '22px 40px 90px',
+        padding: isMobile ? '14px 14px 80px' : fit ? '18px 52px 40px' : '22px 40px 90px', // 한 화면 고정(진도표)일 때 가장자리에 숨 쉴 틈을 둔다
         boxSizing: 'border-box',
       }}
     >
