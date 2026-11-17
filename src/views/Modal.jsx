@@ -12,12 +12,13 @@ export default function Modal({ title, onClose, children, width = 560, noClose =
     <div
       onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}
       style={{
-        position: 'fixed', inset: 0, background: 'rgba(25,31,40,0.42)', zIndex: 100,
+        position: 'fixed', inset: 0, background: 'rgba(25,31,40,0.28)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', zIndex: 100,
         display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '7vh 16px 16px',
         overflowY: 'auto',
       }}
     >
       <div
+        className="app-glass glass-strong"
         style={{
           width: '100%', maxWidth: width, background: '#FFFFFF', border: 'none',
           borderRadius: 20, boxShadow: '0 20px 60px rgba(25,31,40,0.18)', padding: '24px 26px 26px', boxSizing: 'border-box',

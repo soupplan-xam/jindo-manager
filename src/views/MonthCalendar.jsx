@@ -152,7 +152,8 @@ export default function MonthCalendar({ data, setData, setSnack }) {
       onPointerMove={onMove}
       onPointerUp={onUp}
             onPointerCancel={onUp}
-      style={{ border: '1px solid ' + LINE, borderRadius: 12, overflow: 'hidden', background: '#FFFFFF', touchAction: paint ? 'none' : 'auto', userSelect: paint ? 'none' : 'auto' }}
+      className="glass-card"
+      style={{ border: '1px solid ' + LINE, borderRadius: 16, overflow: 'hidden', background: '#FFFFFF', touchAction: paint ? 'none' : 'auto', userSelect: paint ? 'none' : 'auto' }}
     >
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', background: '#F2F4F6', borderBottom: '1px solid ' + LINE }}>
         {DAYS.split('').map((w, i) => (

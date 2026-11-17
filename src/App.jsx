@@ -185,6 +185,7 @@ export default function App() {
   return (
     <div
       data-font-zoom
+      className="app-glass"
       style={{
         zoom: fs === 1 ? undefined : fs,
         height: fit ? vh : undefined,

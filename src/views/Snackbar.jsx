@@ -49,6 +49,7 @@ export default function Snackbar({ snack, setSnack, data, setData }) {
     <div
       onClick={e => e.stopPropagation()}
       data-print="hide"
+      className="glass-strong"
       style={{
         position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 26,
         background: '#FFFFFF', border: '1px solid #E5E8EB', borderRadius: 8,

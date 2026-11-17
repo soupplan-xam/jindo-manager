@@ -206,6 +206,7 @@ function CalendarPopover({ anchor, start, end, min, range = false, onPick, onClo
       ref={box}
       role="dialog"
       aria-label="날짜 고르기"
+      className="glass-strong"
       style={{
         position: 'fixed', top: pos.top, left: pos.left, zIndex: 1000, width: 264, boxSizing: 'border-box',
         background: '#FFFFFF', border: '1px solid ' + LINE, borderRadius: 10, padding: 12,

@@ -247,6 +247,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
     <div
       onClick={e => e.stopPropagation()}
       data-print="hide"
+      className="glass-strong"
       style={{
         position: 'fixed', width: W, background: '#FFFFFF', border: '1px solid ' + LINE, borderRadius: 8,
         boxShadow: '0 10px 28px rgba(26,26,26,0.16)', zIndex: 80, textAlign: 'left', cursor: 'default',
@@ -805,7 +806,8 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   const table = (
     <div
       ref={gridRef}
-      style={{ border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', overflow: 'hidden', height: fit ? '100%' : undefined }}
+      className="glass-card"
+      style={{ border: '1px solid ' + LINE, borderRadius: 14, background: '#FFFFFF', overflow: 'hidden', height: fit ? '100%' : undefined }}
     >
       <div
         style={{
@@ -1296,6 +1298,7 @@ function DashStrip({ data, setData, computed, today, setUI, setWeekOffset, mon0,
 function Tile({ label, sub, children, grow, min, minWidth }) {
   return (
     <div
+      className="glass-card"
       style={{
         border: 'none', borderRadius: 16, background: '#FFFFFF', padding: '12px 16px 14px', boxShadow: '0 1px 3px rgba(25,31,40,0.05)',
         minWidth: minWidth || 0, flex: grow ? grow + ' 1 0' : undefined, boxSizing: 'border-box',

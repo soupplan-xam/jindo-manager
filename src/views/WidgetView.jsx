@@ -76,6 +76,7 @@ export default function WidgetView({ shared = null }) {
   }, [])
   useEffect(() => {
     if (!shared) document.documentElement.classList.add('widget-mode')
+    if (GLASS && !shared) document.documentElement.classList.add('widget-clear') // 투명 창 — 바탕 번짐을 깔지 않는다
     if (desk) {
       desk.getAlwaysOnTop().then(setOnTop).catch(() => {})
       desk.getAutoStart().then(setAutoStart).catch(() => {})
@@ -120,7 +121,7 @@ export default function WidgetView({ shared = null }) {
       // 바탕화면 모드: 고른 바탕색은 반전 필터 밖(여기)에 깐다 — 고른 색 그대로 보인다
       ...(glass ? { background: rgba(pref.glassColor, pref.glassA), borderRadius: 14, overflow: 'hidden' } : null) }}>
       <div
-        className={'wg-wrap' + (inv ? ' wg-glass' : glass ? ' wg-glass-l' : '')}
+        className={'wg-wrap' + (inv ? ' wg-glass' : glass ? ' wg-glass-l' : ' app-glass')}
         style={{
           flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',
           background: glass ? 'transparent' : desk || shared ? '#FFFFFF' : 'rgba(255,255,255,' + pref.opacity + ')', borderRadius: glass ? 14 : desk || shared ? 0 : 16,

@@ -12,7 +12,7 @@
 }
 body {
   margin: 0;
-  background: #F4F6F9;
+  background: #EEF4FB;
   color: #191F28;
   font-family: 'Pretendard Variable', Pretendard, sans-serif;
   font-variant-numeric: tabular-nums;
@@ -107,3 +107,57 @@ html.widget-mode, html.widget-mode body { background: transparent; overflow: hid
 .wg-glass-l .wg-input { background: rgba(255,255,255,0.65); box-shadow: inset 0 0 0 1px rgba(25,31,40,0.18); caret-color: #191F28; }
 .wg-glass-l .wg-input:focus { box-shadow: inset 0 0 0 1px rgba(25,31,40,0.45), 0 0 10px rgba(255,255,255,0.6); }
 
+
+/* ---- 글래스모피즘 ----
+   바탕은 은은한 색 번짐, 그 위의 흰 면은 반투명 유리로. 화면 곳곳의 흰 배경(inline style)은
+   .app-glass 아래에서 한꺼번에 반투명으로 바꾼다. 팝업·모달은 뒤가 흐려 보이는 진한 유리(.glass-strong). */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(62vw 60vh at 6% -4%, #BFE2FF 0%, transparent 62%),
+    radial-gradient(52vw 56vh at 98% 6%, #DAD3FF 0%, transparent 60%),
+    radial-gradient(60vw 62vh at 74% 104%, #BDEDE6 0%, transparent 60%),
+    radial-gradient(48vw 50vh at -2% 100%, #FFE2EC 0%, transparent 56%),
+    #EEF4FB;
+}
+/* 바탕화면 모드 위젯(투명 창)에서는 번짐을 깔지 않는다 */
+html.widget-clear body::before { display: none; }
+
+.app-glass [style*="background: rgb(255, 255, 255)"] { background: rgba(255, 255, 255, 0.46) !important; }
+.app-glass button[style*="background: rgb(255, 255, 255)"],
+.app-glass input[style*="background: rgb(255, 255, 255)"],
+.app-glass select[style*="background: rgb(255, 255, 255)"],
+.app-glass textarea[style*="background: rgb(255, 255, 255)"] { background: rgba(255, 255, 255, 0.72) !important; }
+/* 스위치 손잡이·색 점 같은 작은 흰 조각은 그대로 */
+.app-glass span[style*="background: rgb(255, 255, 255)"] { background: #FFFFFF !important; }
+/* 머리줄 같은 옅은 회색 면 */
+.app-glass [style*="background: rgb(242, 244, 246)"],
+.app-glass [style*="background: rgb(247, 248, 250)"],
+.app-glass [style*="background: rgb(249, 250, 251)"],
+.app-glass [style*="background: rgb(245, 248, 251)"] { background: rgba(255, 255, 255, 0.3) !important; }
+.app-glass [role=tablist][style*="background: rgb(232, 235, 239)"] { background: rgba(255, 255, 255, 0.38) !important; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6); }
+.app-glass [role=tab][aria-selected=true] { background: rgba(255, 255, 255, 0.9) !important; }
+.app-glass .hov:hover, .app-glass .hov2:hover { background: rgba(255, 255, 255, 0.55); }
+
+/* 카드: 흰 테두리 빛과 부드러운 그림자 */
+.glass-card {
+  border: 1px solid rgba(255, 255, 255, 0.75) !important;
+  box-shadow: 0 10px 30px rgba(40, 70, 120, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.3); backdrop-filter: blur(16px) saturate(1.3);
+}
+/* 팝업·모달·알림: 뒤가 흐려 보이는 진한 유리 */
+.glass-strong, .app-glass .glass-strong {
+  background: rgba(255, 255, 255, 0.74) !important;
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 0 18px 50px rgba(30, 55, 100, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.4); backdrop-filter: blur(22px) saturate(1.4);
+}
+/* 어두운 바탕화면 모드 위젯의 메뉴는 화면 반전 안에 있으므로 불투명하게 둔다 */
+/* 설정 같은 큰 창은 글이 많아 조금 더 불투명하게 */
+.app-glass.glass-strong { background: rgba(255, 255, 255, 0.86) !important; }
+.wg-glass .glass-strong { background: #FFFFFF !important; -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+@media print {
+  body::before { display: none; }
+  .app-glass [style*="background: rgb(255, 255, 255)"] { background: #FFFFFF !important; }
+}
