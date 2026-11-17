@@ -13,7 +13,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   const { sessions, perClass, exam } = computed
   const cfg = data.cfg
   const min = !!cfg.minimal
-  const { isMobile } = useWindowWidth()
+  const { isMobile, isCompact } = useWindowWidth()
   const [pop, setPop] = useState(null) // {key, mode:'menu'|'edit', draft}
   const [menuOpen, setMenuOpen] = useState(false)
   const [activeSubject, setActiveSubject] = useState(data.subjects[0] || '수학')
@@ -53,6 +53,8 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
 
   const setUI = p => setData(d => ({ ...d, ui: { ...d.ui, ...p } }))
   const showContents = data.ui.contentsOpen
+  // 창을 줄여 쓸 때: 차시별 내용을 옆이 아니라 표 아래에 둔다(표가 좁아지지 않게)
+  const stack = isCompact && showContents
 
   const t = fromISO(today)
   // 주말에는 이미 지난 주가 아니라 다음 주 월요일부터 보여준다
@@ -1027,8 +1029,8 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
     <div data-print="hide" style={{ width: '100%', maxWidth: 1320, margin: '0 auto', height: fit ? '100%' : undefined, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <DashStrip data={data} setData={setData} computed={computed} today={today} setUI={setUI} setWeekOffset={setWeekOffset} mon0={mon0} isMobile={isMobile} />
 
-      <div ref={wrapRef} style={{ display: 'flex', alignItems: fit ? 'stretch' : 'flex-start', flex: fit ? 1 : undefined, minHeight: fit ? 300 : 0 }}>
-        <div style={{ width: showContents ? splitPct + '%' : '100%', minWidth: 0, flex: 'none', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <div ref={wrapRef} style={{ display: 'flex', flexDirection: stack ? 'column' : 'row', gap: stack ? 14 : 0, alignItems: fit || stack ? 'stretch' : 'flex-start', flex: fit ? 1 : undefined, minHeight: fit ? 300 : 0 }}>
+        <div style={{ width: showContents && !stack ? splitPct + '%' : '100%', minWidth: 0, flex: 'none', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           {toolbar}
           <div style={{ flex: fit ? 1 : undefined, minHeight: 0 }}>{table}</div>
           {exam && toISO(fri) < exam.start && !fit && (
@@ -1037,7 +1039,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             </div>
           )}
         </div>
-        {showContents && (
+        {showContents && !stack && (
           <div
             data-print="hide"
             onMouseDown={startDrag}
@@ -1049,7 +1051,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
         )}
         {showContents && (
           <div data-print="hide" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <ContentsPanel data={data} setData={setData} computed={computed} today={today} active={activeSubject} setActive={setActiveSubject} height={fit ? '100%' : gridH} focusNum={focusNum} weekRange={weekRange} weekSec={weekSec} setSnack={setSnack} onCollapse={() => setUI({ contentsOpen: false })} />
+            <ContentsPanel data={data} setData={setData} computed={computed} today={today} active={activeSubject} setActive={setActiveSubject} height={stack ? 420 : fit ? '100%' : gridH} focusNum={focusNum} weekRange={weekRange} weekSec={weekSec} setSnack={setSnack} onCollapse={() => setUI({ contentsOpen: false })} />
           </div>
         )}
       </div>

@@ -84,7 +84,7 @@ export default function App() {
     document.body.dataset.printScale = data.cfg.printScale || 'l'
   }, [data.cfg.printScale])
 
-  const { isMobile } = useWindowWidth()
+  const { isMobile, isCompact, height: winH } = useWindowWidth()
   const [view, setView] = useState(() => (loadData().setupDone ? 'grid' : 'setup'))
   const [weekOffset, setWeekOffset] = useState(0)
   const [importKind, setImportKind] = useState('timetable')
@@ -177,7 +177,10 @@ export default function App() {
 
   // 진도표와 최초 설정은 데스크톱·모바일 모두 한 화면에 담는다(모바일은 탭으로 나뉜다).
   // 나머지 화면은 자연스럽게 스크롤한다.
-  const fit = view === 'grid' || view === 'setup'
+  // 한 화면 고정(표가 남은 높이를 꽉 채움)은 창이 넉넉할 때만. 창을 줄여 쓰면 칸이 눌려 글이 잘리므로
+  // 그때는 칸 높이를 지키고 페이지를 스크롤한다(휴대폰은 예전 그대로)
+  const fs0 = data.cfg.fontScale || 1
+  const fit = view === 'setup' || (view === 'grid' && (isMobile || (!isCompact && winH / fs0 >= 900)))
 
   // 글씨 크기는 화면 전체 배율로 조절한다. 높이는 배율로 나눠 한 화면 기준을 유지한다.
   // 인쇄할 때는 배율을 1로 돌려 인쇄 크기 설정과 겹치지 않게 한다.
@@ -194,7 +197,7 @@ export default function App() {
         minHeight: fit ? undefined : vh,
         overflow: fit ? 'hidden' : undefined,
         display: 'flex', flexDirection: 'column',
-        padding: isMobile ? '14px 14px 80px' : fit ? '18px 52px 40px' : '22px 40px 90px', // 한 화면 고정(진도표)일 때 가장자리에 숨 쉴 틈을 둔다
+        padding: isMobile ? '14px 14px 80px' : isCompact ? (fit ? '14px 20px 20px' : '14px 20px 48px') : fit ? '18px 52px 40px' : '22px 40px 90px', // 한 화면 고정(진도표)일 때 가장자리에 숨 쉴 틈을 둔다
         boxSizing: 'border-box',
       }}
     >
