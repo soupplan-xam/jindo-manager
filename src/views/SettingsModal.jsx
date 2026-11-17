@@ -5,7 +5,7 @@ import { checkKey } from '../importer.js'
 import DateField from './DateField.jsx'
 import { BellSettings } from './TodaySettings.jsx'
 import NotifySettings from './NotifySettings.jsx'
-import { FONTS, applyFont, fontReady, fontFamily } from '../fonts.js'
+import { FONTS, applyFont, fontReady, fontFamily, WEIGHTS } from '../fonts.js'
 import Modal from './Modal.jsx'
 
 export default function SettingsModal({ data, setData, computed, today, setSnack, onClose, onResetSetup, onImport, onSchools }) {
@@ -177,6 +177,18 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
               )
             })}
           </div>
+          <div role="radiogroup" aria-label="글씨 굵기" style={{ padding: '0 0 16px', display: 'flex', gap: 8 }}>
+            {WEIGHTS.map(([v, labelText]) => {
+              const on = (cfg.fontWeight || 0) === v
+              return (
+                <button key={v} type="button" role="radio" aria-checked={on} onClick={() => setCfg({ fontWeight: v })} className={v ? 'fw-' + v : undefined}
+                  style={{ flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 8, cursor: 'pointer', background: on ? GREEN : '#FFFFFF', color: on ? '#FFFFFF' : SUB, padding: '9px 0', fontSize: 13, fontWeight: 500 }}>
+                  {labelText}
+                </button>
+              )
+            })}
+          </div>
+          <div style={{ margin: '-8px 0 16px', fontSize: 12, color: FAINT }}>글씨 크기·굵기·글꼴은 위젯에도 같이 적용됩니다(위젯 글씨 크기는 위젯 설정에서 따로).</div>
         </Sec>
 
         <Sec open={open} toggleSec={toggleSec} id="dash" title="대시보드">

@@ -4,7 +4,7 @@ import { compute, toISO, fromISO, DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT,
 import useTodayInfo from '../useTodayInfo.js'
 import useCloudSync from '../useCloudSync.js'
 import useNotifier from '../useNotifier.js'
-import { FONTS, applyFont, fontReady } from '../fonts.js'
+import { FONTS, applyFont, fontReady, WEIGHTS, WIDGET_SCALES, weightClass } from '../fonts.js'
 import { periodLabel } from './TodayCards.jsx'
 import { TODO_COLORS } from './MonthCalendar.jsx'
 import { MiniWeek, MiniMonth } from './WidgetParts.jsx'
@@ -15,7 +15,7 @@ import { MiniWeek, MiniMonth } from './WidgetParts.jsx'
 
 const desk = typeof window !== 'undefined' ? window.jindoDesktop : null
 const PREF_KEY = 'jindo.widget'
-const DEFAULT_PREF = { dday: true, opacity: 0.94, tab: 'month', glassA: 0.55, glassColor: '#1E2530' }
+const DEFAULT_PREF = { dday: true, opacity: 0.94, tab: 'month', glassA: 0.55, glassColor: '#1E2530', scale: 1 }
 // 바탕화면 모드 바탕색 고르기 — 흰 글씨가 잘 보이는 어두운 색들
 // 어두운 색이면 흰 글씨, 밝은 색이면 검은 글씨로 저절로 바뀐다
 const GLASS_COLORS = [['#000000', '검정'], ['#1E2530', '먹색'], ['#14284B', '남색'], ['#0F3D4A', '청록'], ['#1F3A2E', '초록'], ['#3B2A4A', '보라'], ['#4A3426', '갈색'], ['#5A2330', '와인'],
@@ -129,7 +129,7 @@ export default function WidgetView({ shared = null }) {
   const iconBtn = { border: 'none', background: 'none', cursor: 'pointer', color: SUB, padding: '4px 6px', borderRadius: 6, fontSize: 13, lineHeight: 1, WebkitAppRegion: 'no-drag' }
 
   return (
-    <div ref={rootRef} style={{ height: '100vh', boxSizing: 'border-box', padding: glass ? 0 : desk || shared ? 0 : 16, display: 'flex',
+    <div ref={rootRef} className={weightClass(data.cfg.fontWeight).trim() || undefined} style={{ zoom: pref.scale && pref.scale !== 1 ? pref.scale : undefined, height: pref.scale && pref.scale !== 1 ? 'calc(100vh / ' + pref.scale + ')' : '100vh', boxSizing: 'border-box', padding: glass ? 0 : desk || shared ? 0 : 16, display: 'flex',
       // 바탕화면 모드: 고른 바탕색은 반전 필터 밖(여기)에 깐다 — 고른 색 그대로 보인다
       ...(glass ? { background: rgba(pref.glassColor, pref.glassA), borderRadius: 14, overflow: 'hidden' } : null) }}>
       <div
@@ -200,6 +200,16 @@ export default function WidgetView({ shared = null }) {
               </select>
             </label>
             {fontMsg && <div role="status" style={{ fontSize: 11.5, color: '#D9480F' }}>{fontMsg}</div>}
+            {/* 글씨 크기(이 기기) · 굵기(모든 기기) */}
+            {[['크기', WIDGET_SCALES, pref.scale || 1, v => setPref({ scale: v })], ['굵기', WEIGHTS, data.cfg.fontWeight || 0, v => setData(dd => ({ ...dd, cfg: { ...dd.cfg, fontWeight: v } }))]].map(([label, opts, cur, set]) => (
+              <div key={label} role="radiogroup" aria-label={'글씨 ' + label} style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ marginRight: 2 }}>{label}</span>
+                {opts.map(([v, n]) => (
+                  <button key={v} type="button" role="radio" aria-checked={cur === v} onClick={() => set(v)} className="wg-btn"
+                    style={{ border: '1px solid ' + (cur === v ? GREEN : LINE), borderRadius: 999, padding: '2px 10px', fontSize: 12, fontWeight: cur === v ? 700 : 500, color: cur === v ? GREEN : SUB, background: '#FFFFFF', cursor: 'pointer' }}>{n}</button>
+                ))}
+              </div>
+            ))}
             {glass ? (
               <>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>

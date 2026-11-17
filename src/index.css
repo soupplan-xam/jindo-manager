@@ -161,3 +161,8 @@ html.widget-clear body::before { display: none; }
   body::before { display: none; }
   .app-glass [style*="background: rgb(255, 255, 255)"] { background: #FFFFFF !important; }
 }
+
+/* 글씨 굵기 — 모든 글씨에 같은 만큼 획을 더한다(굵은 글씨와 보통 글씨의 차이는 그대로) */
+.fw-1, .fw-1 * { -webkit-text-stroke: 0.25px currentColor; }
+.fw-2, .fw-2 * { -webkit-text-stroke: 0.5px currentColor; }
+@media print { .fw-1, .fw-1 *, .fw-2, .fw-2 * { -webkit-text-stroke: 0; } }

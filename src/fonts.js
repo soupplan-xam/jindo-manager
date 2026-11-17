@@ -15,6 +15,12 @@ export const FONTS = [
   { k: 'jua', n: '주아 (둥근 글씨)', family: "'Jua'", css: fs('jua', '5.3.0', [400]) },
   { k: 'gaegu', n: '개구 (손글씨)', family: "'Gaegu'", css: fs('gaegu', '5.3.0', [400, 700]) },
 ]
+// 글씨 굵기 — 모든 글씨에 같은 만큼 획을 더한다(굵은 글씨·보통 글씨의 차이는 그대로). data.cfg.fontWeight 0·1·2
+export const WEIGHTS = [[0, '보통'], [1, '조금 굵게'], [2, '굵게']]
+export const weightClass = w => (w ? ' fw-' + w : '')
+// 위젯 글씨 크기(기기마다 — 창 크기가 달라서)
+export const WIDGET_SCALES = [[0.9, '작게'], [1, '보통'], [1.12, '크게'], [1.25, '더 크게']]
+
 export const fontOf = k => FONTS.find(f => f.k === (k || '')) || FONTS[0]
 export const fontFamily = k => { const f = fontOf(k); return f.family ? f.family + ', ' + BASE : BASE }
 
